@@ -37,10 +37,8 @@ def main():
             register_library()
 
     parser = py_parse(
-        source_file="/home/threezinedine/Projects/ntt-3d-graphical-engine/engine/core/core.h",
-        include_dirs=[
-            "/home/threezinedine/Projects/ntt-3d-graphical-engine/engine/core"
-        ],
+        source_file=os.path.join(ENGINE_DIR, "core", "core.h"),
+        include_dirs=[os.path.join(ENGINE_DIR, "core")],
     )
     print(parser.enums)
 
