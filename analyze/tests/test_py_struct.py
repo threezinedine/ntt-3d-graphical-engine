@@ -242,3 +242,8 @@ protected:
     assert len(my_class.functions) == 1
     assert my_class.functions[0].name == "myMethod"
     assert my_class.functions[0].return_type == "void"
+    assert my_class.functions[0].is_public is True
+    assert my_class.functions[0].is_private is False
+    assert my_class.functions[0].is_protected is False
+    assert my_class.functions[0].is_static is False
+    assert len(my_class.functions[0].parameters) == 0
