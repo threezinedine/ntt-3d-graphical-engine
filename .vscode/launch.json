@@ -8,6 +8,13 @@
 			"program": "${workspaceRoot}/build/engine_debug/engine/main/ntt-engine",
 			"preLaunchTask": "Build Engine (linux-debug)",
 			"cwd": "${workspaceRoot}/build/engine_debug/engine/main"
+		},
+		{
+			"name": "Analyze python",
+			"type": "debugpy",
+			"request": "launch",
+			"program": "${workspaceFolder}/analyze/main.py",
+			"console": "integratedTerminal"
 		}
 	]
 }
