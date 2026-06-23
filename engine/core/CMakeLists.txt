@@ -6,7 +6,12 @@ set(NTT_CORE_LIBRARY_NAME "ntt-core")
 set(
     NTT_CORE_SOURCES
     "core.h"
-    "core.cpp"
+    "defs.h"
+    "common.h"
+    "result.h"
+    "result.cpp"
+    "console.h"
+    "console.cpp"
 )
 
 add_library(
@@ -25,3 +30,5 @@ target_precompile_headers(
     PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/common.h"
 )
+
+ntt_add_options(${NTT_CORE_LIBRARY_NAME})

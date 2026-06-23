@@ -1,0 +1,10 @@
+#ifndef RESULT_OPTION
+#define RESULT_OPTION(option)
+#endif
+
+#ifndef RESULT_OPTION_END
+#define RESULT_OPTION_END(option)
+#endif
+
+RESULT_OPTION(SUCCESS)
+RESULT_OPTION_END(COUNT)
