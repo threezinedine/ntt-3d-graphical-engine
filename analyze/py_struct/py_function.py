@@ -16,7 +16,10 @@ class PyFunction(PyBase):
         templates = []
         if self.is_template:
             for child in self.cursor.get_children():
-                if child.kind == ci.CursorKind.TEMPLATE_TYPE_PARAMETER:  # type: ignore
+                if child.kind in (
+                    ci.CursorKind.TEMPLATE_TYPE_PARAMETER,  # type: ignore
+                    ci.CursorKind.TEMPLATE_NON_TYPE_PARAMETER,  # type: ignore
+                ):
                     templates.append(PyTemplateParameter(child))
         return templates
 

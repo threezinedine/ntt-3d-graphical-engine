@@ -189,8 +189,8 @@ namespace MyNamespace {
 
 def test_py_with_template():
     parser = py_parse(test_code="""
-template <typename T>
-function void myFunction(T value);
+template <typename T, float N>
+void myFunction(T value);
 """)
 
     assert len(parser.functions) == 1
@@ -203,6 +203,8 @@ function void myFunction(T value);
     assert my_function.is_template is True
 
     # template parameters
-    assert len(my_function.templates) == 1
+    assert len(my_function.templates) == 2
     assert my_function.templates[0].name == "T"
     assert my_function.templates[0].type == "typename"
+    assert my_function.templates[1].name == "N"
+    assert my_function.templates[1].type == "float"
