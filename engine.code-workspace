@@ -1,6 +1,15 @@
 {
 	"folders": [
 		{
+			"path": "analyze",
+		},
+		{
+			"path": "engine/core",
+		},
+		{
+			"path": "engine/main",
+		},
+		{
 			"path": ".",
 		},
 	],

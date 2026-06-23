@@ -4,9 +4,8 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
-
-[tool.uv.workspace]
-members = [
-    "analyze",
+dependencies = [
+    "colorlog>=6.10.1",
+    "dacite>=1.9.2",
+    "jinja2>=3.1.6",
 ]

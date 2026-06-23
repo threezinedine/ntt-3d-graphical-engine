@@ -1,0 +1,11 @@
+{
+	"common": {
+		"inherit": [],
+		"options": []
+	},
+	"engine-debug": {
+		"inherit": ["common"],
+		"options": [],
+		"command": "cmake -B build/engine_debug -DCMAKE_BUILD_TYPE=Debug {{ options }}"
+	}
+}
