@@ -32,3 +32,5 @@ target_precompile_headers(
 )
 
 ntt_add_options(${NTT_CORE_LIBRARY_NAME})
+ntt_add_link_flags(${NTT_CORE_LIBRARY_NAME})
+ntt_add_compile_options(${NTT_CORE_LIBRARY_NAME})

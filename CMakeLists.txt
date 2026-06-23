@@ -7,7 +7,10 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 include(ntt-config)
 
 ntt_config()
-ntt_platform_detect()
+
+ntt_print_options()
+ntt_print_link_flags()
+ntt_print_compile_options()
 
 add_subdirectory(engine)
 

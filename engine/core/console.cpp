@@ -45,7 +45,9 @@ void setConsoleColor(ConsoleColor color)
 	case CONSOLE_COLOR_##option:                                                                                       \
 		printf("\033[%sm", console_value);                                                                             \
 		break;
-#define CONSOLE_COLOR_OPTION_END(option)
+#define CONSOLE_COLOR_OPTION_END(option)                                                                               \
+	default:                                                                                                           \
+		break;
 #include "console_color.def"
 #undef CONSOLE_COLOR_OPTION
 #undef CONSOLE_COLOR_OPTION_END

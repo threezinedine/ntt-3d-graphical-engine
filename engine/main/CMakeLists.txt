@@ -17,6 +17,10 @@ target_link_libraries(
     ntt-core
 )
 
+ntt_add_options(ntt-engine)
+ntt_add_link_flags(ntt-engine)
+ntt_add_compile_options(ntt-engine)
+
 if (NTT_PLATFORM_WEB)
     add_custom_command(
         TARGET ntt-engine POST_BUILD
