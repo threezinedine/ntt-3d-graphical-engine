@@ -16,3 +16,12 @@ target_link_libraries(
     PRIVATE
     ntt-core
 )
+
+if (NTT_PLATFORM_WEB)
+    add_custom_command(
+        TARGET ntt-engine POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${CMAKE_SOURCE_DIR}/engine/assets/html/engine.html
+            ${CMAKE_CURRENT_BINARY_DIR}/index.html
+    )
+endif()

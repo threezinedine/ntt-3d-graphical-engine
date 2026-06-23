@@ -2,11 +2,8 @@
 	"configurations": [
 		{
 			"name": "Linux",
-			"includePath": [
-				"${workspaceFolder}/**",
-				"${workspaceFolder}/../core"
-			],
-			"defines": [],
+			"includePath": ["${workspaceFolder}/**"],
+			"defines": ["NTT_ENABLE_ASSERTION=1"],
 			"compilerPath": "/usr/bin/clang",
 			"cStandard": "c17",
 			"cppStandard": "c++17",

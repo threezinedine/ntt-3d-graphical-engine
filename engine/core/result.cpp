@@ -12,7 +12,7 @@ const char* ToString(Result result)
 #define RESULT_OPTION_END(option)                                                                                      \
 	default:                                                                                                           \
 		return "Unknown Result";
-#include "result.inl"
+#include "result.def"
 #undef RESULT_OPTION
 #undef RESULT_OPTION_END
 	}

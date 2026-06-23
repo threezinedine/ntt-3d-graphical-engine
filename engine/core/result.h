@@ -6,7 +6,7 @@ enum Result
 {
 #define RESULT_OPTION(option)	  RESULT_##option,
 #define RESULT_OPTION_END(option) RESULT_##option
-#include "result.inl"
+#include "result.def"
 #undef RESULT_OPTION
 #undef RESULT_OPTION_END
 };

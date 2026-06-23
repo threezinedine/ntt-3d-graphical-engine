@@ -7,6 +7,7 @@ macro(ntt_config)
     endif()
 
     option(CMAKE_BUILD_TYPE "Build type" Debug)
+    ntt_option(NTT_ENABLE_ASSERTION ON)
 
     if (CMAKE_BUILD_TYPE STREQUAL "Debug")
         set(NTT_DEBUG ON)
@@ -53,3 +54,8 @@ function(ntt_add_options target)
         endif()
     endforeach()
 endfunction()
+
+macro(ntt_option option default_value)
+    option(${option} "Option ${option}" ${default_value})
+    list(APPEND NTT_OPTIONS ${option})
+endmacro()

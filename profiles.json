@@ -7,5 +7,15 @@
 		"inherit": ["common"],
 		"options": [],
 		"command": "cmake -B build/engine_debug -DCMAKE_BUILD_TYPE=Debug {{ options }}"
+	},
+	"engine-release": {
+		"inherit": ["common"],
+		"options": ["NTT_ENABLE_ASSERTION=0"],
+		"command": "cmake -B build/engine_release -DCMAKE_BUILD_TYPE=Release {{ options }}"
+	},
+	"web-engine-debug": {
+		"inherit": ["common"],
+		"options": [],
+		"command": "emcmake cmake -B build/web_engine_debug -DCMAKE_BUILD_TYPE=Debug {{ options }}"
 	}
 }
