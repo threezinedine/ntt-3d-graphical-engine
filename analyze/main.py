@@ -2,7 +2,9 @@ import os
 import argparse
 from py_struct import *
 
-CACHE_FILE = os.path.join(os.path.dirname(__file__), ".cache")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ENGINE_DIR = os.path.dirname(BASE_DIR)
+CACHE_FILE = os.path.join(BASE_DIR, ".cache")
 
 
 def main():
