@@ -4,6 +4,7 @@ from .py_struct import PyStruct
 from .py_typedef import PyTypedef
 from .py_base import PyBase
 from .py_function import PyFunction
+from .py_class import PyClass
 
 
 class PyParse:
@@ -11,6 +12,7 @@ class PyParse:
     structs: list[PyStruct] = []
     typedefs: list[PyTypedef] = []
     functions: list[PyFunction] = []
+    classes: list[PyClass] = []
 
     def __init__(self):
         self.enums = []
@@ -61,3 +63,5 @@ def _parse_elements(cursor: ci.Cursor, py_parse: PyParse):
         py_parse.typedefs.append(PyTypedef(cursor))
     elif cursor.kind == ci.CursorKind.FUNCTION_DECL or cursor.kind == ci.CursorKind.FUNCTION_TEMPLATE:  # type: ignore
         py_parse.functions.append(PyFunction(cursor))
+    elif cursor.kind == ci.CursorKind.CLASS_DECL:  # type: ignore
+        py_parse.classes.append(PyClass(cursor))

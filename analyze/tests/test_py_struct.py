@@ -208,3 +208,37 @@ void myFunction(T value);
     assert my_function.templates[0].type == "typename"
     assert my_function.templates[1].name == "N"
     assert my_function.templates[1].type == "float"
+
+
+def test_py_class():
+    parser = py_parse(test_code="""
+class MyClass {
+public:
+    void myMethod();
+
+private:
+    int myAttribute;
+                      
+protected:
+    static float myProtectedAttribute;
+};
+""")
+
+    assert len(parser.classes) == 1
+    my_class = parser.classes[0]
+    assert my_class.name == "MyClass"
+    assert len(my_class.attributes) == 2
+    assert my_class.attributes[0].name == "myAttribute"
+    assert my_class.attributes[0].type == "int"
+    assert my_class.attributes[0].is_public is False
+    assert my_class.attributes[0].is_private is True
+    assert my_class.attributes[0].is_protected is False
+    assert my_class.attributes[1].name == "myProtectedAttribute"
+    assert my_class.attributes[1].type == "float"
+    assert my_class.attributes[1].is_public is False
+    assert my_class.attributes[1].is_private is False
+    assert my_class.attributes[1].is_protected is True
+
+    assert len(my_class.functions) == 1
+    assert my_class.functions[0].name == "myMethod"
+    assert my_class.functions[0].return_type == "void"
