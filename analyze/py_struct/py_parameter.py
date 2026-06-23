@@ -5,27 +5,23 @@ from .py_base import PyBase
 class PyParameter(PyBase):
     def __init__(self, cursor: ci.Cursor):
         super().__init__(cursor)
-        self.type = cursor.type.spelling
-        self.default_value = self._get_default_value(cursor)
+        self.type = self._normalize_type(cursor.type.spelling)
+        self.has_default_value = self._check_has_default(cursor)
 
-    def _get_default_value(self, param_cursor: ci.Cursor) -> str | None:
-        """
-        Given a PARM_DECL cursor, retrieves its default argument value as a string.
-        Returns None if no default value exists.
-        """
+    @staticmethod
+    def _normalize_type(raw_type: str) -> str:
+        """Remove spaces before reference (&) and pointer (*) qualifiers."""
+        import re
+
+        return re.sub(r"\s+(?=[&*])", "", raw_type)
+
+    @staticmethod
+    def _check_has_default(param_cursor: ci.Cursor) -> bool:
+        """Check if a PARM_DECL cursor has a default value expression."""
         children = list(param_cursor.get_children())
-
-        if not children:
-            return None
-
-        default_expr_node = children[-1]
-
-        tokens = [token.spelling for token in default_expr_node.get_tokens()]
-
-        if tokens:
-            return "".join(tokens)
-
-        return default_expr_node.spelling if default_expr_node.spelling else None
+        # Filter out TypeRef children (they're the type, not default values).
+        non_type_children = [c for c in children if c.kind != ci.CursorKind.TYPE_REF]  # type: ignore
+        return len(non_type_children) > 0
 
     def __repr__(self):
-        return f"PyParameter(name={self.name}, type={self.type}, default_value={self.default_value})"
+        return f"PyParameter(name={self.name}, type={self.type}, has_default_value={self.has_default_value})"

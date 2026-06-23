@@ -142,13 +142,13 @@ namespace MyNamespace {
     assert len(my_function.parameters) == 4
     assert my_function.parameters[0].name == "point"
     assert my_function.parameters[0].type == "Point"
-    assert my_function.parameters[0].default_value is None
+    assert my_function.parameters[0].has_default_value is False
     assert my_function.parameters[1].name == "ref"
     assert my_function.parameters[1].type == "Point&"
-    assert my_function.parameters[1].default_value is None
+    assert my_function.parameters[1].has_default_value is False
     assert my_function.parameters[2].name == "a"
     assert my_function.parameters[2].type == "int"
-    assert my_function.parameters[2].default_value is None
+    assert my_function.parameters[2].has_default_value is False
     assert my_function.parameters[3].name == "b"
     assert my_function.parameters[3].type == "float"
-    assert my_function.parameters[3].default_value == "3.14f"
+    assert my_function.parameters[3].has_default_value is True
