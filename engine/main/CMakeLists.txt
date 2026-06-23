@@ -1,3 +1,6 @@
+include(ntt-config)
+ntt_config()
+
 set(
     NTT_ENGINE_SOURCES
     "main_engine.cpp"

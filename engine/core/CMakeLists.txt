@@ -1,3 +1,6 @@
+include(ntt-config)
+ntt_config()
+
 set(NTT_CORE_LIBRARY_NAME "ntt-core")
 
 set(
