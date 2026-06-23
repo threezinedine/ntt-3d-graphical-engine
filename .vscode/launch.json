@@ -15,6 +15,14 @@
 			"request": "launch",
 			"program": "${workspaceFolder}/analyze/main.py",
 			"console": "integratedTerminal"
+		},
+		{
+			"name": "Analyze test",
+			"type": "debugpy",
+			"request": "launch",
+			"module": "pytest",
+			"cwd": "${workspaceFolder}",
+			"console": "integratedTerminal"
 		}
 	]
 }

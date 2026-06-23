@@ -5,7 +5,7 @@ from pathlib import Path
 import clang.cindex as ci
 
 
-def register_library(force_file: str = None):
+def register_library(force_file: str | None = None):
     """
     Register the libclang library for the current platform.
     """

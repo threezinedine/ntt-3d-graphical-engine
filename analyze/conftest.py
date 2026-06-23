@@ -3,7 +3,7 @@ import pytest
 from py_struct import register_library
 
 
-@pytest.fixture(scope="function", autouse=True)
+@pytest.fixture(scope="session", autouse=True)
 def register_library_fixture():
     """
     Fixture to register the library before each test function.

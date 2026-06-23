@@ -1,9 +1,19 @@
 import clang.cindex as ci
 from .py_enum import PyEnum
+from .py_struct import PyStruct
+from .py_typedef import PyTypedef
+from .py_base import PyBase
 
 
 class PyParse:
     enums: list[PyEnum] = []
+    structs: list[PyStruct] = []
+    typedefs: list[PyTypedef] = []
+
+    def __init__(self):
+        self.enums = []
+        self.structs = []
+        self.typedefs = []
 
 
 def py_parse(
@@ -29,7 +39,20 @@ def py_parse(
         )
 
     for child in tu.cursor.get_children():
-        if child.kind == ci.CursorKind.ENUM_DECL:
-            py_parse.enums.append(PyEnum(child))
+        _parse_elements(child, py_parse)
 
     return py_parse
+
+
+def _parse_elements(cursor: ci.Cursor, py_parse: PyParse):
+    if cursor.kind == ci.CursorKind.NAMESPACE:  # type: ignore
+        PyBase.current_namespace.append(cursor.spelling)
+        for child in cursor.get_children():
+            _parse_elements(child, py_parse)
+        PyBase.current_namespace.pop()
+    elif cursor.kind == ci.CursorKind.ENUM_DECL:  # type: ignore
+        py_parse.enums.append(PyEnum(cursor))
+    elif cursor.kind == ci.CursorKind.STRUCT_DECL:  # type: ignore
+        py_parse.structs.append(PyStruct(cursor))
+    elif cursor.kind == ci.CursorKind.TYPEDEF_DECL:  # type: ignore
+        py_parse.typedefs.append(PyTypedef(cursor))
