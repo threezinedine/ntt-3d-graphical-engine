@@ -1,7 +1,9 @@
+#include "core.h"
 #include <cstdio>
 
 int main(void)
 {
-	printf("Hello, World!\n");
+	i8 a = 42;
+	printf("Hello, World %d!\n", a);
 	return 0;
 }
