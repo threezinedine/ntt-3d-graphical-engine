@@ -3,17 +3,20 @@ from .py_enum import PyEnum
 from .py_struct import PyStruct
 from .py_typedef import PyTypedef
 from .py_base import PyBase
+from .py_function import PyFunction
 
 
 class PyParse:
     enums: list[PyEnum] = []
     structs: list[PyStruct] = []
     typedefs: list[PyTypedef] = []
+    functions: list[PyFunction] = []
 
     def __init__(self):
         self.enums = []
         self.structs = []
         self.typedefs = []
+        self.functions = []
 
 
 def py_parse(
@@ -56,3 +59,5 @@ def _parse_elements(cursor: ci.Cursor, py_parse: PyParse):
         py_parse.structs.append(PyStruct(cursor))
     elif cursor.kind == ci.CursorKind.TYPEDEF_DECL:  # type: ignore
         py_parse.typedefs.append(PyTypedef(cursor))
+    elif cursor.kind == ci.CursorKind.FUNCTION_DECL:  # type: ignore
+        py_parse.functions.append(PyFunction(cursor))

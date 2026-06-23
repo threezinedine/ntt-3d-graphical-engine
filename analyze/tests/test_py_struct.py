@@ -123,3 +123,32 @@ namespace First::Second {
     assert point_struct.attributes[0].type == "int"
     assert point_struct.attributes[1].name == "y"
     assert point_struct.attributes[1].type == "int"
+
+
+def test_py_function():
+    parser = py_parse(test_code="""
+namespace MyNamespace {
+    struct Point;
+
+    void myFunction(Point point, Point& ref, int a, float b = 3.14f);
+}
+""")
+
+    assert len(parser.functions) == 1
+    my_function = parser.functions[0]
+    assert my_function.name == "myFunction"
+    assert my_function.namespace == ["MyNamespace"]
+    assert my_function.return_type == "void"
+    assert len(my_function.parameters) == 4
+    assert my_function.parameters[0].name == "point"
+    assert my_function.parameters[0].type == "Point"
+    assert my_function.parameters[0].default_value is None
+    assert my_function.parameters[1].name == "ref"
+    assert my_function.parameters[1].type == "Point&"
+    assert my_function.parameters[1].default_value is None
+    assert my_function.parameters[2].name == "a"
+    assert my_function.parameters[2].type == "int"
+    assert my_function.parameters[2].default_value is None
+    assert my_function.parameters[3].name == "b"
+    assert my_function.parameters[3].type == "float"
+    assert my_function.parameters[3].default_value == "3.14f"
