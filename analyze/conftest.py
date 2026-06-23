@@ -10,9 +10,11 @@ def register_library_fixture():
     """
 
     CACHE_FILE = os.path.join(os.path.dirname(__file__), ".cache")
+    final_path = None
 
-    with open(CACHE_FILE, "r") as file:
-        final_path = file.read().strip()
+    if os.path.exists(CACHE_FILE):
+        with open(CACHE_FILE, "r") as file:
+            final_path = file.read().strip()
 
     if os.name == "nt":
         assert (
@@ -20,7 +22,7 @@ def register_library_fixture():
         ), "On Windows, you must provide the path to libclang.dll"
         register_library(final_path)
     else:
-        if os.path.exists(final_path):
+        if final_path is not None and os.path.exists(final_path):
             register_library(final_path)
         else:
             register_library()

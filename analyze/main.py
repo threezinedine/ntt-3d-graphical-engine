@@ -19,11 +19,9 @@ def main():
     final_path = args.path
 
     if args.path is None:
-        assert os.path.exists(
-            CACHE_FILE
-        ), "Cache file not found. Please provide a path."
-        with open(CACHE_FILE, "r") as file:
-            final_path = file.read().strip()
+        if os.path.exists(CACHE_FILE):
+            with open(CACHE_FILE, "r") as file:
+                final_path = file.read().strip()
 
     if os.name == "nt":
         assert (
@@ -31,7 +29,7 @@ def main():
         ), "On Windows, you must provide the path to libclang.dll"
         register_library(final_path)
     else:
-        if os.path.exists(final_path):
+        if final_path is not None and os.path.exists(final_path):
             register_library(final_path)
         else:
             register_library()
@@ -43,8 +41,9 @@ enum Color {
 """)
     print(parser.enums)
 
-    with open(CACHE_FILE, "w") as file:
-        file.write(final_path)
+    if final_path is not None:
+        with open(CACHE_FILE, "w") as file:
+            file.write(final_path)
 
 
 if __name__ == "__main__":
