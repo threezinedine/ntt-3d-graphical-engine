@@ -1,0 +1,16 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build Engine (linux-debug)",
+			"command": "cmake",
+			"type": "shell",
+			"args": ["--build", "${workspaceRoot}/build/engine_debug"],
+			"problemMatcher": ["$tsc"],
+			"presentation": {
+				"reveal": "always"
+			},
+			"group": "build"
+		}
+	]
+}
