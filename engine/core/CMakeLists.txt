@@ -3,6 +3,15 @@ ntt_config()
 
 set(NTT_CORE_LIBRARY_NAME "ntt-core")
 
+set(NTT_ALLOC_SOURCES
+    "alloc/iallocator.h"
+    "alloc/alloc.h"
+)
+
+if (MSVC)
+    source_group("src/alloc" FILES ${NTT_ALLOC_SOURCES})
+endif()
+
 set(
     NTT_CORE_SOURCES
     "core.h"
@@ -14,9 +23,14 @@ set(
     "console.cpp"
 )
 
+if (MSVC)
+    source_group("src" FILES ${NTT_CORE_SOURCES})
+endif()
+
 add_library(
     ${NTT_CORE_LIBRARY_NAME}
     ${NTT_CORE_SOURCES}
+    ${NTT_ALLOC_SOURCES}
 )
 
 target_include_directories(
