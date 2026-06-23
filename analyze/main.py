@@ -34,11 +34,12 @@ def main():
         else:
             register_library()
 
-    parser = py_parse(test_code="""
-enum Color {
-    RED,
-};
-""")
+    parser = py_parse(
+        source_file="/home/threezinedine/Projects/ntt-3d-graphical-engine/engine/core/core.h",
+        include_dirs=[
+            "/home/threezinedine/Projects/ntt-3d-graphical-engine/engine/core"
+        ],
+    )
     print(parser.enums)
 
     if final_path is not None:

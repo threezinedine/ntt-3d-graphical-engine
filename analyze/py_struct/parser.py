@@ -34,7 +34,8 @@ def py_parse(
     if source_file:
         tu = index.parse(
             path=source_file,
-            args=["-std=c++17"] + ["-I" + dir for dir in include_dirs or []],
+            args=["-std=c++17", "-x", "c++"]
+            + ["-I" + dir for dir in include_dirs or []],
         )
     else:
         tu = index.parse(
