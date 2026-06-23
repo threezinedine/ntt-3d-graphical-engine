@@ -1,6 +1,23 @@
 macro(ntt_config)
     set(NTT_OPTIONS)
     set(NTT_LINK_FLAGS)
+
+    if (MSVC)
+        set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+    endif()
+
+    option(CMAKE_BUILD_TYPE "Build type" Debug)
+
+    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+        set(NTT_DEBUG ON)
+        list(APPEND NTT_OPTIONS NTT_DEBUG)
+    elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
+        set(NTT_RELEASE ON)
+        list(APPEND NTT_OPTIONS NTT_RELEASE)
+    else()
+        message(FATAL_ERROR "Unsupported build type: ${CMAKE_BUILD_TYPE}")
+    endif()
+
     ntt_platform_detect()
 endmacro()
 

@@ -10,3 +10,7 @@ ntt_config()
 ntt_platform_detect()
 
 add_subdirectory(engine)
+
+if (MSVC)
+    set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT ntt-engine)
+endif()
