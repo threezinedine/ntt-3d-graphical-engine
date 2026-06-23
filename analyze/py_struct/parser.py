@@ -59,5 +59,5 @@ def _parse_elements(cursor: ci.Cursor, py_parse: PyParse):
         py_parse.structs.append(PyStruct(cursor))
     elif cursor.kind == ci.CursorKind.TYPEDEF_DECL:  # type: ignore
         py_parse.typedefs.append(PyTypedef(cursor))
-    elif cursor.kind == ci.CursorKind.FUNCTION_DECL:  # type: ignore
+    elif cursor.kind == ci.CursorKind.FUNCTION_DECL or cursor.kind == ci.CursorKind.FUNCTION_TEMPLATE:  # type: ignore
         py_parse.functions.append(PyFunction(cursor))

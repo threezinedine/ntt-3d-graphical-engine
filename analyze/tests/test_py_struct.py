@@ -152,3 +152,57 @@ namespace MyNamespace {
     assert my_function.parameters[3].name == "b"
     assert my_function.parameters[3].type == "float"
     assert my_function.parameters[3].has_default_value is True
+
+
+def test_py_overloaded_function():
+    parser = py_parse(test_code="""
+namespace MyNamespace {
+    struct Point;
+                      
+    void myFunction(Point point);
+    void myFunction(Point point, int a);
+}
+""")
+
+    assert len(parser.functions) == 2
+    my_function1 = parser.functions[0]
+    assert my_function1.name == "myFunction"
+    assert my_function1.namespace == ["MyNamespace"]
+    assert my_function1.return_type == "void"
+    assert len(my_function1.parameters) == 1
+    assert my_function1.parameters[0].name == "point"
+    assert my_function1.parameters[0].type == "Point"
+    assert my_function1.parameters[0].has_default_value is False
+
+    my_function2 = parser.functions[1]
+    assert my_function2.name == "myFunction"
+    assert my_function2.namespace == ["MyNamespace"]
+    assert my_function2.return_type == "void"
+    assert len(my_function2.parameters) == 2
+    assert my_function2.parameters[0].name == "point"
+    assert my_function2.parameters[0].type == "Point"
+    assert my_function2.parameters[0].has_default_value is False
+    assert my_function2.parameters[1].name == "a"
+    assert my_function2.parameters[1].type == "int"
+    assert my_function2.parameters[1].has_default_value is False
+
+
+def test_py_with_template():
+    parser = py_parse(test_code="""
+template <typename T>
+function void myFunction(T value);
+""")
+
+    assert len(parser.functions) == 1
+    my_function = parser.functions[0]
+    assert my_function.name == "myFunction"
+    assert my_function.namespace == []
+    assert len(my_function.parameters) == 1
+    assert my_function.parameters[0].name == "value"
+    assert my_function.parameters[0].type == "T"
+    assert my_function.is_template is True
+
+    # template parameters
+    assert len(my_function.templates) == 1
+    assert my_function.templates[0].name == "T"
+    assert my_function.templates[0].type == "typename"
