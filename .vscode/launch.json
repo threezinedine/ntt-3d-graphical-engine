@@ -5,7 +5,15 @@
 			"name": "Engine (linux-debug)",
 			"type": "cppdbg",
 			"request": "launch",
-			"program": "${workspaceRoot}/build/debug/engine/main/ntt-engine",
+			"program": "${workspaceRoot}/build/debug/engine/main/engine/ntt-engine",
+			"preLaunchTask": "Build Engine (linux-debug)",
+			"cwd": "${workspaceRoot}/build/debug/engine/main"
+		},
+		{
+			"name": "Editor (linux-debug)",
+			"type": "cppdbg",
+			"request": "launch",
+			"program": "${workspaceRoot}/build/debug/engine/main/editor/ntt-editor",
 			"preLaunchTask": "Build Engine (linux-debug)",
 			"cwd": "${workspaceRoot}/build/debug/engine/main"
 		},
