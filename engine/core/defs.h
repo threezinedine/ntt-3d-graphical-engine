@@ -3,6 +3,8 @@
 #include "common.h"
 #include "console.h"
 
+#include "backtrace/backtrace.h"
+
 #if NTT_PLATFORM_UNIX | NTT_PLATFORM_WEB
 
 #include <signal.h>
@@ -31,8 +33,10 @@
 			setConsoleColor(CONSOLE_COLOR_RED);                                                                        \
 			print("Assertion failed: %s, file: %s, line: %d\n", #expr, __FILE__, __LINE__);                            \
 			resetConsoleColor();                                                                                       \
+			Backtrace backtrace;                                                                                       \
+			backtrace.Capture();                                                                                       \
+			backtrace.Print();                                                                                         \
 			debug_break();                                                                                             \
-			abort();                                                                                                   \
 		}                                                                                                              \
 	} while (0)
 
@@ -46,6 +50,9 @@
 			setConsoleColor(CONSOLE_COLOR_RED);                                                                        \
 			print("%s", buffer);                                                                                       \
 			resetConsoleColor();                                                                                       \
+			Backtrace backtrace;                                                                                       \
+			backtrace.Capture();                                                                                       \
+			backtrace.Print();                                                                                         \
 			debug_break();                                                                                             \
 		}                                                                                                              \
 	} while (0)
