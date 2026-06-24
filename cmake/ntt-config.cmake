@@ -67,6 +67,7 @@ macro(ntt_platform_detect)
             list(APPEND NTT_COMPILE_OPTIONS
                 "/W4"
                 "/WX"
+                "/wd4702"
                 "/permissive-")
         elseif (APPLE)
             message(FATAL_ERROR "Apple platform is not supported yet")

@@ -77,7 +77,7 @@ Result Backtrace::Print() const
 		system(addr2lineCommand);
 	}
 #elif NTT_PLATFORM_WINDOWS // NTT_PLATFORM_UNIX
-
+	debug_break();
 #if NTT_DEBUG
 #endif // NTT_DEBUG
 
