@@ -42,7 +42,6 @@ macro(ntt_config)
                     # list(APPEND NTT_COMPILE_OPTIONS "-DNTT_UNITTEST")
                 endif()
             elseif (NTT_PLATFORM_UNIX)
-                message("Here")
                 list(APPEND NTT_COMPILE_OPTIONS "-Wno-unused-parameter")
             endif()
         endif()
@@ -67,7 +66,6 @@ macro(ntt_platform_detect)
             list(APPEND NTT_COMPILE_OPTIONS
                 "/W4"
                 "/WX"
-                "/wd4702"
                 "/permissive-")
         elseif (APPLE)
             message(FATAL_ERROR "Apple platform is not supported yet")

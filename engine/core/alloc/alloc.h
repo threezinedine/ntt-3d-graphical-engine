@@ -18,4 +18,8 @@ struct GlobalAllocators
 
 extern GlobalAllocators g_GlobalAllocators;
 
+#define ALLOCATOR_SAFE(pAllocator) (pAllocator == nullptr ? g_GlobalAllocators.pMalloc : pAllocator)
+
+#define REALLOCATE(ptr) new ((ptr))
+
 } // namespace ntt

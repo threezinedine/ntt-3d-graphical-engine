@@ -33,9 +33,9 @@
 			setConsoleColor(CONSOLE_COLOR_RED);                                                                        \
 			print("Assertion failed: %s, file: %s, line: %d\n", #expr, __FILE__, __LINE__);                            \
 			resetConsoleColor();                                                                                       \
-			Backtrace _backtrace;                                                                                       \
-			_backtrace.Capture();                                                                                       \
-			_backtrace.Print();                                                                                         \
+			Backtrace _backtrace;                                                                                      \
+			_backtrace.Capture();                                                                                      \
+			_backtrace.Print();                                                                                        \
 			debug_break();                                                                                             \
 		}                                                                                                              \
 	} while (0)
@@ -50,9 +50,9 @@
 			setConsoleColor(CONSOLE_COLOR_RED);                                                                        \
 			print("%s", buffer);                                                                                       \
 			resetConsoleColor();                                                                                       \
-			Backtrace _backtrace;                                                                                       \
-			_backtrace.Capture();                                                                                       \
-			_backtrace.Print();                                                                                         \
+			Backtrace _backtrace;                                                                                      \
+			_backtrace.Capture();                                                                                      \
+			_backtrace.Print();                                                                                        \
 			debug_break();                                                                                             \
 		}                                                                                                              \
 	} while (0)
@@ -61,9 +61,13 @@
 
 #else // NTT_ENABLE_ASSERTION
 
-#define NTT_ASSERT(expr)				((void)0)
-#define NTT_ASSERT_MSG(expr, msg)		((void)0)
-#define NTT_ASSERT_RESULT_SUCCESS(_res) return (_res)
+#define NTT_ASSERT(expr)		  ((void)0)
+#define NTT_ASSERT_MSG(expr, msg) ((void)0)
+#define NTT_ASSERT_RESULT_SUCCESS(_res)                                                                                \
+	if ((_res) != RESULT_SUCCESS)                                                                                      \
+	{                                                                                                                  \
+		return (_res);                                                                                                 \
+	}
 
 #endif // NTT_ENABLE_ASSERTION
 

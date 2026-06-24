@@ -56,13 +56,13 @@ void* MallocAllocator::Allocate(u32 size)
 	g_HeadMemoryBlock = pHeader;
 #endif // NTT_LOG_MEMORY
 
-	return static_cast<void*>(pHeader + sizeof(MemoryBlockHeader));
+	return static_cast<void*>(pHeader + 1);
 }
 
 Result MallocAllocator::Free(void* ptr, u32 size)
 {
 	Result			   result  = RESULT_SUCCESS;
-	MemoryBlockHeader* pHeader = static_cast<MemoryBlockHeader*>(ptr) - sizeof(MemoryBlockHeader);
+	MemoryBlockHeader* pHeader = static_cast<MemoryBlockHeader*>(ptr) - 1;
 
 	if (pHeader->size != size)
 	{

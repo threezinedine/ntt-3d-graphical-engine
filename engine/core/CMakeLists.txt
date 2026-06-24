@@ -3,6 +3,12 @@ ntt_config()
 
 set(NTT_CORE_LIBRARY_NAME "ntt-core")
 
+ntt_set_source_group("src/containers"
+    NTT_CONTAINERS_SOURCES
+    "containers/containers.h"
+    "containers/array.h"
+)
+
 ntt_set_source_group("src/alloc" 
     NTT_ALLOC_SOURCES
     "alloc/iallocator.h"
@@ -37,6 +43,7 @@ add_library(
     ${NTT_CORE_SOURCES}
     ${NTT_ALLOC_SOURCES}
     ${NTT_BACKTRACE_SOURCES}
+    ${NTT_CONTAINERS_SOURCES}
 )
 
 target_include_directories(
