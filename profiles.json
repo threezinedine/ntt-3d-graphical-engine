@@ -13,7 +13,13 @@
 	},
 	"only-unittest": {
 		"inherit": ["common"],
-		"options": ["NTT_EDITOR=0", "NTT_ENGINE=0", "NTT_UNITTEST=1"]
+		"options": [
+			"NTT_EDITOR=0",
+			"NTT_ENGINE=0",
+			"NTT_UNITTEST=1",
+			"NTT_ENABLE_ASSERTION=0",
+			"NTT_LOG_MEMORY=0"
+		]
 	},
 	"editor-and-engine": {
 		"inherit": ["common"],

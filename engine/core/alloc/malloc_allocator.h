@@ -10,10 +10,13 @@ public:
 	MallocAllocator();
 	virtual ~MallocAllocator() override;
 
-	virtual Result Initialize() override;
-	virtual void*  Allocate(u32 size) override;
-	virtual void   Free(void* ptr) override;
-	virtual Result Shutdown() override;
+	virtual Result			Initialize() override;
+	virtual Optional<void*> Allocate(u32 size) override;
+	virtual Result			Free(void* ptr, u32 size) override;
+	virtual Result			Shutdown() override;
+
+private:
+	u32 m_AllocatedMemorySize = 0;
 };
 
 } // namespace ntt

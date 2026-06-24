@@ -14,6 +14,7 @@ macro(ntt_config)
 
         option(CMAKE_BUILD_TYPE "Build type" Debug)
         ntt_option(NTT_ENABLE_ASSERTION ON)
+        ntt_option(NTT_LOG_MEMORY ON)
 
         ntt_option(NTT_EDITOR ON)
         ntt_option(NTT_ENGINE ON)

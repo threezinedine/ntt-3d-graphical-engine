@@ -8,9 +8,10 @@ namespace ntt {
 TestSuite* g_HeadTestSuite = nullptr;
 TestSuite* g_TailTestSuite = nullptr;
 
-Test::Test(const char* testName)
+Test::Test(const char* testName, bool useBeforeEachTestImpl)
 	: m_pTestSuite(nullptr)
 	, m_TestName(testName)
+	, m_UseBeforeEachTestImpl(useBeforeEachTestImpl)
 {
 }
 
@@ -113,15 +114,20 @@ void TestSuite::BeforeAllTests()
 
 void TestSuite::BeforeEachTest(Test* pTest)
 {
-	NTT_UNUSED(pTest);
 	setConsoleColor(CONSOLE_COLOR_GREEN);
-	OnBeforeEachTestImpl();
+
+	if (pTest->UseBeforeEachTestImpl())
+	{
+		OnBeforeEachTestImpl();
+	}
 }
 
 void TestSuite::AfterEachTest(Test* pTest)
 {
-	NTT_UNUSED(pTest);
-	OnAfterEachTestImpl();
+	if (pTest->UseBeforeEachTestImpl())
+	{
+		OnAfterEachTestImpl();
+	}
 }
 
 void TestSuite::AfterAllTests()

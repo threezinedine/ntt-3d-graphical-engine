@@ -16,7 +16,7 @@ public:
 	Test* m_NextTest = nullptr;
 
 public:
-	Test(const char* testName);
+	Test(const char* testName, bool useBeforeEachTestImpl = true);
 	virtual ~Test();
 
 public:
@@ -44,14 +44,20 @@ public:
 		return m_TestName;
 	}
 
+	inline bool UseBeforeEachTestImpl() const
+	{
+		return m_UseBeforeEachTestImpl;
+	}
+
 protected:
 	void SetFailure(const char* message, const char* fileName, u32 lineNumber);
 
 private:
-	bool		m_Success		 = true;
-	const char* m_FailureMessage = nullptr;
-	const char* m_FileName		 = nullptr;
-	u32			m_LineNumber	 = 0;
+	bool		m_Success				= true;
+	const char* m_FailureMessage		= nullptr;
+	const char* m_FileName				= nullptr;
+	u32			m_LineNumber			= 0;
+	bool		m_UseBeforeEachTestImpl = true;
 };
 
 class TestSuite
@@ -90,7 +96,7 @@ public:
 	inline void SetTestSuiteName(const char* testSuiteName)
 	{
 		memcpy(m_TestSuiteName, testSuiteName,
-				NTT_TEST_SUITE_NAME_LENGTH); // TODO: use ntt::copyString later
+			   NTT_TEST_SUITE_NAME_LENGTH); // TODO: use ntt::copyString later
 		m_TestSuiteName[NTT_TEST_SUITE_NAME_LENGTH] = '\0';
 	}
 
@@ -112,12 +118,14 @@ extern TestSuite* g_TailTestSuite;
 
 #define TEST_SUITE(testSuiteName) testSuiteName g_TestSuite_##testSuiteName##_instance;
 
-#define TEST_CASE(testSuite, testName)                                                                                 \
+#define TEST_CASE(testSuite, testName)			_TEST_CASE(testSuite, testName, true)
+#define TEST_CASE_ISOLATED(testSuite, testName) _TEST_CASE(testSuite, testName, false)
+#define _TEST_CASE(testSuite, testName, useBeforeEachTestImpl)                                                         \
 	class testName : public ::ntt::Test                                                                                \
 	{                                                                                                                  \
 	public:                                                                                                            \
 		testName()                                                                                                     \
-			: ::ntt::Test(#testName)                                                                                   \
+			: ::ntt::Test(#testName, useBeforeEachTestImpl)                                                            \
 		{                                                                                                              \
 			AssignTestSuite(&g_TestSuite_##testSuite##_instance);                                                      \
 			g_TestSuite_##testSuite##_instance.SetTestSuiteName(#testSuite);                                           \
@@ -202,6 +210,26 @@ extern TestSuite* g_TailTestSuite;
 	do                                                                                                                 \
 	{                                                                                                                  \
 		if (!(condition))                                                                                              \
+		{                                                                                                              \
+			SetFailure("Assertion failed: " #condition, __FILE__, __LINE__);                                           \
+			return;                                                                                                    \
+		}                                                                                                              \
+	} while (0)
+
+#define TEST_EQUAL(expected, actual)                                                                                   \
+	do                                                                                                                 \
+	{                                                                                                                  \
+		if ((expected) != (actual))                                                                                    \
+		{                                                                                                              \
+			SetFailure("Assertion failed: " #expected " == " #actual, __FILE__, __LINE__);                             \
+			return;                                                                                                    \
+		}                                                                                                              \
+	} while (0)
+
+#define TEST_SUCCESS(condition)                                                                                        \
+	do                                                                                                                 \
+	{                                                                                                                  \
+		if ((condition) != ::ntt::RESULT_SUCCESS)                                                                      \
 		{                                                                                                              \
 			SetFailure("Assertion failed: " #condition, __FILE__, __LINE__);                                           \
 			return;                                                                                                    \
