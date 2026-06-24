@@ -1,4 +1,5 @@
 #include "utilities.h"
+#include "core.h"
 
 #include <string.h> // TODO: Remove this include and use ntt::memset instead.
 
@@ -55,7 +56,7 @@ void Test::BeforeTest()
 
 void centerText(char* pBuffer, u32 bufferSize, char* pText)
 {
-	u32 textLength	  = strlen(pText); // TODO: Use ntt::strlen instead of std::strlen.
+	u32 textLength	  = (u32)strlen(pText); // TODO: Use ntt::strlen instead of std::strlen.
 	u32 paddingLength = (bufferSize - textLength) / 2;
 	memset(pBuffer, ' ', bufferSize - 1); // TODO: Use ntt::memset instead of std::memset.
 	pBuffer[bufferSize - 1] = '\0';
@@ -112,12 +113,14 @@ void TestSuite::BeforeAllTests()
 
 void TestSuite::BeforeEachTest(Test* pTest)
 {
+	NTT_UNUSED(pTest);
 	setConsoleColor(CONSOLE_COLOR_GREEN);
 	OnBeforeEachTestImpl();
 }
 
 void TestSuite::AfterEachTest(Test* pTest)
 {
+	NTT_UNUSED(pTest);
 	OnAfterEachTestImpl();
 }
 

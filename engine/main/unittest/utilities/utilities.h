@@ -89,7 +89,7 @@ public:
 public:
 	inline void SetTestSuiteName(const char* testSuiteName)
 	{
-		strncpy(m_TestSuiteName, testSuiteName,
+		memcpy(m_TestSuiteName, testSuiteName,
 				NTT_TEST_SUITE_NAME_LENGTH); // TODO: use ntt::copyString later
 		m_TestSuiteName[NTT_TEST_SUITE_NAME_LENGTH] = '\0';
 	}

@@ -66,3 +66,5 @@
 #define NTT_ASSERT_RESULT_SUCCESS(_res) return (_res)
 
 #endif // NTT_ENABLE_ASSERTION
+
+#define NTT_UNUSED(x) (void)(x)
