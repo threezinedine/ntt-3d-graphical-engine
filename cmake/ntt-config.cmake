@@ -34,6 +34,18 @@ macro(ntt_config)
         endif()
 
         ntt_platform_detect()
+
+        if (NTT_UNITTEST)
+            if (NTT_PLATFORM_WINDOWS)
+                if (MSVC)
+                    # list(APPEND NTT_COMPILE_OPTIONS "-DNTT_UNITTEST")
+                endif()
+            elseif (NTT_PLATFORM_UNIX)
+                message("Here")
+                list(APPEND NTT_COMPILE_OPTIONS "-Wno-unused-parameter")
+            endif()
+        endif()
+
         set(NTT_CONFIGURED ON)
     endif()
 endmacro()
