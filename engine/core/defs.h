@@ -33,9 +33,9 @@
 			setConsoleColor(CONSOLE_COLOR_RED);                                                                        \
 			print("Assertion failed: %s, file: %s, line: %d\n", #expr, __FILE__, __LINE__);                            \
 			resetConsoleColor();                                                                                       \
-			Backtrace backtrace;                                                                                       \
-			backtrace.Capture();                                                                                       \
-			backtrace.Print();                                                                                         \
+			Backtrace _backtrace;                                                                                       \
+			_backtrace.Capture();                                                                                       \
+			_backtrace.Print();                                                                                         \
 			debug_break();                                                                                             \
 		}                                                                                                              \
 	} while (0)
@@ -50,9 +50,9 @@
 			setConsoleColor(CONSOLE_COLOR_RED);                                                                        \
 			print("%s", buffer);                                                                                       \
 			resetConsoleColor();                                                                                       \
-			Backtrace backtrace;                                                                                       \
-			backtrace.Capture();                                                                                       \
-			backtrace.Print();                                                                                         \
+			Backtrace _backtrace;                                                                                       \
+			_backtrace.Capture();                                                                                       \
+			_backtrace.Print();                                                                                         \
 			debug_break();                                                                                             \
 		}                                                                                                              \
 	} while (0)
