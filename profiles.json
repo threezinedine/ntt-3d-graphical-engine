@@ -3,19 +3,35 @@
 		"inherit": [],
 		"options": []
 	},
-	"engine-debug": {
+	"only-engine": {
 		"inherit": ["common"],
-		"options": [],
-		"command": "cmake -B build/engine_debug -DCMAKE_BUILD_TYPE=Debug {{ options }}"
+		"options": ["NTT_EDITOR=0", "NTT_ENGINE=1", "NTT_UNITTEST=0"]
 	},
-	"engine-release": {
+	"only-editor": {
+		"inherit": ["common"],
+		"options": ["NTT_EDITOR=1", "NTT_ENGINE=0", "NTT_UNITTEST=0"]
+	},
+	"only-unittest": {
+		"inherit": ["common"],
+		"options": ["NTT_EDITOR=0", "NTT_ENGINE=0", "NTT_UNITTEST=1"]
+	},
+	"editor-and-engine": {
+		"inherit": ["common"],
+		"options": ["NTT_EDITOR=1", "NTT_ENGINE=1", "NTT_UNITTEST=0"]
+	},
+	"debug": {
+		"inherit": ["editor-and-engine"],
+		"options": [],
+		"command": "cmake -B build/debug -DCMAKE_BUILD_TYPE=Debug {{ options }}"
+	},
+	"release": {
 		"inherit": ["common"],
 		"options": ["NTT_ENABLE_ASSERTION=0"],
-		"command": "cmake -B build/engine_release -DCMAKE_BUILD_TYPE=Release {{ options }}"
+		"command": "cmake -B build/release -DCMAKE_BUILD_TYPE=Release {{ options }}"
 	},
-	"web-engine-debug": {
+	"web-debug": {
 		"inherit": ["common"],
 		"options": [],
-		"command": "emcmake cmake -B build/web_engine_debug -DCMAKE_BUILD_TYPE=Debug {{ options }}"
+		"command": "emcmake cmake -B build/web_debug -DCMAKE_BUILD_TYPE=Debug {{ options }}"
 	}
 }

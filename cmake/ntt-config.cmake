@@ -1,3 +1,5 @@
+include(ntt-assert)
+
 macro(ntt_config)
     if (NOT NTT_CONFIGURED)
         set(NTT_OPTIONS)
@@ -12,6 +14,14 @@ macro(ntt_config)
 
         option(CMAKE_BUILD_TYPE "Build type" Debug)
         ntt_option(NTT_ENABLE_ASSERTION ON)
+
+        ntt_option(NTT_EDITOR ON)
+        ntt_option(NTT_ENGINE ON)
+        ntt_option(NTT_UNITTEST OFF)
+
+        ntt_assert_max_one_is_on(NTT_ENGINE NTT_UNITTEST)
+        ntt_assert_max_one_is_on(NTT_EDITOR NTT_UNITTEST)
+        ntt_assert_at_least_one_is_on(NTT_EDITOR NTT_ENGINE)
 
         if (CMAKE_BUILD_TYPE STREQUAL "Debug")
             set(NTT_DEBUG ON)

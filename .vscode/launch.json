@@ -5,9 +5,9 @@
 			"name": "Engine (linux-debug)",
 			"type": "cppdbg",
 			"request": "launch",
-			"program": "${workspaceRoot}/build/engine_debug/engine/main/ntt-engine",
+			"program": "${workspaceRoot}/build/debug/engine/main/ntt-engine",
 			"preLaunchTask": "Build Engine (linux-debug)",
-			"cwd": "${workspaceRoot}/build/engine_debug/engine/main"
+			"cwd": "${workspaceRoot}/build/debug/engine/main"
 		},
 		{
 			"name": "Analyze python",

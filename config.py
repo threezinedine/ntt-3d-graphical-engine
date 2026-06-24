@@ -24,11 +24,13 @@ formatter = colorlog.ColoredFormatter(
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
+
 @dataclass
 class Profile:
     inherit: list[str] = field(default_factory=list)
     options: list[str] = field(default_factory=list)
     command: str | None = None
+
 
 def load_options(profile: Profile, profiles: dict[str, Profile]) -> dict[str, bool]:
     """
@@ -39,7 +41,9 @@ def load_options(profile: Profile, profiles: dict[str, Profile]) -> dict[str, bo
     if profile.inherit:
         for parent_profile_name in profile.inherit:
             if parent_profile_name not in profiles:
-                logger.error(f"Profile '{parent_profile_name}' not found for inheritance.")
+                logger.error(
+                    f"Profile '{parent_profile_name}' not found for inheritance."
+                )
                 exit(1)
             parent_profile = profiles[parent_profile_name]
             parent_options = load_options(parent_profile, profiles)
@@ -54,10 +58,15 @@ def load_options(profile: Profile, profiles: dict[str, Profile]) -> dict[str, bo
             exit(1)
     return options
 
+
 def main():
     parser = argparse.ArgumentParser(description="Load and process profiles.")
-    parser.add_argument("-p", "--profile", type=str, default="engine-debug", help="Profile name to load")
-    parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging")
+    parser.add_argument(
+        "-p", "--profile", type=str, default="debug", help="Profile name to load"
+    )
+    parser.add_argument(
+        "-v", "--verbose", action="store_true", help="Enable verbose logging"
+    )
     args = parser.parse_args()
 
     if args.verbose:
@@ -76,7 +85,6 @@ def main():
 
     logger.debug(f"Loaded profiles: {list(profiles.keys())}")
 
-
     if args.profile not in profiles:
         logger.error(f"Profile '{args.profile}' not found.")
         exit(1)
@@ -88,8 +96,11 @@ def main():
     logger.info(f"Using profile: {args.profile}")
 
     options = load_options(profiles[args.profile], profiles)
-    options_str = " ".join(f"-D{key}={'ON' if value else 'OFF'}" for key, value in options.items())
-    option_template = Template(profiles[args.profile].command)
+    options_str = " ".join(
+        f"-D{key}={'ON' if value else 'OFF'}" for key, value in options.items()
+    )
+
+    option_template = Template(profiles[args.profile].command)  # type: ignore
     command_to_execute = option_template.render(options=options_str)
 
     logger.debug(f"Executing command: {command_to_execute}")

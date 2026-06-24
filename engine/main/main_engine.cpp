@@ -3,14 +3,6 @@
 
 using namespace ntt;
 
-void test()
-{
-	Backtrace backtrace;
-	backtrace.Capture();
-	backtrace.Print();
-	NTT_ASSERT(3 == 4);
-}
-
 int main(i32 argc, char** argv)
 {
 	g_Globals.argc = argc;
@@ -25,8 +17,6 @@ int main(i32 argc, char** argv)
 #undef CONSOLE_COLOR_OPTION_END
 	resetConsoleColor();
 	print("Line with reset color!\n");
-
-	test();
 
 	return 0;
 }
