@@ -1,7 +1,9 @@
 #pragma once
 
-#include "alloc/iallocator.h"
+#include "alloc/alloc.h"
+#include "backtrace/backtrace.h"
 #include "common.h"
 #include "console.h"
 #include "defs.h"
+#include "globals.h"
 #include "result.h"

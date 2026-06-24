@@ -7,10 +7,12 @@ namespace ntt {
 class IAllocator
 {
 public:
-	virtual ~IAllocator();
+	virtual ~IAllocator() = default;
 
-	virtual void* Allocate(u32 size) = 0;
-	virtual void  Free(void* ptr)	 = 0;
+	virtual Result Initialize()		  = 0;
+	virtual void*  Allocate(u32 size) = 0;
+	virtual void   Free(void* ptr)	  = 0;
+	virtual Result Shutdown()		  = 0;
 };
 
 } // namespace ntt

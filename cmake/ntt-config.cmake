@@ -49,6 +49,11 @@ macro(ntt_platform_detect)
                 "-Wall" 
                 "-Wextra" 
                 "-Wpedantic")
+
+            if (NTT_DEBUG)
+                list(APPEND NTT_COMPILE_FLAGS "-g" "-fno-omit-frame-pointer" "-O0")
+                list(APPEND NTT_LINK_FLAGS "-rdynamic" "-no-pie")
+            endif()
         else()
             message(FATAL_ERROR "Unsupported platform")
         endif()
@@ -111,4 +116,12 @@ endmacro()
 macro(ntt_option option default_value)
     option(${option} "Option ${option}" ${default_value})
     list(APPEND NTT_OPTIONS ${option})
+endmacro()
+
+macro(ntt_set_source_group source_group_name variable)
+    set(${variable} ${ARGN})
+
+    if (MSVC)
+        source_group(${source_group_name} FILES ${ARGN})
+    endif()
 endmacro()

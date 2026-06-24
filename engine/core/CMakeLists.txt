@@ -3,34 +3,39 @@ ntt_config()
 
 set(NTT_CORE_LIBRARY_NAME "ntt-core")
 
-set(NTT_ALLOC_SOURCES
+ntt_set_source_group("src/alloc" 
+    NTT_ALLOC_SOURCES
     "alloc/iallocator.h"
     "alloc/alloc.h"
+    "alloc/malloc_allocator.h"
+    "alloc/malloc_allocator.cpp"
 )
 
-if (MSVC)
-    source_group("src/alloc" FILES ${NTT_ALLOC_SOURCES})
-endif()
+ntt_set_source_group("src/backtrace"
+    NTT_BACKTRACE_SOURCES
+    "backtrace/backtrace.h"
+    "backtrace/backtrace.cpp"
+)
 
-set(
+ntt_set_source_group("src/core"
     NTT_CORE_SOURCES
     "core.h"
     "defs.h"
+    "raii.h"
     "common.h"
     "result.h"
     "result.cpp"
     "console.h"
     "console.cpp"
+    "globals.h"
+    "globals.cpp"
 )
-
-if (MSVC)
-    source_group("src" FILES ${NTT_CORE_SOURCES})
-endif()
 
 add_library(
     ${NTT_CORE_LIBRARY_NAME}
     ${NTT_CORE_SOURCES}
     ${NTT_ALLOC_SOURCES}
+    ${NTT_BACKTRACE_SOURCES}
 )
 
 target_include_directories(
