@@ -93,3 +93,41 @@ TEST_CASE(ArrayTest, AppendObjects)
 	TEST_EQUAL(TestObject::s_CopyConstructorCount, 0);
 	TEST_EQUAL(TestObject::s_MoveConstructorCount, 3);
 }
+
+TEST_CASE(ArrayTest, AppendAndResizeObjects)
+{
+	Array<TestObject> array(2); // Start with capacity 2
+
+	TEST_EQUAL(array.Append(TestObject()), RESULT_SUCCESS);
+	TEST_EQUAL(array.Append(TestObject()), RESULT_SUCCESS); // This should trigger a resize
+	TEST_EQUAL(array.Append(TestObject()), RESULT_SUCCESS); // This should trigger another resize
+
+	TEST_EQUAL(array.GetCount(), 3);
+	TEST_EQUAL(array.GetCapacity(), 4); // Capacity should have doubled from 2 to 4
+
+	// Check constructor and destructor counts
+	TEST_EQUAL(TestObject::s_ConstructorCount, 3);
+	TEST_EQUAL(TestObject::s_DestructorCount, 3); // All temporary objects should be destructed
+	TEST_EQUAL(TestObject::s_CopyConstructorCount, 0);
+	TEST_EQUAL(TestObject::s_MoveConstructorCount, 5);
+}
+
+TEST_CASE(ArrayTest, ClearArray)
+{
+	Array<TestObject> array;
+
+	TEST_EQUAL(array.Append(TestObject()), RESULT_SUCCESS);
+	TEST_EQUAL(array.Append(TestObject()), RESULT_SUCCESS);
+	TEST_EQUAL(array.Append(TestObject()), RESULT_SUCCESS);
+
+	TEST_EQUAL(array.GetCount(), 3);
+
+	TEST_EQUAL(array.Clear(), RESULT_SUCCESS);
+	TEST_EQUAL(array.GetCount(), 0);
+
+	// Check constructor and destructor counts
+	TEST_EQUAL(TestObject::s_ConstructorCount, 3);
+	TEST_EQUAL(TestObject::s_DestructorCount, 6); // All objects should be destructed
+	TEST_EQUAL(TestObject::s_CopyConstructorCount, 0);
+	TEST_EQUAL(TestObject::s_MoveConstructorCount, 3);
+}
