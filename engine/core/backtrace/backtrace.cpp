@@ -7,7 +7,7 @@
 #if NTT_PLATFORM_UNIX
 #include <execinfo.h>
 #elif NTT_PLATFORM_WINDOWS
-#error "Backtrace is not implemented for Windows yet."
+#include <Windows.h>
 #elif NTT_PLATFORM_ANDROID
 #error "Backtrace is not implemented for Android yet."
 #elif NTT_PLATFORM_IOS
@@ -50,6 +50,12 @@ Result Backtrace::Capture()
 {
 #if NTT_PLATFORM_UNIX
 	m_Depth = backtrace(m_Addresses, NTT_MAX_BACKTRACE_DEPTH);
+#elif NTT_PLATFORM_WINDOWS
+	// Windows implementation would go here
+	// For example, using CaptureStackBackTrace function
+	m_Depth = CaptureStackBackTrace(0, NTT_MAX_BACKTRACE_DEPTH, m_Addresses, nullptr);
+#else
+#error "Backtrace capture is not implemented for this platform."
 #endif // NTT_PLATFORM_UNIX
 
 	return RESULT_SUCCESS;
@@ -65,6 +71,13 @@ Result Backtrace::Print() const
 			addr2lineCommand, sizeof(addr2lineCommand), "addr2line -e %s -piC %p", g_Globals.argv[0], m_Addresses[i]);
 		system(addr2lineCommand);
 	}
+#elif NTT_PLATFORM_WINDOWS // NTT_PLATFORM_UNIX
+
+#if NTT_DEBUG
+#endif // NTT_DEBUG
+
+#else // NTT_PLATFORM_UNIX
+#errror "Backtrace print is not implemented for this platform."
 #endif // NTT_PLATFORM_UNIX
 	return RESULT_SUCCESS;
 }
