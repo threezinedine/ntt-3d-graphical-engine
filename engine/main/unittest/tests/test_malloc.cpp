@@ -31,10 +31,10 @@ TEST_CASE_ISOLATED(MallocTest, AllocateAndFreeMemory)
 	TEST_SUCCESS(ntt::GlobalAllocators::Register());
 	TEST_SUCCESS(ntt::GlobalAllocators::Initialize());
 
-	ntt::Optional<void*> result = ntt::g_GlobalAllocators.pMalloc->Allocate(1024);
-	TEST_EQUAL(result.result, ntt::RESULT_SUCCESS);
+	void* ptr = ntt::g_GlobalAllocators.pMalloc->Allocate(1024);
+	TEST_NOT_NULL(ptr);
 
-	TEST_SUCCESS(ntt::g_GlobalAllocators.pMalloc->Free(result.value, 1024));
+	TEST_SUCCESS(ntt::g_GlobalAllocators.pMalloc->Free(ptr, 1024));
 
 	TEST_SUCCESS(ntt::GlobalAllocators::Shutdown());
 	TEST_SUCCESS(ntt::GlobalAllocators::Unregister());
@@ -45,8 +45,8 @@ TEST_CASE_ISOLATED(MallocTest, NotFreeingMemory)
 	TEST_SUCCESS(ntt::GlobalAllocators::Register());
 	TEST_SUCCESS(ntt::GlobalAllocators::Initialize());
 
-	ntt::Optional<void*> pMemory = ntt::g_GlobalAllocators.pMalloc->Allocate(1024);
-	TEST_EQUAL(pMemory.result, ntt::RESULT_SUCCESS);
+	void* ptr = ntt::g_GlobalAllocators.pMalloc->Allocate(1024);
+	TEST_NOT_NULL(ptr);
 
 	TEST_EQUAL(ntt::GlobalAllocators::Shutdown(), ntt::RESULT_MEMORY_LEAK);
 	TEST_SUCCESS(ntt::GlobalAllocators::Unregister());
@@ -57,10 +57,10 @@ TEST_CASE_ISOLATED(MallocTest, UnmatchedFreeSize)
 	TEST_SUCCESS(ntt::GlobalAllocators::Register());
 	TEST_SUCCESS(ntt::GlobalAllocators::Initialize());
 
-	ntt::Optional<void*> pMemoryResult = ntt::g_GlobalAllocators.pMalloc->Allocate(1024);
-	TEST_EQUAL(pMemoryResult.result, ntt::RESULT_SUCCESS);
+	void* ptr = ntt::g_GlobalAllocators.pMalloc->Allocate(1024);
+	TEST_NOT_NULL(ptr);
 
-	TEST_EQUAL(ntt::g_GlobalAllocators.pMalloc->Free(pMemoryResult.value, 1000), ntt::RESULT_UNMATCHED_FREE_SIZE);
+	TEST_EQUAL(ntt::g_GlobalAllocators.pMalloc->Free(ptr, 1000), ntt::RESULT_UNMATCHED_FREE_SIZE);
 
 	TEST_SUCCESS(ntt::GlobalAllocators::Shutdown());
 	TEST_SUCCESS(ntt::GlobalAllocators::Unregister());

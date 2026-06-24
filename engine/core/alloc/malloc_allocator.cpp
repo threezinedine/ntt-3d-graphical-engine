@@ -31,17 +31,15 @@ Result MallocAllocator::Initialize()
 	return RESULT_SUCCESS;
 }
 
-Optional<void*> MallocAllocator::Allocate(u32 size)
+void* MallocAllocator::Allocate(u32 size)
 {
 	m_AllocatedMemorySize += size;
-	Optional<void*> result;
 
 	void* pBlock = malloc(sizeof(MemoryBlockHeader) + size);
 
 	if (pBlock == nullptr)
 	{
-		result.result = RESULT_OUT_OF_MEMORY;
-		return result;
+		return nullptr;
 	}
 
 	MemoryBlockHeader* pHeader = static_cast<MemoryBlockHeader*>(pBlock);
@@ -58,9 +56,7 @@ Optional<void*> MallocAllocator::Allocate(u32 size)
 	g_HeadMemoryBlock = pHeader;
 #endif // NTT_LOG_MEMORY
 
-	result.value  = static_cast<void*>(pHeader + sizeof(MemoryBlockHeader));
-	result.result = RESULT_SUCCESS;
-	return result;
+	return static_cast<void*>(pHeader + sizeof(MemoryBlockHeader));
 }
 
 Result MallocAllocator::Free(void* ptr, u32 size)

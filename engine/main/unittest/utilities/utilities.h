@@ -235,3 +235,13 @@ extern TestSuite* g_TailTestSuite;
 			return;                                                                                                    \
 		}                                                                                                              \
 	} while (0)
+
+#define TEST_NOT_NULL(condition)                                                                                       \
+	do                                                                                                                 \
+	{                                                                                                                  \
+		if ((condition) == nullptr)                                                                                    \
+		{                                                                                                              \
+			SetFailure("Assertion failed: " #condition " != nullptr", __FILE__, __LINE__);                             \
+			return;                                                                                                    \
+		}                                                                                                              \
+	} while (0)
