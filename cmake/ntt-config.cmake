@@ -6,6 +6,8 @@ macro(ntt_config)
 
         if (MSVC)
             set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+            list(APPEND NTT_OPTIONS NTT_MSVC)
+            set(NTT_MSVC ON)
         endif()
 
         option(CMAKE_BUILD_TYPE "Build type" Debug)

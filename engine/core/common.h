@@ -32,3 +32,5 @@ static_assert(sizeof(f64) == 8, "f64 must be 8 bytes");
 
 #include "raii.h"
 #include "result.h"
+
+#include "defs.h"

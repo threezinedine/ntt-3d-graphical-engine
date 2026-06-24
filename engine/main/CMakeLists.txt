@@ -27,5 +27,8 @@ if (NTT_PLATFORM_WEB)
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             ${CMAKE_SOURCE_DIR}/engine/assets/html/engine.html
             ${CMAKE_CURRENT_BINARY_DIR}/index.html
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${CMAKE_SOURCE_DIR}/engine/assets/icons/logo.ico
+            ${CMAKE_CURRENT_BINARY_DIR}/favicon.ico
     )
 endif()

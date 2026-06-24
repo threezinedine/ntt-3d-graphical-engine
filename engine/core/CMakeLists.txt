@@ -7,6 +7,7 @@ ntt_set_source_group("src/alloc"
     NTT_ALLOC_SOURCES
     "alloc/iallocator.h"
     "alloc/alloc.h"
+    "alloc/alloc.cpp"
     "alloc/malloc_allocator.h"
     "alloc/malloc_allocator.cpp"
 )

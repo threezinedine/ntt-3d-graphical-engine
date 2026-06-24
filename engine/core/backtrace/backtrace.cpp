@@ -6,6 +6,7 @@
 
 #if NTT_PLATFORM_UNIX
 #include <execinfo.h>
+#elif NTT_PLATFORM_WEB
 #elif NTT_PLATFORM_WINDOWS
 #include <Windows.h>
 #elif NTT_PLATFORM_ANDROID
@@ -54,6 +55,10 @@ Result Backtrace::Capture()
 	// Windows implementation would go here
 	// For example, using CaptureStackBackTrace function
 	m_Depth = CaptureStackBackTrace(0, NTT_MAX_BACKTRACE_DEPTH, m_Addresses, nullptr);
+#elif NTT_PLATFORM_WEB
+	// Web implementation would go here
+	// For example, using emscripten_get_callstack function
+	m_Depth = 0; // Placeholder for actual implementation
 #else
 #error "Backtrace capture is not implemented for this platform."
 #endif // NTT_PLATFORM_UNIX
@@ -76,8 +81,12 @@ Result Backtrace::Print() const
 #if NTT_DEBUG
 #endif // NTT_DEBUG
 
+#elif NTT_PLATFORM_WEB // NTT_PLATFORM_UNIX
+	// Web implementation would go here
+	// For example, using emscripten_get_callstack function
+
 #else // NTT_PLATFORM_UNIX
-#errror "Backtrace print is not implemented for this platform."
+#error "Backtrace print is not implemented for this platform."
 #endif // NTT_PLATFORM_UNIX
 	return RESULT_SUCCESS;
 }
