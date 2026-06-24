@@ -17,12 +17,12 @@ public:
 		s_ConstructorCount++;
 	}
 
-	TestObject(const TestObject& other)
+	TestObject(const TestObject&)
 	{
 		s_CopyConstructorCount++;
 	}
 
-	TestObject(TestObject&& other) noexcept
+	TestObject(TestObject&&) noexcept
 	{
 		s_MoveConstructorCount++;
 	}
@@ -32,7 +32,7 @@ public:
 		s_DestructorCount++;
 	}
 
-	void operator=(TestObject&& other) noexcept
+	void operator=(TestObject&&) noexcept
 	{
 		s_MoveConstructorCount++;
 	}
