@@ -11,7 +11,10 @@ int main(i32 argc, char** argv)
 	NTT_ASSERT_RESULT_SUCCESS(GlobalAllocators::Initialize());
 
 	Optional<void*> result = g_GlobalAllocators.pMalloc->Allocate(1024);
-	g_GlobalAllocators.pMalloc->Free(result.value, 1000);
+	g_GlobalAllocators.pMalloc->Free(result.value, 1024);
+
+	Optional<void*> result2 = g_GlobalAllocators.pMalloc->Allocate(1024);
+	g_GlobalAllocators.pMalloc->Free(result2.value, 1024);
 
 #define CONSOLE_COLOR_OPTION(option, console_value)                                                                    \
 	setConsoleColor(CONSOLE_COLOR_##option);                                                                           \
