@@ -11,6 +11,17 @@
 				"reveal": "always"
 			},
 			"group": "build"
+		},
+		{
+			"label": "Build Unittest (linux)",
+			"command": "cmake",
+			"type": "shell",
+			"args": ["--build", "${workspaceRoot}/build/unittest"],
+			"problemMatcher": ["$tsc"],
+			"presentation": {
+				"reveal": "always"
+			},
+			"group": "build"
 		}
 	]
 }

@@ -1,33 +1,33 @@
 include(ntt-config)
 ntt_config()
 
-if (NTT_EDITOR)
+if (NTT_UNITTEST)
     ntt_set_source_group(
         "src"
-        NTT_EDITOR_SOURCES
-        "main_editor.cpp"
+        NTT_UNITTEST_SOURCES
+        "main_unittest.cpp"
     )
 
     add_executable(
-        ntt-editor
-        ${NTT_EDITOR_SOURCES}
+        ntt-unittest
+        ${NTT_UNITTEST_SOURCES}
     )
 
     target_link_libraries(
-        ntt-editor
+        ntt-unittest
         PRIVATE
         ntt-core
     )
 
-    ntt_add_options(ntt-editor)
-    ntt_add_link_flags(ntt-editor)
-    ntt_add_compile_options(ntt-editor)
+    ntt_add_options(ntt-unittest)
+    ntt_add_link_flags(ntt-unittest)
+    ntt_add_compile_options(ntt-unittest)
 
     if (NTT_PLATFORM_WEB)
         add_custom_command(
-            TARGET ntt-editor POST_BUILD
+            TARGET ntt-engine POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                ${CMAKE_SOURCE_DIR}/engine/assets/html/editor.html
+                ${CMAKE_SOURCE_DIR}/engine/assets/html/engine.html
                 ${CMAKE_CURRENT_BINARY_DIR}/index.html
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
                 ${CMAKE_SOURCE_DIR}/engine/assets/icons/logo.ico

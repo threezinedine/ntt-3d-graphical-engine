@@ -21,7 +21,7 @@ macro(ntt_config)
 
         ntt_assert_max_one_is_on(NTT_ENGINE NTT_UNITTEST)
         ntt_assert_max_one_is_on(NTT_EDITOR NTT_UNITTEST)
-        ntt_assert_at_least_one_is_on(NTT_EDITOR NTT_ENGINE)
+        ntt_assert_at_least_one_is_on(NTT_EDITOR NTT_ENGINE NTT_UNITTEST)
 
         if (CMAKE_BUILD_TYPE STREQUAL "Debug")
             set(NTT_DEBUG ON)

@@ -1,5 +1,4 @@
 #include "core.h"
-#include <cstdio>
 
 using namespace ntt;
 

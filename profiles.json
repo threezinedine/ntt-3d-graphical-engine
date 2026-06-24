@@ -33,5 +33,10 @@
 		"inherit": ["common"],
 		"options": [],
 		"command": "emcmake cmake -B build/web_debug -DCMAKE_BUILD_TYPE=Debug {{ options }}"
+	},
+	"unittest": {
+		"inherit": ["only-unittest"],
+		"options": [],
+		"command": "cmake -B build/unittest -DCMAKE_BUILD_TYPE=Debug {{ options }}"
 	}
 }

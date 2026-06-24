@@ -31,6 +31,14 @@
 			"module": "pytest",
 			"cwd": "${workspaceFolder}",
 			"console": "integratedTerminal"
+		},
+		{
+			"name": "Unittest",
+			"type": "cppdbg",
+			"request": "launch",
+			"program": "${workspaceRoot}/build/unittest/engine/main/unittest/ntt-unittest",
+			"preLaunchTask": "Build Unittest (linux)",
+			"cwd": "${workspaceRoot}/build/unittest/engine/main/unittest"
 		}
 	]
 }
