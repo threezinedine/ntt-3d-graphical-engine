@@ -43,6 +43,11 @@ macro(ntt_platform_detect)
         if (EMSCRIPTEN)
             set(NTT_PLATFORM_WEB ON)
             list(APPEND NTT_OPTIONS NTT_PLATFORM_WEB)
+
+            if (NTT_UNITTEST)
+                message(FATAL_ERROR "Unit test is not supported on web platform")
+            endif()
+
         elseif (WIN32)
             set(NTT_PLATFORM_WINDOWS ON)
             list(APPEND NTT_OPTIONS NTT_PLATFORM_WINDOWS)
