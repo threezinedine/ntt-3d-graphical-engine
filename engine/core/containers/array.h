@@ -26,7 +26,11 @@ public:
 		{
 		}
 
-		Iterator(Iterator&& other) noexcept = delete;
+		Iterator(Iterator&& other) noexcept
+		{
+			m_pCurrent		 = other.m_pCurrent;
+			other.m_pCurrent = nullptr;
+		}
 
 		void operator=(const Iterator& other)
 		{
