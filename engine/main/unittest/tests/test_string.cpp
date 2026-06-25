@@ -101,4 +101,8 @@ TEST_CASE(StringTest, Slice)
 	StringView slice2 = str.Slice(6, 10);
 	TEST_EQUAL(slice2.Length(), 5); // Should be clamped to the end of the string
 	TEST_EQUAL(strcmp(slice2.Data(), "World"), 0);
+
+	StringView slice3 = str.Slice(13, 2);
+	TEST_EQUAL(slice3.Length(), 0);		// Out of bounds, should return empty slice
+	TEST_EQUAL(slice3.Data(), nullptr); // Data should be nullptr for empty slice
 }

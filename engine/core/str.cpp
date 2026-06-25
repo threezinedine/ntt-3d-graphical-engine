@@ -176,6 +176,11 @@ bool String::EndsWith(const String& suffix) const
 
 StringView String::Slice(u32 start, u32 length) const
 {
+	if (start >= Length())
+	{
+		return StringView(nullptr, 0); // Return an empty StringView if start is out of bounds
+	}
+
 	u32 end = start + length;
 	if (end > Length())
 	{
