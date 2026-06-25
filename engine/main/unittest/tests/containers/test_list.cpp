@@ -30,9 +30,9 @@ TEST_CASE(ListTest, AppendElements)
 {
 	List<i32> list;
 
-	TEST_EQUAL(list.Append(1), RESULT_SUCCESS);
-	TEST_EQUAL(list.Append(2), RESULT_SUCCESS);
-	TEST_EQUAL(list.Append(3), RESULT_SUCCESS);
+	TEST_SUCCESS(list.Append(1));
+	TEST_SUCCESS(list.Append(2));
+	TEST_SUCCESS(list.Append(3));
 
 	TEST_EQUAL(list.GetCount(), 3);
 }
@@ -41,9 +41,9 @@ TEST_CASE(ListTest, AppendElement)
 {
 	List<TestObject> list;
 
-	TEST_EQUAL(list.Append(TestObject()), RESULT_SUCCESS);
-	TEST_EQUAL(list.Append(TestObject()), RESULT_SUCCESS);
-	TEST_EQUAL(list.Append(TestObject()), RESULT_SUCCESS);
+	TEST_SUCCESS(list.Append(TestObject()));
+	TEST_SUCCESS(list.Append(TestObject()));
+	TEST_SUCCESS(list.Append(TestObject()));
 
 	TEST_EQUAL(list.GetCount(), 3);
 
@@ -58,13 +58,13 @@ TEST_CASE(ListTest, ClearList)
 {
 	List<TestObject> list;
 
-	TEST_EQUAL(list.Append(TestObject()), RESULT_SUCCESS);
-	TEST_EQUAL(list.Append(TestObject()), RESULT_SUCCESS);
-	TEST_EQUAL(list.Append(TestObject()), RESULT_SUCCESS);
+	TEST_SUCCESS(list.Append(TestObject()));
+	TEST_SUCCESS(list.Append(TestObject()));
+	TEST_SUCCESS(list.Append(TestObject()));
 
 	TEST_EQUAL(list.GetCount(), 3);
 
-	TEST_EQUAL(list.Clear(), RESULT_SUCCESS);
+	TEST_SUCCESS(list.Clear());
 	TEST_EQUAL(list.GetCount(), 0);
 
 	// Check constructor and destructor counts

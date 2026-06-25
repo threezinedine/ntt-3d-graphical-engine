@@ -39,26 +39,29 @@ public:
 
 		Iterator& operator=(Iterator&& other) noexcept = delete;
 
-		T& operator*() const
+		inline T& operator*() const
 		{
 			return *m_pCurrent;
 		}
 
-		Iterator& operator++()
+		inline Iterator& operator++()
 		{
 			++m_pCurrent;
 			return *this;
 		}
 
-		bool operator!=(const Iterator& other) const
+		inline bool operator!=(const Iterator& other) const
 		{
 			return m_pCurrent != other.m_pCurrent;
 		}
 
-		bool operator==(const Iterator& other) const
+		inline bool operator==(const Iterator& other) const
 		{
 			return m_pCurrent == other.m_pCurrent;
 		}
+
+	public:
+		friend class Array<T>;
 
 	private:
 		T* m_pCurrent;
@@ -120,72 +123,6 @@ public:
 		return;
 	}
 
-	Result Append(T&& value)
-	{
-		if (m_Count > m_Capacity)
-		{
-			return RESULT_UNKNOWN;
-		}
-
-		if (m_Count == m_Capacity)
-		{
-			NTT_ASSERT_RESULT_SUCCESS(Resize(m_Capacity * 2));
-		}
-
-		m_pData[m_Count] = (T&&)value;
-		++m_Count;
-		return RESULT_SUCCESS;
-	}
-
-	Result Insert(T&& value, u32 index)
-	{
-		if (index > m_Count)
-		{
-			return RESULT_INDEX_OUT_OF_BOUNDS;
-		}
-
-		if (m_Count == m_Capacity)
-		{
-			NTT_ASSERT_RESULT_SUCCESS(Resize(m_Capacity * 2));
-		}
-
-		for (u32 i = m_Count; i > index; --i)
-		{
-			m_pData[i] = (T&&)m_pData[i - 1];
-		}
-
-		m_pData[index] = (T&&)value;
-		++m_Count;
-		return RESULT_SUCCESS;
-	}
-
-	Result Resize(u32 newCapacity)
-	{
-		if (newCapacity <= m_Capacity)
-		{
-			return RESULT_NEW_CAPACITY_TOO_SMALL;
-		}
-
-		T* pNewData = static_cast<T*>(ALLOCATOR_SAFE(m_pAllocator)->Allocate(sizeof(T) * newCapacity));
-
-		if (pNewData == nullptr)
-		{
-			return RESULT_OUT_OF_MEMORY;
-		}
-
-		for (u32 i = 0; i < m_Count; ++i)
-		{
-			pNewData[i] = (T&&)m_pData[i];
-		}
-
-		NTT_ASSERT_MSG(ALLOCATOR_SAFE(m_pAllocator)->Free(m_pData, sizeof(T) * m_Capacity) == RESULT_SUCCESS,
-					   "Failed to free memory for Array.");
-
-		m_pData	   = pNewData;
-		m_Capacity = newCapacity;
-		return RESULT_SUCCESS;
-	}
-
 	T& operator[](u32 index)
 	{
 		NTT_ASSERT_MSG(index < m_Count, "Index out of bounds.");
@@ -202,79 +139,33 @@ public:
 		return m_Capacity;
 	}
 
-	Result Clear()
-	{
-		for (u32 i = 0; i < m_Count; ++i)
-		{
-			m_pData[i].~T(); // Call the destructor for each element
-		}
-
-		m_Count = 0;
-		return RESULT_SUCCESS;
-	}
-
-	i32 FindIndex(Predicate predicate) const
-	{
-		for (u32 i = 0; i < m_Count; ++i)
-		{
-			if (predicate(m_pData[i]))
-			{
-				return i;
-			}
-		}
-		return static_cast<i32>(-1); // Return -1 if not found
-	}
-
-	Iterator Find(Predicate predicate)
-	{
-		for (u32 i = 0; i < m_Count; ++i)
-		{
-			if (predicate(m_pData[i]))
-			{
-				return Iterator(&m_pData[i]);
-			}
-		}
-		return end(); // Return end iterator if not found
-	}
-
-	Iterator end()
+	inline Iterator end()
 	{
 		return Iterator(m_pData + m_Count);
 	}
 
-	Iterator begin()
+	inline Iterator begin()
 	{
 		return Iterator(m_pData);
 	}
 
-	bool IsEmpty() const
+	inline bool IsEmpty() const
 	{
 		return m_Count == 0;
 	}
 
-	bool Any(Predicate predicate) const
-	{
-		for (u32 i = 0; i < m_Count; ++i)
-		{
-			if (predicate(m_pData[i]))
-			{
-				return true;
-			}
-		}
-		return false;
-	}
+	Result Resize(u32 newCapacity);
+	Result Clear();
 
-	bool All(Predicate predicate) const
-	{
-		for (u32 i = 0; i < m_Count; ++i)
-		{
-			if (!predicate(m_pData[i]))
-			{
-				return false;
-			}
-		}
-		return true;
-	}
+	Result Append(T&& value);
+	Result Insert(T&& value, u32 index);
+	Result Insert(T&& value, Iterator iter);
+	Result Remove(u32 index);
+
+	i32		 FindIndex(Predicate predicate) const;
+	Iterator Find(Predicate predicate);
+	bool	 Any(Predicate predicate) const;
+	bool	 All(Predicate predicate) const;
 
 private:
 	T*			m_pData		 = nullptr;
@@ -282,5 +173,162 @@ private:
 	u32			m_Capacity	 = 0;
 	IAllocator* m_pAllocator = nullptr;
 };
+
+template <typename T>
+Result Array<T>::Append(T&& value)
+{
+	if (m_Count > m_Capacity)
+	{
+		return RESULT_UNKNOWN;
+	}
+
+	if (m_Count == m_Capacity)
+	{
+		NTT_ASSERT_RESULT_SUCCESS(Resize(m_Capacity * 2));
+	}
+
+	m_pData[m_Count] = (T&&)value;
+	++m_Count;
+	return RESULT_SUCCESS;
+}
+
+template <typename T>
+Result Array<T>::Insert(T&& value, typename Array<T>::Iterator iter)
+{
+	u32 index = static_cast<u32>(iter.m_pCurrent - m_pData);
+	return Insert((T&&)value, index);
+}
+
+template <typename T>
+Result Array<T>::Remove(u32 index)
+{
+	if (index >= m_Count)
+	{
+		return RESULT_INDEX_OUT_OF_BOUNDS;
+	}
+
+	for (u32 i = index; i < m_Count - 1; ++i)
+	{
+		m_pData[i] = (T&&)m_pData[i + 1];
+	}
+
+	--m_Count;
+	return RESULT_SUCCESS;
+}
+
+template <typename T>
+Result Array<T>::Insert(T&& value, u32 index)
+{
+	if (index > m_Count)
+	{
+		return RESULT_INDEX_OUT_OF_BOUNDS;
+	}
+
+	if (m_Count == m_Capacity)
+	{
+		NTT_ASSERT_RESULT_SUCCESS(Resize(m_Capacity * 2));
+	}
+
+	for (u32 i = m_Count; i > index; --i)
+	{
+		m_pData[i] = (T&&)m_pData[i - 1];
+	}
+
+	m_pData[index] = (T&&)value;
+	++m_Count;
+	return RESULT_SUCCESS;
+}
+
+template <typename T>
+Result Array<T>::Resize(u32 newCapacity)
+{
+	if (newCapacity <= m_Capacity)
+	{
+		return RESULT_NEW_CAPACITY_TOO_SMALL;
+	}
+
+	T* pNewData = static_cast<T*>(ALLOCATOR_SAFE(m_pAllocator)->Allocate(sizeof(T) * newCapacity));
+
+	if (pNewData == nullptr)
+	{
+		return RESULT_OUT_OF_MEMORY;
+	}
+
+	for (u32 i = 0; i < m_Count; ++i)
+	{
+		pNewData[i] = (T&&)m_pData[i];
+	}
+
+	NTT_ASSERT_MSG(ALLOCATOR_SAFE(m_pAllocator)->Free(m_pData, sizeof(T) * m_Capacity) == RESULT_SUCCESS,
+				   "Failed to free memory for Array.");
+
+	m_pData	   = pNewData;
+	m_Capacity = newCapacity;
+	return RESULT_SUCCESS;
+}
+
+template <typename T>
+Result Array<T>::Clear()
+{
+	for (u32 i = 0; i < m_Count; ++i)
+	{
+		m_pData[i].~T(); // Call the destructor for each element
+	}
+
+	m_Count = 0;
+	return RESULT_SUCCESS;
+}
+
+template <typename T>
+i32 Array<T>::FindIndex(Predicate predicate) const
+{
+	for (u32 i = 0; i < m_Count; ++i)
+	{
+		if (predicate(m_pData[i]))
+		{
+			return i;
+		}
+	}
+	return static_cast<i32>(-1); // Return -1 if not found
+}
+
+template <typename T>
+typename Array<T>::Iterator Array<T>::Find(Predicate predicate)
+{
+	for (u32 i = 0; i < m_Count; ++i)
+	{
+		if (predicate(m_pData[i]))
+		{
+			return Iterator(&m_pData[i]);
+		}
+	}
+	return end(); // Return end iterator if not found
+}
+
+template <typename T>
+bool Array<T>::Any(Predicate predicate) const
+{
+	for (u32 i = 0; i < m_Count; ++i)
+	{
+		if (predicate(m_pData[i]))
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+template <typename T>
+bool Array<T>::All(Predicate predicate) const
+{
+	for (u32 i = 0; i < m_Count; ++i)
+	{
+		if (!predicate(m_pData[i]))
+		{
+			return false;
+		}
+	}
+	return true;
+}
 
 } // namespace ntt

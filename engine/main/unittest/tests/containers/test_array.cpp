@@ -30,9 +30,9 @@ TEST_CASE(ArrayTest, AppendElements)
 {
 	Array<i32> array(2, g_GlobalAllocators.pMalloc);
 
-	TEST_EQUAL(array.Append(1), RESULT_SUCCESS);
-	TEST_EQUAL(array.Append(2), RESULT_SUCCESS);
-	TEST_EQUAL(array.Append(3), RESULT_SUCCESS); // This should trigger a resize
+	TEST_SUCCESS(array.Append(1));
+	TEST_SUCCESS(array.Append(2));
+	TEST_SUCCESS(array.Append(3)); // This should trigger a resize
 
 	TEST_EQUAL(array.GetCount(), 3);
 	TEST_EQUAL(array.GetCapacity(), 4); // Capacity should have doubled from 2 to
@@ -42,9 +42,9 @@ TEST_CASE(ArrayTest, AppendObjects)
 {
 	Array<TestObject> array;
 
-	TEST_EQUAL(array.Append(TestObject()), RESULT_SUCCESS);
-	TEST_EQUAL(array.Append(TestObject()), RESULT_SUCCESS);
-	TEST_EQUAL(array.Append(TestObject()), RESULT_SUCCESS); // This should trigger a resize
+	TEST_SUCCESS(array.Append(TestObject()));
+	TEST_SUCCESS(array.Append(TestObject()));
+	TEST_SUCCESS(array.Append(TestObject())); // This should trigger a resize
 
 	TEST_EQUAL(array.GetCount(), 3);
 	TEST_EQUAL(array.GetCapacity(), 4); // Capacity should have doubled from 2 to 4
@@ -60,9 +60,9 @@ TEST_CASE(ArrayTest, AppendAndResizeObjects)
 {
 	Array<TestObject> array(2); // Start with capacity 2
 
-	TEST_EQUAL(array.Append(TestObject()), RESULT_SUCCESS);
-	TEST_EQUAL(array.Append(TestObject()), RESULT_SUCCESS); // This should trigger a resize
-	TEST_EQUAL(array.Append(TestObject()), RESULT_SUCCESS); // This should trigger another resize
+	TEST_SUCCESS(array.Append(TestObject()));
+	TEST_SUCCESS(array.Append(TestObject())); // This should trigger a resize
+	TEST_SUCCESS(array.Append(TestObject())); // This should trigger another resize
 
 	TEST_EQUAL(array.GetCount(), 3);
 	TEST_EQUAL(array.GetCapacity(), 4); // Capacity should have doubled from 2 to 4
@@ -78,13 +78,13 @@ TEST_CASE(ArrayTest, ClearArray)
 {
 	Array<TestObject> array;
 
-	TEST_EQUAL(array.Append(TestObject()), RESULT_SUCCESS);
-	TEST_EQUAL(array.Append(TestObject()), RESULT_SUCCESS);
-	TEST_EQUAL(array.Append(TestObject()), RESULT_SUCCESS);
+	TEST_SUCCESS(array.Append(TestObject()));
+	TEST_SUCCESS(array.Append(TestObject()));
+	TEST_SUCCESS(array.Append(TestObject()));
 
 	TEST_EQUAL(array.GetCount(), 3);
 
-	TEST_EQUAL(array.Clear(), RESULT_SUCCESS);
+	TEST_SUCCESS(array.Clear());
 	TEST_EQUAL(array.GetCount(), 0);
 
 	// Check constructor and destructor counts
@@ -98,15 +98,15 @@ TEST_CASE(ArrayTest, ResizeArray)
 {
 	Array<TestObject> array(2); // Start with capacity 2
 
-	TEST_EQUAL(array.Append(TestObject()), RESULT_SUCCESS);
-	TEST_EQUAL(array.Append(TestObject()), RESULT_SUCCESS); // This should trigger a resize
-	TEST_EQUAL(array.Append(TestObject()), RESULT_SUCCESS); // This should trigger another resize
+	TEST_SUCCESS(array.Append(TestObject()));
+	TEST_SUCCESS(array.Append(TestObject())); // This should trigger a resize
+	TEST_SUCCESS(array.Append(TestObject())); // This should trigger another resize
 
 	TEST_EQUAL(array.GetCount(), 3);
 	TEST_EQUAL(array.GetCapacity(), 4); // Capacity should have doubled from 2 to 4
 
 	// Resize to a larger capacity
-	TEST_EQUAL(array.Resize(8), RESULT_SUCCESS);
+	TEST_SUCCESS(array.Resize(8));
 	TEST_EQUAL(array.GetCapacity(), 8);
 
 	TEST_EQUAL(array.GetCount(), 3); // Count should remain the same after resizing
@@ -128,9 +128,9 @@ TEST_CASE(ArrayTest, IndexOperator)
 {
 	Array<i32> array;
 
-	TEST_EQUAL(array.Append(10), RESULT_SUCCESS);
-	TEST_EQUAL(array.Append(20), RESULT_SUCCESS);
-	TEST_EQUAL(array.Append(30), RESULT_SUCCESS);
+	TEST_SUCCESS(array.Append(10));
+	TEST_SUCCESS(array.Append(20));
+	TEST_SUCCESS(array.Append(30));
 
 	TEST_EQUAL((i32)array[0], 10);
 	TEST_EQUAL((i32)array[1], 20);
@@ -145,8 +145,8 @@ TEST_CASE(ArrayTest, MoveConstructor)
 {
 	Array<TestObject> array1;
 
-	TEST_EQUAL(array1.Append(TestObject()), RESULT_SUCCESS);
-	TEST_EQUAL(array1.Append(TestObject()), RESULT_SUCCESS);
+	TEST_SUCCESS(array1.Append(TestObject()));
+	TEST_SUCCESS(array1.Append(TestObject()));
 
 	TEST_EQUAL(array1.GetCount(), 2);
 
@@ -166,8 +166,8 @@ TEST_CASE(ArrayTest, MoveAssignmentOperator)
 {
 	Array<TestObject> array1;
 
-	TEST_EQUAL(array1.Append(TestObject()), RESULT_SUCCESS);
-	TEST_EQUAL(array1.Append(TestObject()), RESULT_SUCCESS);
+	TEST_SUCCESS(array1.Append(TestObject()));
+	TEST_SUCCESS(array1.Append(TestObject()));
 
 	TEST_EQUAL(array1.GetCount(), 2);
 
@@ -189,9 +189,9 @@ TEST_CASE(ArrayTest, Destructor)
 	{
 		Array<TestObject> array;
 
-		TEST_EQUAL(array.Append(TestObject()), RESULT_SUCCESS);
-		TEST_EQUAL(array.Append(TestObject()), RESULT_SUCCESS);
-		TEST_EQUAL(array.Append(TestObject()), RESULT_SUCCESS);
+		TEST_SUCCESS(array.Append(TestObject()));
+		TEST_SUCCESS(array.Append(TestObject()));
+		TEST_SUCCESS(array.Append(TestObject()));
 
 		TEST_EQUAL(array.GetCount(), 3);
 
@@ -210,9 +210,9 @@ TEST_CASE(ArrayTest, FindIndex)
 {
 	Array<i32> array;
 
-	TEST_EQUAL(array.Append(10), RESULT_SUCCESS);
-	TEST_EQUAL(array.Append(20), RESULT_SUCCESS);
-	TEST_EQUAL(array.Append(30), RESULT_SUCCESS);
+	TEST_SUCCESS(array.Append(10));
+	TEST_SUCCESS(array.Append(20));
+	TEST_SUCCESS(array.Append(30));
 
 	auto predicate = [](const i32& value) -> bool { return value == 20; };
 	i32	 index	   = array.FindIndex(predicate);
@@ -229,9 +229,9 @@ TEST_CASE(ArrayTest, Find)
 {
 	Array<i32> array;
 
-	TEST_EQUAL(array.Append(10), RESULT_SUCCESS);
-	TEST_EQUAL(array.Append(20), RESULT_SUCCESS);
-	TEST_EQUAL(array.Append(30), RESULT_SUCCESS);
+	TEST_SUCCESS(array.Append(10));
+	TEST_SUCCESS(array.Append(20));
+	TEST_SUCCESS(array.Append(30));
 
 	Array<i32>::Iterator iterator = array.Find([](const i32& value) -> bool { return value == 20; });
 
@@ -247,9 +247,9 @@ TEST_CASE(ArrayTest, OperatorForLoop)
 {
 	Array<i32> array;
 
-	TEST_EQUAL(array.Append(10), RESULT_SUCCESS);
-	TEST_EQUAL(array.Append(20), RESULT_SUCCESS);
-	TEST_EQUAL(array.Append(30), RESULT_SUCCESS);
+	TEST_SUCCESS(array.Append(10));
+	TEST_SUCCESS(array.Append(20));
+	TEST_SUCCESS(array.Append(30));
 
 	i32 expectedValue = 0;
 	for (const auto& value : array)
@@ -266,9 +266,9 @@ TEST_CASE(ArrayTest, IsEmptyAndAnyAll)
 
 	TEST_EQUAL(array.IsEmpty(), true);
 
-	TEST_EQUAL(array.Append(10), RESULT_SUCCESS);
-	TEST_EQUAL(array.Append(20), RESULT_SUCCESS);
-	TEST_EQUAL(array.Append(30), RESULT_SUCCESS);
+	TEST_SUCCESS(array.Append(10));
+	TEST_SUCCESS(array.Append(20));
+	TEST_SUCCESS(array.Append(30));
 
 	TEST_EQUAL(array.IsEmpty(), false);
 
@@ -283,10 +283,10 @@ TEST_CASE(ArrayTest, InsertElements)
 {
 	Array<i32> array;
 
-	TEST_EQUAL(array.Append(10), RESULT_SUCCESS);
-	TEST_EQUAL(array.Append(30), RESULT_SUCCESS);
+	TEST_SUCCESS(array.Append(10));
+	TEST_SUCCESS(array.Append(30));
 
-	TEST_EQUAL(array.Insert(20, 1), RESULT_SUCCESS); // Insert 20 at index 1
+	TEST_SUCCESS(array.Insert(20, 1)); // Insert 20 at index 1
 
 	TEST_EQUAL(array.GetCount(), 3);
 	TEST_EQUAL((i32)array[0], 10);
@@ -294,7 +294,7 @@ TEST_CASE(ArrayTest, InsertElements)
 	TEST_EQUAL((i32)array[2], 30);
 
 	// Test inserting at the beginning
-	TEST_EQUAL(array.Insert(5, 0), RESULT_SUCCESS); // Insert 5 at index 0
+	TEST_SUCCESS(array.Insert(5, 0)); // Insert 5 at index 0
 
 	TEST_EQUAL(array.GetCount(), 4);
 	TEST_EQUAL((i32)array[0], 5);
@@ -303,11 +303,62 @@ TEST_CASE(ArrayTest, InsertElements)
 	TEST_EQUAL((i32)array[3], 30);
 
 	// Test inserting at the end
-	TEST_EQUAL(array.Insert(40, array.GetCount()), RESULT_SUCCESS); // Insert 40 at the end
+	TEST_SUCCESS(array.Insert(40, array.GetCount())); // Insert 40 at the end
 
 	TEST_EQUAL(array.GetCount(), 5);
 	TEST_EQUAL((i32)array[4], 40);
 
 	// Test inserting out of bounds
 	TEST_EQUAL(array.Insert(50, array.GetCount() + 1), RESULT_INDEX_OUT_OF_BOUNDS); // Out of bounds
+}
+
+TEST_CASE(ArrayTest, InsertUsingIterator)
+{
+	Array<i32> array;
+
+	TEST_SUCCESS(array.Append(10));
+	TEST_SUCCESS(array.Append(30));
+
+	auto iter = array.begin();
+	++iter; // Move iterator to index 1
+
+	TEST_SUCCESS(array.Insert(20, iter)); // Insert 20 at index 1 using iterator
+
+	TEST_EQUAL(array.GetCount(), 3);
+	TEST_EQUAL((i32)array[0], 10);
+	TEST_EQUAL((i32)array[1], 20);
+	TEST_EQUAL((i32)array[2], 30);
+
+	TEST_SUCCESS(array.Insert(5, array.end())); // Insert 5 at the end using iterator
+	TEST_EQUAL(array.GetCount(), 4);
+	TEST_EQUAL((i32)array[3], 5);
+}
+
+TEST_CASE(ArrayTest, RemoveElements)
+{
+	Array<i32> array;
+
+	TEST_SUCCESS(array.Append(10));
+	TEST_SUCCESS(array.Append(20));
+	TEST_SUCCESS(array.Append(30));
+
+	TEST_SUCCESS(array.Remove(1)); // Remove element at index 1 (value 20)
+
+	TEST_EQUAL(array.GetCount(), 2);
+	TEST_EQUAL((i32)array[0], 10);
+	TEST_EQUAL((i32)array[1], 30);
+
+	// Test removing the first element
+	TEST_SUCCESS(array.Remove(0)); // Remove element at index 0 (value 10)
+
+	TEST_EQUAL(array.GetCount(), 1);
+	TEST_EQUAL((i32)array[0], 30);
+
+	// Test removing the last element
+	TEST_SUCCESS(array.Remove(0)); // Remove element at index 0 (value 30)
+
+	TEST_EQUAL(array.GetCount(), 0);
+
+	// Test removing from an empty array
+	TEST_EQUAL(array.Remove(0), RESULT_INDEX_OUT_OF_BOUNDS); // Out of bounds
 }
