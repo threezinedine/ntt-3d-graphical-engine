@@ -2,6 +2,7 @@
 
 #include "alloc/alloc.h"
 #include "common.h"
+#include "containers/array.h"
 
 #define NTT_SHORT_STRING_OPTIMIZATION_SIZE 15
 
@@ -18,15 +19,16 @@ public:
 	String(String&& other) noexcept;
 	~String();
 
-	u32			Length() const;
-	const char* CStr() const;
-	void		operator=(const String& other) = delete;
-	void		operator=(String&& other) noexcept;
-	void		operator=(const char* str);
-	String		operator+(const String& other) const;
-	Result		Clear();
-	bool		EndsWith(const String& suffix) const;
-	StringView	Slice(u32 start, u32 length) const;
+	u32				  Length() const;
+	const char*		  CStr() const;
+	void			  operator=(const String& other) = delete;
+	void			  operator=(String&& other) noexcept;
+	void			  operator=(const char* str);
+	String			  operator+(const String& other) const;
+	Result			  Clear();
+	bool			  EndsWith(const String& suffix) const;
+	StringView		  Slice(u32 start, u32 length) const;
+	Array<StringView> Split(const String& delimiter) const;
 
 private:
 	bool		m_IsShortString;
@@ -58,6 +60,11 @@ public:
 	StringView& operator=(StringView&& other) noexcept = default;
 	StringView& operator=(const String& str)		   = delete;
 	StringView& operator=(String&& str)				   = delete;
+
+	bool operator==(const StringView& other) const;
+	bool operator!=(const StringView& other) const;
+	bool operator==(const char* str) const;
+	bool operator!=(const char* str) const;
 
 	operator char*()
 	{

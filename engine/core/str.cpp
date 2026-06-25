@@ -134,6 +134,8 @@ Result String::Clear()
 
 String String::operator+(const String& other) const
 {
+	NTT_ASSERT(ALLOCATOR_SAFE(m_pAllocator) == ALLOCATOR_SAFE(other.m_pAllocator));
+
 	u32 newLength = Length() + other.Length();
 	if (newLength <= NTT_SHORT_STRING_OPTIMIZATION_SIZE)
 	{
@@ -188,6 +190,52 @@ StringView String::Slice(u32 start, u32 length) const
 	}
 
 	return StringView(CStr() + start, end - start);
+}
+
+Array<StringView> String::Split(const String& delimiter) const
+{
+	Array<StringView> result;
+	const char*		  strPtr		  = CStr();
+	const char*		  delimPtr		  = delimiter.CStr();
+	u32				  delimiterLength = delimiter.Length();
+	u32				  strLength		  = Length();
+	u32				  baseIndex		  = 0;
+
+	for (u32 i = 0; i < strLength; i++)
+	{
+		if (strncmp(strPtr + i, delimPtr, delimiterLength) == 0)
+		{
+			result.Append(StringView(strPtr + baseIndex, i - baseIndex));
+			baseIndex = i + delimiterLength;
+		}
+	}
+
+	if (baseIndex <= strLength)
+	{
+		result.Append(StringView(strPtr + baseIndex, strLength - baseIndex));
+	}
+
+	return result;
+}
+
+bool StringView::operator==(const StringView& other) const
+{
+	return m_Length == other.m_Length && strncmp(m_pData, other.m_pData, m_Length) == 0;
+}
+
+bool StringView::operator!=(const StringView& other) const
+{
+	return m_Length != other.m_Length || strncmp(m_pData, other.m_pData, m_Length) != 0;
+}
+
+bool StringView::operator==(const char* str) const
+{
+	return strncmp(m_pData, str, m_Length) == 0;
+}
+
+bool StringView::operator!=(const char* str) const
+{
+	return strncmp(m_pData, str, m_Length) != 0;
 }
 
 } // namespace ntt

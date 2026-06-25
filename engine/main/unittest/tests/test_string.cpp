@@ -106,3 +106,59 @@ TEST_CASE(StringTest, Slice)
 	TEST_EQUAL(slice3.Length(), 0);		// Out of bounds, should return empty slice
 	TEST_EQUAL(slice3.Data(), nullptr); // Data should be nullptr for empty slice
 }
+
+TEST_CASE(StringTest, Split)
+{
+	String str("one,two,three,four");
+	String delimiter(",");
+
+	Array<StringView> parts = str.Split(delimiter);
+
+	TEST_EQUAL(parts.GetCount(), 4);
+	TEST_EQUAL(parts[0], "one");
+	TEST_EQUAL(parts[1], "two");
+	TEST_EQUAL(parts[2], "three");
+	TEST_EQUAL(parts[3], "four");
+}
+
+TEST_CASE(StringTest, SplitWithNoDelimiter)
+{
+	String str("one,two,three,four");
+	String delimiter(";");
+
+	Array<StringView> parts = str.Split(delimiter);
+
+	TEST_EQUAL(parts.GetCount(), 1);
+	TEST_EQUAL(parts[0], "one,two,three,four");
+}
+
+TEST_CASE(StringTest, SplitWithConsecutiveDelimiters)
+{
+	String str("one,,two,,,three");
+	String delimiter(",");
+
+	Array<StringView> parts = str.Split(delimiter);
+
+	TEST_EQUAL(parts.GetCount(), 6);
+	TEST_EQUAL(parts[0], "one");
+	TEST_EQUAL(parts[1], "");
+	TEST_EQUAL(parts[2], "two");
+	TEST_EQUAL(parts[3], "");
+	TEST_EQUAL(parts[4], "");
+	TEST_EQUAL(parts[5], "three");
+}
+
+TEST_CASE(StringTest, SplitWithDelimiterAtEnds)
+{
+	String str(",one,two,three,");
+	String delimiter(",");
+
+	Array<StringView> parts = str.Split(delimiter);
+
+	TEST_EQUAL(parts.GetCount(), 5);
+	TEST_EQUAL(parts[0], "");
+	TEST_EQUAL(parts[1], "one");
+	TEST_EQUAL(parts[2], "two");
+	TEST_EQUAL(parts[3], "three");
+	TEST_EQUAL(parts[4], "");
+}
