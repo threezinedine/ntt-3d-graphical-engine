@@ -67,6 +67,10 @@ macro(ntt_platform_detect)
                 "/W4"
                 "/WX"
                 "/permissive-")
+            
+            if (NTT_UNITTEST)
+                list(APPEND NTT_COMPILE_OPTIONS "/wd4100")
+            endif()
         elseif (APPLE)
             message(FATAL_ERROR "Apple platform is not supported yet")
         elseif (UNIX)

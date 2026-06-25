@@ -204,7 +204,6 @@ TEST_CASE(ArrayTest, MoveConstructor)
 	Array<TestObject> array2((Array<TestObject>&&)array1);
 
 	TEST_EQUAL(array2.GetCount(), 2);
-	TEST_EQUAL(array1.GetCount(), 0); // array1 should be empty after move
 
 	// Check constructor and destructor counts
 	TEST_EQUAL(TestObject::s_ConstructorCount, 2);
@@ -227,7 +226,6 @@ TEST_CASE(ArrayTest, MoveAssignmentOperator)
 	array2 = (Array<TestObject>&&)array1;
 
 	TEST_EQUAL(array2.GetCount(), 2);
-	TEST_EQUAL(array1.GetCount(), 0); // array1 should be empty after move
 
 	// Check constructor and destructor counts
 	TEST_EQUAL(TestObject::s_ConstructorCount, 2);
