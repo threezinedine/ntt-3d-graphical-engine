@@ -45,6 +45,24 @@ public:
 		}
 	}
 
+	void operator=(const Array& other) = delete;
+	void operator=(Array&& other) noexcept
+	{
+		if (this != &other)
+		{
+			m_pData		 = other.m_pData;
+			m_Count		 = other.m_Count;
+			m_Capacity	 = other.m_Capacity;
+			m_pAllocator = other.m_pAllocator;
+
+			other.m_pData	   = nullptr;
+			other.m_Count	   = 0;
+			other.m_Capacity   = 0;
+			other.m_pAllocator = nullptr;
+		}
+		return;
+	}
+
 	Result Append(const T& value)
 	{
 		if (m_Count > m_Capacity)

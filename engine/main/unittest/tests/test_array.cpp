@@ -189,3 +189,70 @@ TEST_CASE(ArrayTest, IndexOperator)
 	// Uncommenting the following line will trigger an assertion failure
 	// i32 value = array[3];
 }
+
+TEST_CASE(ArrayTest, MoveConstructor)
+{
+	Array<TestObject> array1;
+
+	TEST_EQUAL(array1.Append(TestObject()), RESULT_SUCCESS);
+	TEST_EQUAL(array1.Append(TestObject()), RESULT_SUCCESS);
+
+	TEST_EQUAL(array1.GetCount(), 2);
+
+	// Move construct array2 from array1
+	Array<TestObject> array2((Array<TestObject>&&)array1);
+
+	TEST_EQUAL(array2.GetCount(), 2);
+	TEST_EQUAL(array1.GetCount(), 0); // array1 should be empty after move
+
+	// Check constructor and destructor counts
+	TEST_EQUAL(TestObject::s_ConstructorCount, 2);
+	TEST_EQUAL(TestObject::s_DestructorCount, 2); // No destructors called yet
+	TEST_EQUAL(TestObject::s_CopyConstructorCount, 0);
+	TEST_EQUAL(TestObject::s_MoveConstructorCount, 2); // Move constructors called during move
+}
+
+TEST_CASE(ArrayTest, MoveAssignmentOperator)
+{
+	Array<TestObject> array1;
+
+	TEST_EQUAL(array1.Append(TestObject()), RESULT_SUCCESS);
+	TEST_EQUAL(array1.Append(TestObject()), RESULT_SUCCESS);
+
+	TEST_EQUAL(array1.GetCount(), 2);
+
+	// Move assign array2 from array1
+	Array<TestObject> array2;
+	array2 = (Array<TestObject>&&)array1;
+
+	TEST_EQUAL(array2.GetCount(), 2);
+	TEST_EQUAL(array1.GetCount(), 0); // array1 should be empty after move
+
+	// Check constructor and destructor counts
+	TEST_EQUAL(TestObject::s_ConstructorCount, 2);
+	TEST_EQUAL(TestObject::s_DestructorCount, 2); // No destructors called yet
+	TEST_EQUAL(TestObject::s_CopyConstructorCount, 0);
+	TEST_EQUAL(TestObject::s_MoveConstructorCount, 2); // Move constructors called during move
+}
+
+TEST_CASE(ArrayTest, Destructor)
+{
+	{
+		Array<TestObject> array;
+
+		TEST_EQUAL(array.Append(TestObject()), RESULT_SUCCESS);
+		TEST_EQUAL(array.Append(TestObject()), RESULT_SUCCESS);
+		TEST_EQUAL(array.Append(TestObject()), RESULT_SUCCESS);
+
+		TEST_EQUAL(array.GetCount(), 3);
+
+		// Check constructor and destructor counts
+		TEST_EQUAL(TestObject::s_ConstructorCount, 3);
+		TEST_EQUAL(TestObject::s_DestructorCount, 3); // No destructors called yet
+		TEST_EQUAL(TestObject::s_CopyConstructorCount, 0);
+		TEST_EQUAL(TestObject::s_MoveConstructorCount, 3);
+	}
+
+	// After the array goes out of scope, destructors should be called
+	TEST_EQUAL(TestObject::s_DestructorCount, 6);
+}
