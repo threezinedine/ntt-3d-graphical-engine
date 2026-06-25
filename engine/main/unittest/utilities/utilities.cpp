@@ -135,7 +135,7 @@ void TestSuite::AfterAllTests()
 	OnAfterAllTestsImpl();
 
 	setConsoleColor(CONSOLE_COLOR_GREEN);
-	print("[----------] %u tests from test suite: %s\n", m_TestCount, m_TestSuiteName);
+	print("[----------] %u tests from test suite: %s\n\n", m_TestCount, m_TestSuiteName);
 	resetConsoleColor();
 }
 

@@ -11,6 +11,9 @@ template <typename T>
 class Array
 {
 public:
+	typedef bool (*Predicate)(const T&);
+
+public:
 	Array(u32 capacity = NTT_ARRAY_DEFAULT_CAPACITY, IAllocator* pAllocator = nullptr)
 		: m_pData(nullptr)
 		, m_Count(0)
@@ -149,6 +152,47 @@ public:
 
 		m_Count = 0;
 		return RESULT_SUCCESS;
+	}
+
+	i32 FindIndex(Predicate predicate) const
+	{
+		for (u32 i = 0; i < m_Count; ++i)
+		{
+			if (predicate(m_pData[i]))
+			{
+				return i;
+			}
+		}
+		return static_cast<i32>(-1); // Return -1 if not found
+	}
+
+	bool IsEmpty() const
+	{
+		return m_Count == 0;
+	}
+
+	bool Any(Predicate predicate) const
+	{
+		for (u32 i = 0; i < m_Count; ++i)
+		{
+			if (predicate(m_pData[i]))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	bool All(Predicate predicate) const
+	{
+		for (u32 i = 0; i < m_Count; ++i)
+		{
+			if (!predicate(m_pData[i]))
+			{
+				return false;
+			}
+		}
+		return true;
 	}
 
 private:

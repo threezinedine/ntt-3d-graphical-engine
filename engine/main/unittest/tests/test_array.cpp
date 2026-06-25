@@ -256,3 +256,41 @@ TEST_CASE(ArrayTest, Destructor)
 	// After the array goes out of scope, destructors should be called
 	TEST_EQUAL(TestObject::s_DestructorCount, 6);
 }
+
+TEST_CASE(ArrayTest, FindIndex)
+{
+	Array<i32> array;
+
+	TEST_EQUAL(array.Append(10), RESULT_SUCCESS);
+	TEST_EQUAL(array.Append(20), RESULT_SUCCESS);
+	TEST_EQUAL(array.Append(30), RESULT_SUCCESS);
+
+	auto predicate = [](const i32& value) -> bool { return value == 20; };
+	i32	 index	   = array.FindIndex(predicate);
+
+	TEST_EQUAL(index, 1); // The index of the value 20 should be 1
+
+	auto notFoundPredicate = [](const i32& value) -> bool { return value == 40; };
+	i32	 notFoundIndex	   = array.FindIndex(notFoundPredicate);
+
+	TEST_EQUAL(notFoundIndex, -1); // The value 40 is not in the array, so it should return -1
+}
+
+TEST_CASE(ArrayTest, IsEmptyAndAnyAll)
+{
+	Array<i32> array;
+
+	TEST_EQUAL(array.IsEmpty(), true);
+
+	TEST_EQUAL(array.Append(10), RESULT_SUCCESS);
+	TEST_EQUAL(array.Append(20), RESULT_SUCCESS);
+	TEST_EQUAL(array.Append(30), RESULT_SUCCESS);
+
+	TEST_EQUAL(array.IsEmpty(), false);
+
+	TEST_EQUAL(array.Any([](const i32& value) -> bool { return value == 20; }), true);
+	TEST_EQUAL(array.Any([](const i32& value) { return value >= 20; }), true);
+	TEST_EQUAL(array.Any([](const i32& value) { return value >= 40; }), false);
+	TEST_EQUAL(array.All([](const i32& value) -> bool { return value > 0; }), true);
+	TEST_EQUAL(array.All([](const i32& value) -> bool { return value < 30; }), false);
+}
