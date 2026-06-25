@@ -167,3 +167,107 @@ TEST_CASE(ListTest, InsertBefore)
 	TEST_EQUAL(list.GetCount(), 1);
 	TEST_EQUAL(list[0], 1);
 }
+
+// ── InsertAfter edge cases ──
+
+TEST_CASE(ListTest, InsertAfterSingleElement)
+{
+	List<i32> list;
+	TEST_SUCCESS(list.Append(1));
+
+	// Insert after the only element (head = tail)
+	TEST_SUCCESS(list.InsertAfter(list.Begin(), 2));
+
+	TEST_EQUAL(list.GetCount(), 2);
+	TEST_EQUAL(list[0], 1);
+	TEST_EQUAL(list[1], 2);
+}
+
+TEST_CASE(ListTest, InsertAfterChain)
+{
+	List<i32> list;
+	TEST_SUCCESS(list.Append(1));
+
+	// Chain: insert 2 after 1, then 3 after 2
+	auto it = list.Begin();
+	TEST_SUCCESS(list.InsertAfter(it, 2));
+	++it; // now points to 2
+	TEST_SUCCESS(list.InsertAfter(it, 3));
+
+	TEST_EQUAL(list.GetCount(), 3);
+	TEST_EQUAL(list[0], 1);
+	TEST_EQUAL(list[1], 2);
+	TEST_EQUAL(list[2], 3);
+}
+
+TEST_CASE(ListTest, InsertAfterWithObjects)
+{
+	List<TestObject> list;
+
+	TEST_SUCCESS(list.Append(TestObject()));
+	TEST_SUCCESS(list.Append(TestObject()));
+
+	auto it = list.Begin();
+	++it;
+
+	TEST_SUCCESS(list.InsertAfter(list.Begin(), TestObject()));
+
+	TEST_EQUAL(list.GetCount(), 3);
+
+	// 3 temporaries constructed, destroyed; 0 copies; 3 moves into the list
+	TEST_EQUAL(TestObject::s_ConstructorCount, 3);
+	TEST_EQUAL(TestObject::s_DestructorCount, 3);
+	TEST_EQUAL(TestObject::s_CopyConstructorCount, 0);
+	TEST_EQUAL(TestObject::s_MoveConstructorCount, 3);
+}
+
+// ── InsertBefore edge cases ──
+
+TEST_CASE(ListTest, InsertBeforeSingleElement)
+{
+	List<i32> list;
+	TEST_SUCCESS(list.Append(1));
+
+	// Insert before the only element
+	TEST_SUCCESS(list.InsertBefore(list.Begin(), 0));
+
+	TEST_EQUAL(list.GetCount(), 2);
+	TEST_EQUAL(list[0], 0);
+	TEST_EQUAL(list[1], 1);
+}
+
+TEST_CASE(ListTest, InsertBeforeChain)
+{
+	List<i32> list;
+	TEST_SUCCESS(list.Append(3));
+
+	// Chain: insert 2 before 3, then 1 before 2
+	auto it = list.Begin(); // points to 3
+	TEST_SUCCESS(list.InsertBefore(it, 2));
+	it = list.Begin(); // points to 2 now
+	TEST_SUCCESS(list.InsertBefore(it, 1));
+
+	TEST_EQUAL(list.GetCount(), 3);
+	TEST_EQUAL(list[0], 1);
+	TEST_EQUAL(list[1], 2);
+	TEST_EQUAL(list[2], 3);
+}
+
+TEST_CASE(ListTest, InsertBeforeWithObjects)
+{
+	List<TestObject> list;
+
+	TEST_SUCCESS(list.Append(TestObject()));
+	TEST_SUCCESS(list.Append(TestObject()));
+
+	// Insert before the head
+	TEST_SUCCESS(list.InsertBefore(list.Begin(), TestObject()));
+
+	TEST_EQUAL(list.GetCount(), 3);
+
+	// 3 temporaries constructed, destroyed; 0 copies; 3 moves into the list
+	TEST_EQUAL(TestObject::s_ConstructorCount, 3);
+	TEST_EQUAL(TestObject::s_DestructorCount, 3);
+	TEST_EQUAL(TestObject::s_CopyConstructorCount, 0);
+	TEST_EQUAL(TestObject::s_MoveConstructorCount, 3);
+}
