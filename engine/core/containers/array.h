@@ -37,7 +37,11 @@ public:
 			m_pCurrent = other.m_pCurrent;
 		}
 
-		Iterator& operator=(Iterator&& other) noexcept = delete;
+		void operator=(Iterator&& other) noexcept
+		{
+			m_pCurrent		 = other.m_pCurrent;
+			other.m_pCurrent = nullptr;
+		}
 
 		inline T& operator*() const
 		{
@@ -160,7 +164,9 @@ public:
 	Result Append(T&& value);
 	Result Insert(T&& value, u32 index);
 	Result Insert(T&& value, Iterator iter);
+
 	Result Remove(u32 index);
+	Result Remove(Iterator iter);
 
 	i32		 FindIndex(Predicate predicate) const;
 	Iterator Find(Predicate predicate);
@@ -214,6 +220,13 @@ Result Array<T>::Remove(u32 index)
 
 	--m_Count;
 	return RESULT_SUCCESS;
+}
+
+template <typename T>
+Result Array<T>::Remove(typename Array<T>::Iterator iter)
+{
+	u32 index = static_cast<u32>(iter.m_pCurrent - m_pData);
+	return Remove(index);
 }
 
 template <typename T>

@@ -214,15 +214,9 @@ TEST_CASE(ArrayTest, FindIndex)
 	TEST_SUCCESS(array.Append(20));
 	TEST_SUCCESS(array.Append(30));
 
-	auto predicate = [](const i32& value) -> bool { return value == 20; };
-	i32	 index	   = array.FindIndex(predicate);
+	TEST_EQUAL(array.FindIndex([](const i32& value) -> bool { return value == 20; }), 1);
 
-	TEST_EQUAL(index, 1); // The index of the value 20 should be 1
-
-	auto notFoundPredicate = [](const i32& value) -> bool { return value == 40; };
-	i32	 notFoundIndex	   = array.FindIndex(notFoundPredicate);
-
-	TEST_EQUAL(notFoundIndex, -1); // The value 40 is not in the array, so it should return -1
+	TEST_EQUAL(array.FindIndex([](const i32& value) -> bool { return value == 40; }), -1);
 }
 
 TEST_CASE(ArrayTest, Find)
@@ -361,4 +355,39 @@ TEST_CASE(ArrayTest, RemoveElements)
 
 	// Test removing from an empty array
 	TEST_EQUAL(array.Remove(0), RESULT_INDEX_OUT_OF_BOUNDS); // Out of bounds
+}
+
+TEST_CASE(ArrayTest, RemoveUsingIterator)
+{
+	Array<i32> array;
+
+	TEST_SUCCESS(array.Append(10));
+	TEST_SUCCESS(array.Append(20));
+	TEST_SUCCESS(array.Append(30));
+
+	Array<i32>::Iterator iter = array.begin();
+	++iter; // Move iterator to index 1 (value 20)
+
+	TEST_SUCCESS(array.Remove(iter)); // Remove element at index 1 using iterator
+
+	TEST_EQUAL(array.GetCount(), 2);
+	TEST_EQUAL((i32)array[0], 10);
+	TEST_EQUAL((i32)array[1], 30);
+
+	// Test removing the first element using iterator
+	iter = array.begin();			  // Move iterator to index 0 (value 10)
+	TEST_SUCCESS(array.Remove(iter)); // Remove element at index 0 using iterator
+
+	TEST_EQUAL(array.GetCount(), 1);
+	TEST_EQUAL((i32)array[0], 30);
+
+	// Test removing the last element using iterator
+	iter = array.begin();			  // Move iterator to index 0 (value 30)
+	TEST_SUCCESS(array.Remove(iter)); // Remove element at index 0 using iterator
+
+	TEST_EQUAL(array.GetCount(), 0);
+
+	// Test removing from an empty array using iterator
+	iter = array.begin();										// Iterator points to end() since the array is empty
+	TEST_EQUAL(array.Remove(iter), RESULT_INDEX_OUT_OF_BOUNDS); // Out of bounds
 }
