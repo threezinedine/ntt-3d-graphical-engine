@@ -140,7 +140,8 @@ String String::operator+(const String& other) const
 		String result(m_pAllocator);
 		result.m_IsShortString = true;
 		memcpy(result.m_pShortBuffer, CStr(), NTT_SHORT_STRING_OPTIMIZATION_SIZE);
-		memcpy(result.m_pShortBuffer + strlen(result.m_pShortBuffer), other.CStr(),
+		memcpy(result.m_pShortBuffer + strlen(result.m_pShortBuffer),
+			   other.CStr(),
 			   NTT_SHORT_STRING_OPTIMIZATION_SIZE - strlen(result.m_pShortBuffer));
 		result.m_pShortBuffer[NTT_SHORT_STRING_OPTIMIZATION_SIZE] = '\0'; // Ensure null-termination
 		return result;
@@ -155,6 +156,33 @@ String String::operator+(const String& other) const
 		memcpy(result.m_pHeapBuffer + (size_t)Length(), other.CStr(), (size_t)other.Length() + 1);
 		return result;
 	}
+}
+
+bool String::EndsWith(const String& suffix) const
+{
+	u32 strLength	 = Length();
+	u32 suffixLength = suffix.Length();
+
+	if (suffixLength > strLength)
+	{
+		return false;
+	}
+
+	const char* strPtr	  = CStr() + (strLength - suffixLength);
+	const char* suffixPtr = suffix.CStr();
+
+	return strcmp(strPtr, suffixPtr) == 0;
+}
+
+StringView String::Slice(u32 start, u32 length) const
+{
+	u32 end = start + length;
+	if (end > Length())
+	{
+		end = Length(); // Adjust end if it exceeds the string length
+	}
+
+	return StringView(CStr() + start, end - start);
 }
 
 } // namespace ntt

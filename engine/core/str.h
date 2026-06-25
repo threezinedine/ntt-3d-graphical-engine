@@ -7,6 +7,8 @@
 
 namespace ntt {
 
+class StringView;
+
 class String
 {
 public:
@@ -23,12 +25,58 @@ public:
 	void		operator=(const char* str);
 	String		operator+(const String& other) const;
 	Result		Clear();
+	bool		EndsWith(const String& suffix) const;
+	StringView	Slice(u32 start, u32 length) const;
 
 private:
 	bool		m_IsShortString;
 	char		m_pShortBuffer[NTT_SHORT_STRING_OPTIMIZATION_SIZE + 1];
 	char*		m_pHeapBuffer;
 	IAllocator* m_pAllocator;
+};
+
+class StringView
+{
+public:
+	StringView(const char* str, u32 length)
+		: m_pData(str)
+		, m_Length(length)
+	{
+	}
+
+	StringView(const String& str)
+		: m_pData(str.CStr())
+		, m_Length(str.Length())
+	{
+	}
+
+	StringView(String&& str)				= delete;
+	StringView(const StringView& other)		= default;
+	StringView(StringView&& other) noexcept = default;
+
+	StringView& operator=(const StringView& other)	   = default;
+	StringView& operator=(StringView&& other) noexcept = default;
+	StringView& operator=(const String& str)		   = delete;
+	StringView& operator=(String&& str)				   = delete;
+
+	operator char*()
+	{
+		return const_cast<char*>(m_pData);
+	}
+
+	inline const char* Data() const
+	{
+		return m_pData;
+	}
+
+	inline u32 Length() const
+	{
+		return m_Length;
+	}
+
+private:
+	const char* m_pData;
+	u32			m_Length;
 };
 
 } // namespace ntt
