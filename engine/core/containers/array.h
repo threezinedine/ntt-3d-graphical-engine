@@ -14,6 +14,53 @@ public:
 	typedef bool (*Predicate)(const T&);
 
 public:
+	struct Iterator
+	{
+		Iterator(T* pCurrent)
+			: m_pCurrent(pCurrent)
+		{
+		}
+
+		Iterator(const Iterator& other)
+			: m_pCurrent(other.m_pCurrent)
+		{
+		}
+
+		Iterator(Iterator&& other) noexcept = delete;
+
+		void operator=(const Iterator& other)
+		{
+			m_pCurrent = other.m_pCurrent;
+		}
+
+		Iterator& operator=(Iterator&& other) noexcept = delete;
+
+		T& operator*() const
+		{
+			return *m_pCurrent;
+		}
+
+		Iterator& operator++()
+		{
+			++m_pCurrent;
+			return *this;
+		}
+
+		bool operator!=(const Iterator& other) const
+		{
+			return m_pCurrent != other.m_pCurrent;
+		}
+
+		bool operator==(const Iterator& other) const
+		{
+			return m_pCurrent == other.m_pCurrent;
+		}
+
+	private:
+		T* m_pCurrent;
+	};
+
+public:
 	Array(u32 capacity = NTT_ARRAY_DEFAULT_CAPACITY, IAllocator* pAllocator = nullptr)
 		: m_pData(nullptr)
 		, m_Count(0)
@@ -172,6 +219,28 @@ public:
 			}
 		}
 		return static_cast<i32>(-1); // Return -1 if not found
+	}
+
+	Iterator Find(Predicate predicate)
+	{
+		for (u32 i = 0; i < m_Count; ++i)
+		{
+			if (predicate(m_pData[i]))
+			{
+				return Iterator(&m_pData[i]);
+			}
+		}
+		return end(); // Return end iterator if not found
+	}
+
+	Iterator end()
+	{
+		return Iterator(m_pData + m_Count);
+	}
+
+	Iterator begin()
+	{
+		return Iterator(m_pData);
 	}
 
 	bool IsEmpty() const

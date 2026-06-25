@@ -225,6 +225,41 @@ TEST_CASE(ArrayTest, FindIndex)
 	TEST_EQUAL(notFoundIndex, -1); // The value 40 is not in the array, so it should return -1
 }
 
+TEST_CASE(ArrayTest, Find)
+{
+	Array<i32> array;
+
+	TEST_EQUAL(array.Append(10), RESULT_SUCCESS);
+	TEST_EQUAL(array.Append(20), RESULT_SUCCESS);
+	TEST_EQUAL(array.Append(30), RESULT_SUCCESS);
+
+	Array<i32>::Iterator iterator = array.Find([](const i32& value) -> bool { return value == 20; });
+
+	TEST_ASSERT(iterator != array.end()); // The iterator should not be equal to end()
+	TEST_EQUAL(*iterator, 20);			  // The value pointed to by the iterator should be 20
+
+	Array<i32>::Iterator notFoundIterator = array.Find([](const i32& value) -> bool { return value == 40; });
+
+	TEST_ASSERT(notFoundIterator == array.end()); // The iterator should be equal to end() since the value is not found
+}
+
+TEST_CASE(ArrayTest, OperatorForLoop)
+{
+	Array<i32> array;
+
+	TEST_EQUAL(array.Append(10), RESULT_SUCCESS);
+	TEST_EQUAL(array.Append(20), RESULT_SUCCESS);
+	TEST_EQUAL(array.Append(30), RESULT_SUCCESS);
+
+	i32 expectedValue = 0;
+	for (const auto& value : array)
+	{
+		expectedValue += value;
+	}
+
+	TEST_EQUAL(expectedValue, 60); // After the loop, expectedValue should be 60
+}
+
 TEST_CASE(ArrayTest, IsEmptyAndAnyAll)
 {
 	Array<i32> array;
