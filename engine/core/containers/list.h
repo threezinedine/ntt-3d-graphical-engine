@@ -140,6 +140,7 @@ public:
 	Result Clear();
 	Result Append(T&& value);
 	Result InsertAfter(Iterator position, T&& value);
+	Result InsertBefore(Iterator position, T&& value);
 	T&	   operator[](u32 index);
 
 private:
@@ -220,6 +221,10 @@ Result List<T>::InsertAfter(typename List<T>::Iterator position, T&& value)
 		{
 			pCurrent->pNext->pPrev = pNewNode;
 		}
+		else
+		{
+			m_pTail = pNewNode;
+		}
 		pCurrent->pNext = pNewNode;
 	}
 	else
@@ -233,6 +238,52 @@ Result List<T>::InsertAfter(typename List<T>::Iterator position, T&& value)
 			m_pTail->pNext = pNewNode;
 		}
 		m_pTail = pNewNode;
+	}
+
+	m_Count++;
+
+	return RESULT_SUCCESS;
+}
+
+template <typename T>
+Result List<T>::InsertBefore(typename List<T>::Iterator position, T&& value)
+{
+	Node* pCurrent = position.m_pCurrent;
+
+	Node* pNewNode = (Node*)ALLOCATOR_SAFE(m_pAllocator)->Allocate(sizeof(Node));
+
+	if (pNewNode == nullptr)
+	{
+		return RESULT_OUT_OF_MEMORY;
+	}
+
+	pNewNode->data	= static_cast<T&&>(value);
+	pNewNode->pNext = pCurrent;
+	pNewNode->pPrev = (pCurrent != nullptr) ? pCurrent->pPrev : nullptr;
+
+	if (pCurrent != nullptr)
+	{
+		if (pCurrent->pPrev != nullptr)
+		{
+			pCurrent->pPrev->pNext = pNewNode;
+		}
+		else
+		{
+			m_pHead = pNewNode;
+		}
+		pCurrent->pPrev = pNewNode;
+	}
+	else
+	{
+		if (m_pTail == nullptr)
+		{
+			m_pTail = pNewNode;
+		}
+		else
+		{
+			m_pHead->pPrev = pNewNode;
+		}
+		m_pHead = pNewNode;
 	}
 
 	m_Count++;

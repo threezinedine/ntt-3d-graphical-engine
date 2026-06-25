@@ -2,6 +2,7 @@
 	"liveServer.settings.root": "/build/web_debug/engine/main",
 	"python.analysis.typeCheckingMode": "standard",
 	"chat.tools.terminal.autoApprove": {
-		"clang++": true
+		"clang++": true,
+		"./build/unittest/engine/main/unittest/ntt-unittest": true
 	}
 }

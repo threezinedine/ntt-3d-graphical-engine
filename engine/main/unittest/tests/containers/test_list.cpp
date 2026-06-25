@@ -129,3 +129,41 @@ TEST_CASE(ListTest, InsertAfter)
 	TEST_EQUAL(list.GetCount(), 1);
 	TEST_EQUAL(list[0], 1);
 }
+
+TEST_CASE(ListTest, InsertBefore)
+{
+	List<i32> list;
+
+	TEST_SUCCESS(list.Append(2));
+	TEST_SUCCESS(list.Append(3));
+
+	auto it = list.Begin();
+	++it; // Move to the second element (3)
+
+	TEST_SUCCESS(list.InsertBefore(it, 1)); // Insert 1 before 3
+
+	TEST_EQUAL(list.GetCount(), 3);
+	TEST_EQUAL(list[0], 2);
+	TEST_EQUAL(list[1], 1);
+	TEST_EQUAL(list[2], 3);
+
+	list.Clear();
+
+	TEST_SUCCESS(list.Append(2));
+	TEST_SUCCESS(list.Append(3));
+
+	it = list.Begin(); // Iterator pointing to the first element (2)
+
+	TEST_SUCCESS(list.InsertBefore(it, 1)); // Insert 1 before 2
+
+	TEST_EQUAL(list.GetCount(), 3);
+	TEST_EQUAL(list[0], 1);
+	TEST_EQUAL(list[1], 2);
+	TEST_EQUAL(list[2], 3);
+
+	list.Clear();
+
+	TEST_SUCCESS(list.InsertBefore(list.Begin(), 1)); // Insert 1 before the first element (which is nullptr)
+	TEST_EQUAL(list.GetCount(), 1);
+	TEST_EQUAL(list[0], 1);
+}
