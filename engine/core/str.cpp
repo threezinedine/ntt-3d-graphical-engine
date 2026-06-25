@@ -30,6 +30,31 @@ String::String(const char* str, IAllocator* pAllocator)
 	}
 }
 
+Result String::Reserve(u32 newCapacity)
+{
+	if (newCapacity <= Length())
+	{
+		return RESULT_NEW_CAPACITY_TOO_SMALL;
+	}
+
+	if (newCapacity <= NTT_SHORT_STRING_OPTIMIZATION_SIZE)
+	{
+		// No need to reserve, as the short string optimization can handle this
+		return RESULT_SUCCESS;
+	}
+
+	char* pNewHeapBuffer = (char*)ALLOCATOR_SAFE(m_pAllocator)->Allocate(newCapacity + 1);
+	memcpy(pNewHeapBuffer, CStr(), Length() + 1); // Copy existing string including null terminator
+
+	if (m_pHeapBuffer != nullptr)
+	{
+		ALLOCATOR_SAFE(m_pAllocator)->Free(m_pHeapBuffer, (u32)(strlen(m_pHeapBuffer) + 1));
+	}
+	m_pHeapBuffer	= pNewHeapBuffer;
+	m_IsShortString = false;
+	return RESULT_SUCCESS;
+}
+
 String::String(String&& other) noexcept
 	: m_IsShortString(other.m_IsShortString)
 	, m_pAllocator(other.m_pAllocator)
@@ -247,5 +272,14 @@ StringView::StringView(const char* str, u32 length)
 		m_Length = (u32)strlen(str);
 	}
 }
+
+// String String::Join(const Array<String>& strings, const String& delimiter)
+// {
+// 	u32 totalLength = 0;
+// 	for (const auto& str : strings)
+// 	{
+// 		totalLength += str.Length();
+// 	}
+// }
 
 } // namespace ntt

@@ -162,3 +162,19 @@ TEST_CASE(StringTest, SplitWithDelimiterAtEnds)
 	TEST_EQUAL(parts[3], "three");
 	TEST_EQUAL(parts[4], "");
 }
+
+TEST_CASE(StringTest, Reserve)
+{
+	String str("Hello");
+	TEST_EQUAL(str.Length(), 5);
+	TEST_SUCCESS(str.Reserve(20));
+	TEST_EQUAL(str.IsShortString(), false);				 // Should now be using heap allocation
+	TEST_EQUAL(str.Length(), 5);						 // Length should remain the same
+	TEST_EQUAL(strcmp(str.GetHeapBuffer(), "Hello"), 0); // Content should remain the same
+
+	TEST_EQUAL(str.Reserve(3), RESULT_NEW_CAPACITY_TOO_SMALL); // Reserving less than current capacity should do nothing
+	TEST_EQUAL(str.Length(), 5);
+	TEST_EQUAL(str.IsShortString(), false);				 // Should now be using heap allocation
+	TEST_EQUAL(str.Length(), 5);						 // Length should remain the same
+	TEST_EQUAL(strcmp(str.GetHeapBuffer(), "Hello"), 0); // Content should remain the same
+}

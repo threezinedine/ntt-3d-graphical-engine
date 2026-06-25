@@ -21,6 +21,7 @@ public:
 
 	u32				  Length() const;
 	const char*		  CStr() const;
+	Result			  Reserve(u32 newCapacity);
 	void			  operator=(const String& other) = delete;
 	void			  operator=(String&& other) noexcept;
 	void			  operator=(const char* str);
@@ -29,6 +30,27 @@ public:
 	bool			  EndsWith(const String& suffix) const;
 	StringView		  Slice(u32 start, u32 length) const;
 	Array<StringView> Split(const String& delimiter) const;
+
+#if NTT_UNITTEST
+public:
+	inline const char* GetShortBuffer() const
+	{
+		return m_pShortBuffer;
+	}
+
+	inline const char* GetHeapBuffer() const
+	{
+		return m_pHeapBuffer;
+	}
+
+	inline bool IsShortString() const
+	{
+		return m_IsShortString;
+	}
+#endif // NTT_UNITTEST
+
+public:
+	static String Join(const Array<String>& strings, const String& delimiter);
 
 private:
 	bool		m_IsShortString;

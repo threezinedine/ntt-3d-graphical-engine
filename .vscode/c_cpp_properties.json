@@ -6,7 +6,8 @@
 			"defines": [
 				"NTT_ENABLE_ASSERTION=1",
 				"NTT_PLATFORM_UNIX=1",
-				"NTT_LOG_MEMORY=1"
+				"NTT_LOG_MEMORY=1",
+				"NTT_UNITTEST=1"
 			],
 			"compilerPath": "/usr/bin/clang",
 			"cStandard": "c17",
