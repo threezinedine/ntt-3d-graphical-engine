@@ -2,6 +2,7 @@
 
 #include "alloc/alloc.h"
 #include "common.h"
+#include "utils/utils.h"
 
 #define NTT_ARRAY_DEFAULT_CAPACITY 4
 
@@ -261,6 +262,7 @@ Result Array<T>::Insert(T&& value, u32 index)
 	for (u32 i = m_Count; i > index; --i)
 	{
 		m_pData[i] = (T&&)m_pData[i - 1];
+		MemSet(&m_pData[i - 1], 0, sizeof(T)); // Clear the moved-from element
 	}
 
 	m_pData[index] = (T&&)value;

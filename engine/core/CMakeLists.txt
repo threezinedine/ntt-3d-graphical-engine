@@ -10,6 +10,12 @@ ntt_set_source_group("src/containers"
     "containers/list.h"
 )
 
+ntt_set_source_group("src/utils"
+    NTT_UTILS_SOURCES
+    "utils/utils.h"
+    "utils/utils.cpp"
+)
+
 ntt_set_source_group("src/alloc" 
     NTT_ALLOC_SOURCES
     "alloc/iallocator.h"
@@ -47,6 +53,7 @@ add_library(
     ${NTT_ALLOC_SOURCES}
     ${NTT_BACKTRACE_SOURCES}
     ${NTT_CONTAINERS_SOURCES}
+    ${NTT_UTILS_SOURCES}
 )
 
 target_include_directories(

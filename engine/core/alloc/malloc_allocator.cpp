@@ -42,6 +42,8 @@ void* MallocAllocator::Allocate(u32 size)
 		return nullptr;
 	}
 
+	memset(pBlock, 0, sizeof(MemoryBlockHeader) + size);
+
 	MemoryBlockHeader* pHeader = static_cast<MemoryBlockHeader*>(pBlock);
 	pHeader->size			   = size;
 
