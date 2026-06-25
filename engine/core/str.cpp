@@ -55,6 +55,16 @@ Result String::Reserve(u32 newCapacity)
 	return RESULT_SUCCESS;
 }
 
+bool String::operator==(const String& other) const
+{
+	return this->Length() == other.Length() && strcmp(this->CStr(), other.CStr()) == 0;
+}
+
+bool String::operator!=(const String& other) const
+{
+	return !(*this == other);
+}
+
 String::String(String&& other) noexcept
 	: m_IsShortString(other.m_IsShortString)
 	, m_pAllocator(other.m_pAllocator)
@@ -273,13 +283,34 @@ StringView::StringView(const char* str, u32 length)
 	}
 }
 
-// String String::Join(const Array<String>& strings, const String& delimiter)
-// {
-// 	u32 totalLength = 0;
-// 	for (const auto& str : strings)
-// 	{
-// 		totalLength += str.Length();
-// 	}
-// }
+String String::Join(const Array<String>& strings, const String& delimiter)
+{
+	u32 totalLength = 0;
+	for (const auto& str : strings)
+	{
+		totalLength += str.Length();
+	}
+
+	String result;
+	result.Reserve(totalLength + (strings.GetCount() - 1) * delimiter.Length());
+
+	char* pResultBuffer = result.m_IsShortString ? result.m_pShortBuffer : result.m_pHeapBuffer;
+	u32	  offset		= 0;
+
+	for (u32 i = 0; i < strings.GetCount(); ++i)
+	{
+		const String& str = strings[i];
+		memcpy(pResultBuffer + offset, str.CStr(), str.Length());
+		offset += str.Length();
+
+		if (i < strings.GetCount() - 1) // Don't add delimiter after the last string
+		{
+			memcpy(pResultBuffer + offset, delimiter.CStr(), delimiter.Length());
+			offset += delimiter.Length();
+		}
+	}
+
+	return result;
+}
 
 } // namespace ntt

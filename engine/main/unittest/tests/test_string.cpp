@@ -178,3 +178,17 @@ TEST_CASE(StringTest, Reserve)
 	TEST_EQUAL(str.Length(), 5);						 // Length should remain the same
 	TEST_EQUAL(strcmp(str.GetHeapBuffer(), "Hello"), 0); // Content should remain the same
 }
+
+TEST_CASE(StringTest, Join)
+{
+	Array<String> strings;
+	TEST_SUCCESS(strings.Append(String("one")));
+	TEST_SUCCESS(strings.Append(String("two")));
+	TEST_SUCCESS(strings.Append(String("three")));
+
+	String delimiter(", ");
+	String result = String::Join(strings, delimiter);
+
+	TEST_EQUAL(result.Length(), 15);
+	TEST_EQUAL(result, "one, two, three");
+}

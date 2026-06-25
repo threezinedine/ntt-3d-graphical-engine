@@ -133,6 +133,12 @@ public:
 		return m_pData[index];
 	}
 
+	const T& operator[](u32 index) const
+	{
+		NTT_ASSERT_MSG(index < m_Count, "Index out of bounds.");
+		return m_pData[index];
+	}
+
 	inline u32 GetCount() const
 	{
 		return m_Count;
@@ -148,7 +154,17 @@ public:
 		return Iterator(m_pData + m_Count);
 	}
 
+	inline Iterator end() const
+	{
+		return Iterator(m_pData + m_Count);
+	}
+
 	inline Iterator begin()
+	{
+		return Iterator(m_pData);
+	}
+
+	inline Iterator begin() const
 	{
 		return Iterator(m_pData);
 	}

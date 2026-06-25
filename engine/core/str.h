@@ -25,6 +25,8 @@ public:
 	void			  operator=(const String& other) = delete;
 	void			  operator=(String&& other) noexcept;
 	void			  operator=(const char* str);
+	bool			  operator==(const String& other) const;
+	bool			  operator!=(const String& other) const;
 	String			  operator+(const String& other) const;
 	Result			  Clear();
 	bool			  EndsWith(const String& suffix) const;
