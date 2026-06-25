@@ -138,6 +138,7 @@ public:
 	}
 
 	Result Clear();
+	Result Append(const T& value) = delete;
 	Result Append(T&& value);
 	Result InsertAfter(Iterator position, T&& value);
 	Result InsertBefore(Iterator position, T&& value);

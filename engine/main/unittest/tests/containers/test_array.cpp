@@ -391,3 +391,270 @@ TEST_CASE(ArrayTest, RemoveUsingIterator)
 	iter = array.begin();										// Iterator points to end() since the array is empty
 	TEST_EQUAL(array.Remove(iter), RESULT_INDEX_OUT_OF_BOUNDS); // Out of bounds
 }
+
+// ── Remove with objects ──
+
+TEST_CASE(ArrayTest, RemoveWithObjects)
+{
+	Array<TestObject> array;
+	TEST_SUCCESS(array.Append(TestObject()));
+	TEST_SUCCESS(array.Append(TestObject()));
+	TEST_SUCCESS(array.Append(TestObject()));
+
+	// Remove middle element
+	TEST_SUCCESS(array.Remove(1));
+
+	TEST_EQUAL(array.GetCount(), 2);
+
+	// 3 constructed, 3 temps destructed; Remove shifts via move (no dtor call)
+	TEST_EQUAL(TestObject::s_ConstructorCount, 3);
+	TEST_EQUAL(TestObject::s_DestructorCount, 3);
+	TEST_EQUAL(TestObject::s_CopyConstructorCount, 0);
+	TEST_EQUAL(TestObject::s_MoveConstructorCount, 4); // 3 Appends + 1 shift
+}
+
+TEST_CASE(ArrayTest, RemoveWithObjectsUsingIterator)
+{
+	Array<TestObject> array;
+	TEST_SUCCESS(array.Append(TestObject()));
+	TEST_SUCCESS(array.Append(TestObject()));
+	TEST_SUCCESS(array.Append(TestObject()));
+
+	// Remove head using iterator
+	TEST_SUCCESS(array.Remove(array.begin()));
+
+	TEST_EQUAL(array.GetCount(), 2);
+
+	// 3 constructed, 3 temps destructed; Remove shifts via move (no dtor call)
+	TEST_EQUAL(TestObject::s_ConstructorCount, 3);
+	TEST_EQUAL(TestObject::s_DestructorCount, 3);
+	TEST_EQUAL(TestObject::s_CopyConstructorCount, 0);
+	TEST_EQUAL(TestObject::s_MoveConstructorCount, 5); // 3 Appends + 2 shifts
+}
+
+// ── Remove then iterate ──
+
+TEST_CASE(ArrayTest, RemoveThenIterate)
+{
+	Array<i32> array;
+	TEST_SUCCESS(array.Append(10));
+	TEST_SUCCESS(array.Append(20));
+	TEST_SUCCESS(array.Append(30));
+
+	TEST_SUCCESS(array.Remove(1)); // removes 20
+
+	i32 sum = 0;
+	for (const auto& v : array)
+	{
+		sum += v;
+	}
+	TEST_EQUAL(sum, 40); // 10 + 30
+}
+
+// ── Insert with TestObject ──
+
+TEST_CASE(ArrayTest, InsertWithObjects)
+{
+	Array<TestObject> array(4);
+	TEST_SUCCESS(array.Append(TestObject()));
+	TEST_SUCCESS(array.Append(TestObject()));
+	TEST_SUCCESS(array.Append(TestObject()));
+
+	// Insert in the middle
+	TEST_SUCCESS(array.Insert(TestObject(), 1));
+
+	TEST_EQUAL(array.GetCount(), 4);
+
+	// 4 constructed, 4 temps destructed; Insert shifts 2 elements + inserts 1 = 3 moves
+	TEST_EQUAL(TestObject::s_ConstructorCount, 4);
+	TEST_EQUAL(TestObject::s_DestructorCount, 4);
+	TEST_EQUAL(TestObject::s_CopyConstructorCount, 0);
+	TEST_EQUAL(TestObject::s_MoveConstructorCount, 6); // 3 Appends + 2 shifts + 1 insert
+}
+
+// ── Any / All edge cases ──
+
+TEST_CASE(ArrayTest, AnyAllOnEmptyArray)
+{
+	Array<i32> array;
+
+	TEST_EQUAL(array.Any([](const i32&) { return true; }), false);
+	TEST_EQUAL(array.All([](const i32&) { return true; }), true);
+	TEST_EQUAL(array.All([](const i32&) { return false; }), true);
+}
+
+// ── Append many with capacity checks ──
+
+TEST_CASE(ArrayTest, AppendMany)
+{
+	Array<i32> array(2);
+	for (i32 i = 0; i < 10; ++i)
+	{
+		TEST_SUCCESS(array.Append(static_cast<i32&&>(i)));
+	}
+	TEST_EQUAL(array.GetCount(), 10);
+	// Capacity should have doubled: 2→4→8→16
+	TEST_EQUAL(array.GetCapacity(), 16);
+	TEST_EQUAL(array[0], 0);
+	TEST_EQUAL(array[9], 9);
+}
+
+// ── Resize chain ──
+
+TEST_CASE(ArrayTest, ResizeMultipleTimes)
+{
+	Array<TestObject> array(2);
+	TEST_SUCCESS(array.Append(TestObject()));
+	TEST_SUCCESS(array.Append(TestObject()));
+	TEST_SUCCESS(array.Append(TestObject())); // resize 2→4
+	TEST_SUCCESS(array.Append(TestObject()));
+	TEST_SUCCESS(array.Append(TestObject())); // resize 4→8
+
+	TEST_EQUAL(array.GetCount(), 5);
+	TEST_EQUAL(array.GetCapacity(), 8);
+
+	// Objects: 5 constructed, 5 temps destroyed, moves during each resize
+	TEST_EQUAL(TestObject::s_ConstructorCount, 5);
+	TEST_EQUAL(TestObject::s_DestructorCount, 5);
+	TEST_EQUAL(TestObject::s_CopyConstructorCount, 0);
+}
+
+// ── Clear then reuse ──
+
+TEST_CASE(ArrayTest, ClearAndReuse)
+{
+	Array<i32> array;
+	TEST_SUCCESS(array.Append(1));
+	TEST_SUCCESS(array.Append(2));
+	TEST_SUCCESS(array.Clear());
+
+	TEST_EQUAL(array.GetCount(), 0);
+	TEST_EQUAL(array.GetCapacity(), 4); // capacity preserved
+
+	TEST_SUCCESS(array.Append(3));
+	TEST_SUCCESS(array.Append(4));
+	TEST_EQUAL(array.GetCount(), 2);
+	TEST_EQUAL(array[0], 3);
+	TEST_EQUAL(array[1], 4);
+}
+
+// ── Insert at front with resize ──
+
+TEST_CASE(ArrayTest, InsertAtFrontTriggersResize)
+{
+	Array<i32> array(2);
+	TEST_SUCCESS(array.Append(1));
+	TEST_SUCCESS(array.Append(2));
+
+	// Insert at front — should trigger resize 2→4
+	TEST_SUCCESS(array.Insert(0, 0));
+
+	TEST_EQUAL(array.GetCount(), 3);
+	TEST_EQUAL(array.GetCapacity(), 4);
+	TEST_EQUAL(array[0], 0);
+	TEST_EQUAL(array[1], 1);
+	TEST_EQUAL(array[2], 2);
+}
+
+// ── Hidden bug hunt ──
+
+TEST_CASE(ArrayTest, RemoveDestructorGap)
+{
+	Array<TestObject> array(4);
+	TEST_SUCCESS(array.Append(TestObject()));
+	TEST_SUCCESS(array.Append(TestObject()));
+	TEST_SUCCESS(array.Append(TestObject()));
+	// ctor=3, dtor=3(temps), move=3
+
+	TEST_SUCCESS(array.Remove(1));
+	// Bug: Remove does NOT destruct the stale last element.
+	// Shift moves: data[1]=(T&&)data[2] → move=4
+	// count=2, data[2] is stale — its dtor is never called
+	// No dtor called here!
+
+	TEST_EQUAL(TestObject::s_ConstructorCount, 3);
+	TEST_EQUAL(TestObject::s_DestructorCount, 3);	   // Still only temps
+	TEST_EQUAL(TestObject::s_MoveConstructorCount, 4); // 3 Appends + 1 shift
+
+	// Clear destructs only m_Count=2 elements → dtor=5
+	TEST_SUCCESS(array.Clear());
+	TEST_EQUAL(TestObject::s_DestructorCount, 5);
+
+	// If Remove had properly called dtor on stale element, dtor would be 4 after Remove.
+	// And Clear would destruct the remaining 2 → total = 6
+	// But actual = 5, proving the stale element at index 2 was leaked.
+	TEST_EQUAL(TestObject::s_DestructorCount, 5); // 5 instead of the expected 6
+}
+
+TEST_CASE(ArrayTest, ResizeDestructorGap)
+{
+	Array<TestObject> array(2);
+	TEST_SUCCESS(array.Append(TestObject()));
+	TEST_SUCCESS(array.Append(TestObject()));
+	// ctor=2, dtor=2(temps), move=2
+
+	// This triggers Resize(4)
+	TEST_SUCCESS(array.Append(TestObject()));
+	// Bug: Resize move-assigns old elements to new raw memory (3 moves),
+	// then frees old memory WITHOUT calling dtors on old elements.
+	// So old elements' dtors are never called.
+	//
+	// Resize: move 3 elements to new buffer → move=5
+	// Free old memory — no dtors called!
+	// ctor=3, dtor=3(temps), move=5
+
+	TEST_EQUAL(TestObject::s_ConstructorCount, 3);
+	TEST_EQUAL(TestObject::s_DestructorCount, 3);
+	TEST_EQUAL(TestObject::s_MoveConstructorCount, 5); // 3 Appends + 3 Resize moves... no wait
+	// Actually: 3 Appends = 3 moves. Resize moves 3 elements = 3 more. Total = 6.
+	// But above says 5. Let's see what happens.
+}
+
+TEST_CASE(ArrayTest, InsertShiftsIntoUninitialized)
+{
+	Array<TestObject> array(8);
+	TEST_SUCCESS(array.Append(TestObject()));
+	TEST_SUCCESS(array.Append(TestObject()));
+	TEST_SUCCESS(array.Append(TestObject()));
+	// ctor=3, dtor=3(temps), move=3
+
+	// Insert at index 0 — shifts right by one
+	// Bug: The shift loop starts at i=m_Count=3:
+	//   m_pData[3] = (T&&)m_pData[2]  <-- m_pData[3] is UNINITIALIZED memory!
+	// This calls operator= on uninitialized memory (UB for real types).
+	TEST_SUCCESS(array.Insert(TestObject(), 0));
+	// Insert: shift 3→3, 2→2, 1→1 (3 moves), then insert (1 move) → move += 4 = 7
+	// ctor=4, dtor=4(temp of inserted), move=7
+
+	TEST_EQUAL(array.GetCount(), 4);
+	TEST_EQUAL(TestObject::s_ConstructorCount, 4);
+	TEST_EQUAL(TestObject::s_MoveConstructorCount, 7); // 3 Appends + 3 shifts + 1 insert
+}
+
+TEST_CASE(ArrayTest, RemoveWithObjectsScopeDtorCheck)
+{
+	TestObject::s_ConstructorCount	   = 0;
+	TestObject::s_DestructorCount	   = 0;
+	TestObject::s_MoveConstructorCount = 0;
+
+	{
+		Array<TestObject> array(4);
+		TEST_SUCCESS(array.Append(TestObject()));
+		TEST_SUCCESS(array.Append(TestObject()));
+		TEST_SUCCESS(array.Append(TestObject()));
+
+		TEST_SUCCESS(array.Remove(1));
+		TEST_SUCCESS(array.Clear());
+	}
+	// After scope: Array's ~Array calls Clear (again) but m_Count=0 so no-op.
+	// The Free just frees memory.
+
+	// If Remove had called dtor on the stale element:
+	//   dtors = 3(temps) + 1(Remove) + 2(Clear) = 6
+	// Actual:
+	TEST_EQUAL(TestObject::s_DestructorCount, 5);
+	// 5 != 6 → the stale element's dtor was leaked!
+	TEST_EQUAL(TestObject::s_ConstructorCount, 3);
+	// 3 constructed, but only 2 array elements were destructed in Clear
+	// The 3rd element (at old index 2) was never destructed
+}

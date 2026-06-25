@@ -427,3 +427,223 @@ TEST_CASE(ListTest, RemoveThenAppend)
 	TEST_EQUAL(list.GetCount(), 1);
 	TEST_EQUAL(list[0], 2);
 }
+
+// ── Move / destructor tests ──
+
+TEST_CASE(ListTest, MoveConstructor)
+{
+	List<TestObject> list;
+	TEST_SUCCESS(list.Append(TestObject()));
+	TEST_SUCCESS(list.Append(TestObject()));
+
+	TEST_EQUAL(list.GetCount(), 2);
+
+	// Move-construct list2 from list
+	List<TestObject> list2((List<TestObject>&&)list);
+	TEST_EQUAL(list2.GetCount(), 2);
+
+	TEST_EQUAL(TestObject::s_ConstructorCount, 2);
+	TEST_EQUAL(TestObject::s_DestructorCount, 2);
+	TEST_EQUAL(TestObject::s_CopyConstructorCount, 0);
+	TEST_EQUAL(TestObject::s_MoveConstructorCount, 2);
+}
+
+TEST_CASE(ListTest, Destructor)
+{
+	{
+		List<TestObject> list;
+		TEST_SUCCESS(list.Append(TestObject()));
+		TEST_SUCCESS(list.Append(TestObject()));
+		TEST_SUCCESS(list.Append(TestObject()));
+		TEST_EQUAL(list.GetCount(), 3);
+
+		TEST_EQUAL(TestObject::s_ConstructorCount, 3);
+		TEST_EQUAL(TestObject::s_DestructorCount, 3);
+		TEST_EQUAL(TestObject::s_CopyConstructorCount, 0);
+		TEST_EQUAL(TestObject::s_MoveConstructorCount, 3);
+	}
+	// After scope exit: 3 more destructors from ~List → Clear
+	TEST_EQUAL(TestObject::s_DestructorCount, 6);
+}
+
+// ── Append + iteration with objects ──
+
+TEST_CASE(ListTest, AppendAndIterateWithObjects)
+{
+	List<TestObject> list;
+	TEST_SUCCESS(list.Append(TestObject()));
+	TEST_SUCCESS(list.Append(TestObject()));
+	TEST_SUCCESS(list.Append(TestObject()));
+
+	i32 count = 0;
+	for (auto it = list.Begin(); it != list.End(); ++it)
+	{
+		count++;
+	}
+	TEST_EQUAL(count, 3);
+
+	TEST_EQUAL(TestObject::s_ConstructorCount, 3);
+	TEST_EQUAL(TestObject::s_DestructorCount, 3);
+	TEST_EQUAL(TestObject::s_CopyConstructorCount, 0);
+	TEST_EQUAL(TestObject::s_MoveConstructorCount, 3);
+}
+
+// ── Clear + reuse ──
+
+TEST_CASE(ListTest, ClearAndReuse)
+{
+	List<i32> list;
+	TEST_SUCCESS(list.Append(1));
+	TEST_SUCCESS(list.Append(2));
+	TEST_SUCCESS(list.Clear());
+
+	TEST_EQUAL(list.GetCount(), 0);
+
+	// Reuse the cleared list
+	TEST_SUCCESS(list.Append(3));
+	TEST_SUCCESS(list.Append(4));
+	TEST_EQUAL(list.GetCount(), 2);
+	TEST_EQUAL(list[0], 3);
+	TEST_EQUAL(list[1], 4);
+}
+
+// ── Iterator compare ──
+
+TEST_CASE(ListTest, IteratorEquality)
+{
+	List<i32> list;
+	TEST_SUCCESS(list.Append(1));
+	TEST_SUCCESS(list.Append(2));
+	TEST_SUCCESS(list.Append(3));
+
+	auto b = list.Begin();
+	auto e = list.End();
+
+	TEST_ASSERT(b != e);
+
+	// Iterate to the end
+	while (b != e)
+	{
+		++b;
+	}
+	TEST_ASSERT(b == e);
+}
+
+// ── Operator[] ──
+
+TEST_CASE(ListTest, IndexOperator)
+{
+	List<i32> list;
+	TEST_SUCCESS(list.Append(10));
+	TEST_SUCCESS(list.Append(20));
+	TEST_SUCCESS(list.Append(30));
+
+	TEST_EQUAL(list[0], 10);
+	TEST_EQUAL(list[1], 20);
+	TEST_EQUAL(list[2], 30);
+
+	// Modify through operator[]
+	list[1] = 25;
+	TEST_EQUAL(list[1], 25);
+}
+
+// ── Append many elements ──
+
+TEST_CASE(ListTest, AppendMany)
+{
+	List<i32> list;
+	for (i32 i = 0; i < 100; ++i)
+	{
+		TEST_SUCCESS(list.Append(static_cast<i32&&>(i)));
+	}
+	TEST_EQUAL(list.GetCount(), 100);
+	TEST_EQUAL(list[0], 0);
+	TEST_EQUAL(list[99], 99);
+}
+
+// ── Hidden bug hunt ──
+
+TEST_CASE(ListTest, MoveList)
+{
+	List<TestObject> list;
+	TEST_SUCCESS(list.Append(TestObject()));
+	TEST_SUCCESS(list.Append(TestObject()));
+
+	// Move the list to a new instance
+	List<TestObject> movedList = static_cast<List<TestObject>&&>(list);
+
+	TEST_EQUAL(movedList.GetCount(), 2);
+	TEST_EQUAL(list.GetCount(), 0); // Original list should be empty after move
+
+	// Check constructor and destructor counts
+	TEST_EQUAL(TestObject::s_ConstructorCount, 2);
+	TEST_EQUAL(TestObject::s_DestructorCount, 2); // All temporary objects should be destructed
+	TEST_EQUAL(TestObject::s_CopyConstructorCount, 0);
+	TEST_EQUAL(TestObject::s_MoveConstructorCount, 2);
+}
+
+TEST_CASE(ListTest, InsertAfterDuplicate)
+{
+	List<i32> list;
+	TEST_SUCCESS(list.Append(1));
+	TEST_SUCCESS(list.Append(2));
+
+	// InsertAfter with same iterator twice
+	auto it = list.Begin();					// points to 1
+	TEST_SUCCESS(list.InsertAfter(it, 10)); // list: [1, 10, 2]
+	TEST_SUCCESS(list.InsertAfter(it, 11)); // list: [1, 11, 10, 2]
+
+	TEST_EQUAL(list.GetCount(), 4);
+	TEST_EQUAL(list[0], 1);
+	TEST_EQUAL(list[1], 11);
+	TEST_EQUAL(list[2], 10);
+	TEST_EQUAL(list[3], 2);
+}
+
+TEST_CASE(ListTest, InsertBeforeDuplicate)
+{
+	List<i32> list;
+	TEST_SUCCESS(list.Append(1));
+	TEST_SUCCESS(list.Append(3));
+
+	// InsertBefore with same iterator twice
+	auto it = list.Begin();
+	++it;									// points to 3
+	TEST_SUCCESS(list.InsertBefore(it, 2)); // list: [1, 2, 3]
+	it = list.Begin();
+	++it; // still before 3? No, it points to the node we just inserted
+	// Actually let's get a fresh iterator to 3
+	it = list.Begin();
+	++it;									// 2
+	++it;									// 3
+	TEST_SUCCESS(list.InsertBefore(it, 4)); // list: [1, 2, 4, 3]
+
+	TEST_EQUAL(list.GetCount(), 4);
+	TEST_EQUAL(list[0], 1);
+	TEST_EQUAL(list[1], 2);
+	TEST_EQUAL(list[2], 4);
+	TEST_EQUAL(list[3], 3);
+}
+
+TEST_CASE(ListTest, RemoveAndClear)
+{
+	List<TestObject> list;
+	TEST_SUCCESS(list.Append(TestObject()));
+	TEST_SUCCESS(list.Append(TestObject()));
+	TEST_SUCCESS(list.Append(TestObject()));
+	// ctor=3, move=3, dtor=3
+
+	// Remove head
+	TEST_SUCCESS(list.Remove(list.Begin()));
+	// Remove calls ~Node() on the removed node → dtor++ for the TestObject inside
+	// ctor=3, move=3, dtor=4
+
+	TEST_SUCCESS(list.Clear());
+	// Clear destructs remaining 2 nodes → dtor += 2
+	// ctor=3, move=3, dtor=6
+
+	TEST_EQUAL(TestObject::s_ConstructorCount, 3);
+	TEST_EQUAL(TestObject::s_DestructorCount, 6);
+	TEST_EQUAL(TestObject::s_CopyConstructorCount, 0);
+	TEST_EQUAL(TestObject::s_MoveConstructorCount, 3);
+}
