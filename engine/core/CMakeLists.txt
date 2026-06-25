@@ -37,6 +37,8 @@ ntt_set_source_group("src/core"
     "console.cpp"
     "globals.h"
     "globals.cpp"
+    "str.h"
+    "str.cpp"
 )
 
 add_library(

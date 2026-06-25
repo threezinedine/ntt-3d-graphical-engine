@@ -8,3 +8,4 @@
 #include "defs.h"
 #include "globals.h"
 #include "result.h"
+#include "str.h"

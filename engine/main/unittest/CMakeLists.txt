@@ -13,6 +13,7 @@ if (NTT_UNITTEST)
         "src/tests"
         NTT_TESTS_SOURCES
         "tests/test_malloc.cpp"
+        "tests/test_string.cpp"
     )
 
     ntt_set_source_group(
