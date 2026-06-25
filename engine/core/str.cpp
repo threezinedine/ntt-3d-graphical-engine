@@ -285,6 +285,11 @@ StringView::StringView(const char* str, u32 length)
 
 String String::Join(const Array<String>& strings, const String& delimiter)
 {
+	if (strings.GetCount() == 0)
+	{
+		return String();
+	}
+
 	u32 totalLength = 0;
 	for (const auto& str : strings)
 	{
