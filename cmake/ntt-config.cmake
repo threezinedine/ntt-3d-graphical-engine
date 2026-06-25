@@ -63,10 +63,14 @@ macro(ntt_platform_detect)
         elseif (WIN32)
             set(NTT_PLATFORM_WINDOWS ON)
             list(APPEND NTT_OPTIONS NTT_PLATFORM_WINDOWS)
-            list(APPEND NTT_COMPILE_OPTIONS
-                "/W4"
-                "/WX"
-                "/permissive-")
+
+            if (MSVC)
+                list(APPEND NTT_COMPILE_OPTIONS
+                    "/W4"
+                    "/WX"
+                    "/wd6387"
+                    "/permissive-")
+            endif()
             
             if (NTT_UNITTEST)
                 list(APPEND NTT_COMPILE_OPTIONS "/wd4100")

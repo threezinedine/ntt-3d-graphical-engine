@@ -18,15 +18,15 @@ String::String(const char* str, IAllocator* pAllocator)
 	{
 		m_IsShortString = true;
 		m_pHeapBuffer	= nullptr;
-		strncpy(m_pShortBuffer, str, NTT_SHORT_STRING_OPTIMIZATION_SIZE);
+		memcpy(m_pShortBuffer, str, NTT_SHORT_STRING_OPTIMIZATION_SIZE);
 		m_pShortBuffer[NTT_SHORT_STRING_OPTIMIZATION_SIZE] = '\0'; // Ensure null-termination
 	}
 	else
 	{
 		m_IsShortString = false;
-		m_pHeapBuffer	= (char*)ALLOCATOR_SAFE(m_pAllocator)->Allocate(strlen(str) + 1);
+		m_pHeapBuffer	= (char*)ALLOCATOR_SAFE(m_pAllocator)->Allocate((u32)strlen(str) + 1);
 		NTT_ASSERT_MSG(m_pHeapBuffer != nullptr, "Failed to allocate memory for heap string.");
-		strcpy(m_pHeapBuffer, str);
+		memcpy(m_pHeapBuffer, str, (u32)strlen(str) + 1);
 	}
 }
 
@@ -55,7 +55,7 @@ String::~String()
 {
 	if (m_pHeapBuffer != nullptr)
 	{
-		ALLOCATOR_SAFE(m_pAllocator)->Free(m_pHeapBuffer, strlen(m_pHeapBuffer) + 1);
+		ALLOCATOR_SAFE(m_pAllocator)->Free(m_pHeapBuffer, (u32)(strlen(m_pHeapBuffer) + 1));
 		m_pHeapBuffer = nullptr; // Prevent dangling pointer
 	}
 }
@@ -67,7 +67,7 @@ const char* String::CStr() const
 
 u32 String::Length() const
 {
-	return m_IsShortString ? strlen(m_pShortBuffer) : strlen(m_pHeapBuffer);
+	return m_IsShortString ? (u32)strlen(m_pShortBuffer) : (u32)strlen(m_pHeapBuffer);
 }
 
 void String::operator=(String&& other) noexcept
@@ -79,7 +79,7 @@ void String::operator=(String&& other) noexcept
 		// Free existing resources
 		if (!m_IsShortString && m_pHeapBuffer != nullptr)
 		{
-			ALLOCATOR_SAFE(m_pAllocator)->Free(m_pHeapBuffer, strlen(m_pHeapBuffer) + 1);
+			ALLOCATOR_SAFE(m_pAllocator)->Free(m_pHeapBuffer, (u32)(strlen(m_pHeapBuffer) + 1));
 		}
 
 		m_IsShortString = other.m_IsShortString;
@@ -108,15 +108,15 @@ void String::operator=(const char* str)
 	{
 		m_IsShortString = true;
 		m_pHeapBuffer	= nullptr;
-		strncpy(m_pShortBuffer, str, NTT_SHORT_STRING_OPTIMIZATION_SIZE);
+		memcpy(m_pShortBuffer, str, NTT_SHORT_STRING_OPTIMIZATION_SIZE);
 		m_pShortBuffer[NTT_SHORT_STRING_OPTIMIZATION_SIZE] = '\0'; // Ensure null-termination
 	}
 	else
 	{
 		m_IsShortString = false;
-		m_pHeapBuffer	= (char*)ALLOCATOR_SAFE(m_pAllocator)->Allocate(strlen(str) + 1);
+		m_pHeapBuffer	= (char*)ALLOCATOR_SAFE(m_pAllocator)->Allocate((u32)strlen(str) + 1);
 		NTT_ASSERT_MSG(m_pHeapBuffer != nullptr, "Failed to allocate memory for heap string.");
-		strcpy(m_pHeapBuffer, str);
+		memcpy(m_pHeapBuffer, str, (u32)strlen(str) + 1);
 	}
 }
 
@@ -126,7 +126,7 @@ Result String::Clear()
 	memset(m_pShortBuffer, 0, sizeof(m_pShortBuffer));
 	if (m_pHeapBuffer != nullptr)
 	{
-		NTT_ASSERT_RESULT_SUCCESS(ALLOCATOR_SAFE(m_pAllocator)->Free(m_pHeapBuffer, strlen(m_pHeapBuffer) + 1));
+		NTT_ASSERT_RESULT_SUCCESS(ALLOCATOR_SAFE(m_pAllocator)->Free(m_pHeapBuffer, (u32)strlen(m_pHeapBuffer) + 1));
 		m_pHeapBuffer = nullptr;
 	}
 	return RESULT_SUCCESS;
@@ -139,9 +139,9 @@ String String::operator+(const String& other) const
 	{
 		String result(m_pAllocator);
 		result.m_IsShortString = true;
-		strncpy(result.m_pShortBuffer, CStr(), NTT_SHORT_STRING_OPTIMIZATION_SIZE);
-		strncat(
-			result.m_pShortBuffer, other.CStr(), NTT_SHORT_STRING_OPTIMIZATION_SIZE - strlen(result.m_pShortBuffer));
+		memcpy(result.m_pShortBuffer, CStr(), NTT_SHORT_STRING_OPTIMIZATION_SIZE);
+		memcpy(result.m_pShortBuffer + strlen(result.m_pShortBuffer), other.CStr(),
+			   NTT_SHORT_STRING_OPTIMIZATION_SIZE - strlen(result.m_pShortBuffer));
 		result.m_pShortBuffer[NTT_SHORT_STRING_OPTIMIZATION_SIZE] = '\0'; // Ensure null-termination
 		return result;
 	}
@@ -151,8 +151,8 @@ String String::operator+(const String& other) const
 		result.m_IsShortString = false;
 		result.m_pHeapBuffer   = (char*)ALLOCATOR_SAFE(m_pAllocator)->Allocate(newLength + 1);
 		NTT_ASSERT_MSG(result.m_pHeapBuffer != nullptr, "Failed to allocate memory for concatenated string.");
-		strcpy(result.m_pHeapBuffer, CStr());
-		strcat(result.m_pHeapBuffer, other.CStr());
+		memcpy(result.m_pHeapBuffer, CStr(), (size_t)Length());
+		memcpy(result.m_pHeapBuffer + (size_t)Length(), other.CStr(), (size_t)other.Length() + 1);
 		return result;
 	}
 }
