@@ -14,6 +14,7 @@ if (NTT_UNITTEST)
         NTT_TESTS_SOURCES
         "tests/test_malloc.cpp"
         "tests/test_array.cpp"
+        "tests/test_list.cpp"
     )
 
     ntt_set_source_group(

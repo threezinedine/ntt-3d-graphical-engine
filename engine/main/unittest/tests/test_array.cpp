@@ -56,20 +56,21 @@ i32 TestObject::s_MoveConstructorCount = 0;
 
 class ArrayTest : public TestSuite
 {
-	void OnBeforeEachTestImpl() override
+	ON_BEFORE_EACH()
 	{
-		GlobalAllocators::Register();
-		GlobalAllocators::Initialize();
+		W_TEST_SUCCESS(GlobalAllocators::Register());
+		W_TEST_SUCCESS(GlobalAllocators::Initialize());
+
 		TestObject::s_ConstructorCount	   = 0;
 		TestObject::s_DestructorCount	   = 0;
 		TestObject::s_CopyConstructorCount = 0;
 		TestObject::s_MoveConstructorCount = 0;
 	}
 
-	void OnAfterEachTestImpl() override
+	ON_AFTER_EACH()
 	{
-		GlobalAllocators::Shutdown();
-		GlobalAllocators::Unregister();
+		W_TEST_SUCCESS(GlobalAllocators::Shutdown());
+		W_TEST_SUCCESS(GlobalAllocators::Unregister());
 	}
 };
 

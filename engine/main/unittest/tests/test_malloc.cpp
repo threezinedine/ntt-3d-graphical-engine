@@ -5,16 +5,16 @@ using namespace ntt;
 
 class MallocTest : public TestSuite
 {
-	void OnBeforeEachTestImpl() override
+	ON_BEFORE_EACH()
 	{
-		GlobalAllocators::Register();
-		GlobalAllocators::Initialize();
+		W_TEST_SUCCESS(GlobalAllocators::Register());
+		W_TEST_SUCCESS(GlobalAllocators::Initialize());
 	}
 
-	void OnAfterEachTestImpl() override
+	ON_AFTER_EACH()
 	{
-		GlobalAllocators::Shutdown();
-		GlobalAllocators::Unregister();
+		W_TEST_SUCCESS(GlobalAllocators::Shutdown());
+		W_TEST_SUCCESS(GlobalAllocators::Unregister());
 	}
 };
 

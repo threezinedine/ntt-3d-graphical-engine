@@ -53,6 +53,9 @@ public:
 	{
 		if (this != &other)
 		{
+			NTT_ASSERT_MSG(ALLOCATOR_SAFE(m_pAllocator)->Free(m_pData, sizeof(T) * m_Capacity) == RESULT_SUCCESS,
+						   "Failed to free memory for Array.");
+
 			m_pData		 = other.m_pData;
 			m_Count		 = other.m_Count;
 			m_Capacity	 = other.m_Capacity;

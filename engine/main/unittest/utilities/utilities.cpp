@@ -8,10 +8,12 @@ namespace ntt {
 TestSuite* g_HeadTestSuite = nullptr;
 TestSuite* g_TailTestSuite = nullptr;
 
-Test::Test(const char* testName, bool useBeforeEachTestImpl)
+Test::Test(const char* testName, bool useBeforeEachTestImpl, const char* fileName, u32 lineNumber)
 	: m_pTestSuite(nullptr)
 	, m_TestName(testName)
 	, m_UseBeforeEachTestImpl(useBeforeEachTestImpl)
+	, m_TestFileName(fileName)
+	, m_TestLineNumber(lineNumber)
 {
 }
 
@@ -79,6 +81,7 @@ void Test::AfterTest()
 	else
 	{
 		print("[  FAILED  ] %s.%s\n", m_pTestSuite->GetTestSuiteName(), GetTestName());
+		print("\tTest %s:%u\n", m_TestFileName, m_TestLineNumber);
 		print("\t%s:%u: Failure\n", m_FileName, m_LineNumber);
 		print("\t%s\n", m_FailureMessage);
 	}
@@ -118,7 +121,7 @@ void TestSuite::BeforeEachTest(Test* pTest)
 
 	if (pTest->UseBeforeEachTestImpl())
 	{
-		OnBeforeEachTestImpl();
+		OnBeforeEachTestImpl(pTest);
 	}
 }
 
@@ -126,7 +129,7 @@ void TestSuite::AfterEachTest(Test* pTest)
 {
 	if (pTest->UseBeforeEachTestImpl())
 	{
-		OnAfterEachTestImpl();
+		OnAfterEachTestImpl(pTest);
 	}
 }
 
@@ -143,11 +146,11 @@ void TestSuite::OnBeforeAllTestsImpl()
 {
 }
 
-void TestSuite::OnBeforeEachTestImpl()
+void TestSuite::OnBeforeEachTestImpl(Test* pTest)
 {
 }
 
-void TestSuite::OnAfterEachTestImpl()
+void TestSuite::OnAfterEachTestImpl(Test* pTest)
 {
 }
 

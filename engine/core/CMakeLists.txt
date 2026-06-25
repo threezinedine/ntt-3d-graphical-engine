@@ -7,6 +7,7 @@ ntt_set_source_group("src/containers"
     NTT_CONTAINERS_SOURCES
     "containers/containers.h"
     "containers/array.h"
+    "containers/list.h"
 )
 
 ntt_set_source_group("src/alloc" 

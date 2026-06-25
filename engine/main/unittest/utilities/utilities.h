@@ -16,7 +16,7 @@ public:
 	Test* m_NextTest = nullptr;
 
 public:
-	Test(const char* testName, bool useBeforeEachTestImpl = true);
+	Test(const char* testName, bool useBeforeEachTestImpl = true, const char* fileName = nullptr, u32 lineNumber = 0);
 	virtual ~Test();
 
 public:
@@ -49,7 +49,7 @@ public:
 		return m_UseBeforeEachTestImpl;
 	}
 
-protected:
+public:
 	void SetFailure(const char* message, const char* fileName, u32 lineNumber);
 
 private:
@@ -58,6 +58,8 @@ private:
 	const char* m_FileName				= nullptr;
 	u32			m_LineNumber			= 0;
 	bool		m_UseBeforeEachTestImpl = true;
+	const char* m_TestFileName			= nullptr;
+	u32			m_TestLineNumber		= 0;
 };
 
 class TestSuite
@@ -77,8 +79,8 @@ public:
 
 protected:
 	virtual void OnBeforeAllTestsImpl();
-	virtual void OnBeforeEachTestImpl();
-	virtual void OnAfterEachTestImpl();
+	virtual void OnBeforeEachTestImpl(Test* pTest);
+	virtual void OnAfterEachTestImpl(Test* pTest);
 	virtual void OnAfterAllTestsImpl();
 
 private:
@@ -121,24 +123,24 @@ extern TestSuite* g_TailTestSuite;
 #define TEST_CASE(testSuite, testName)			_TEST_CASE(testSuite, testName, true)
 #define TEST_CASE_ISOLATED(testSuite, testName) _TEST_CASE(testSuite, testName, false)
 #define _TEST_CASE(testSuite, testName, useBeforeEachTestImpl)                                                         \
-	class testName : public ::ntt::Test                                                                                \
+	class testSuite##_##testName : public ::ntt::Test                                                                  \
 	{                                                                                                                  \
 	public:                                                                                                            \
-		testName()                                                                                                     \
-			: ::ntt::Test(#testName, useBeforeEachTestImpl)                                                            \
+		testSuite##_##testName()                                                                                       \
+			: ::ntt::Test(#testName, useBeforeEachTestImpl, __FILE__, __LINE__)                                        \
 		{                                                                                                              \
 			AssignTestSuite(&g_TestSuite_##testSuite##_instance);                                                      \
 			g_TestSuite_##testSuite##_instance.SetTestSuiteName(#testSuite);                                           \
 		}                                                                                                              \
-		~testName() override                                                                                           \
+		~testSuite##_##testName() override                                                                             \
 		{                                                                                                              \
 		}                                                                                                              \
                                                                                                                        \
 	protected:                                                                                                         \
 		virtual void OnRunTestImpl() override;                                                                         \
 	};                                                                                                                 \
-	testName g_##testName##_instance;                                                                                  \
-	void	 testName::OnRunTestImpl()
+	testSuite##_##testName g_##testSuite##_##testName##_instance;                                                      \
+	void				   testSuite##_##testName::OnRunTestImpl()
 
 #define GET_SUITE(testSuite) g_TestSuite_##testSuite##_instance
 
@@ -206,42 +208,57 @@ extern TestSuite* g_TailTestSuite;
 		}                                                                                                              \
 	} while (0)
 
-#define TEST_ASSERT(condition)                                                                                         \
+#define _TEST_ASSERT(pre, condition)                                                                                   \
 	do                                                                                                                 \
 	{                                                                                                                  \
 		if (!(condition))                                                                                              \
 		{                                                                                                              \
-			SetFailure("Assertion failed: " #condition, __FILE__, __LINE__);                                           \
+			pre SetFailure("Assertion failed: " #condition, __FILE__, __LINE__);                                       \
 			return;                                                                                                    \
 		}                                                                                                              \
 	} while (0)
 
-#define TEST_EQUAL(expected, actual)                                                                                   \
+#define TEST_ASSERT(condition)	 _TEST_ASSERT(, condition)
+#define W_TEST_ASSERT(condition) _TEST_ASSERT(pTest->, condition)
+
+#define _TEST_EQUAL(pre, expected, actual)                                                                             \
 	do                                                                                                                 \
 	{                                                                                                                  \
 		if ((expected) != (actual))                                                                                    \
 		{                                                                                                              \
-			SetFailure("Assertion failed: " #expected " == " #actual, __FILE__, __LINE__);                             \
+			pre SetFailure("Assertion failed: " #expected " == " #actual, __FILE__, __LINE__);                         \
 			return;                                                                                                    \
 		}                                                                                                              \
 	} while (0)
 
-#define TEST_SUCCESS(condition)                                                                                        \
+#define TEST_EQUAL(expected, actual)   _TEST_EQUAL(, expected, actual)
+#define W_TEST_EQUAL(expected, actual) _TEST_EQUAL(pTest->, expected, actual)
+
+#define _TEST_SUCCESS(pre, condition)                                                                                  \
 	do                                                                                                                 \
 	{                                                                                                                  \
 		if ((condition) != ::ntt::RESULT_SUCCESS)                                                                      \
 		{                                                                                                              \
-			SetFailure("Assertion failed: " #condition, __FILE__, __LINE__);                                           \
+			pre SetFailure("Assertion failed: " #condition, __FILE__, __LINE__);                                       \
 			return;                                                                                                    \
 		}                                                                                                              \
 	} while (0)
 
-#define TEST_NOT_NULL(condition)                                                                                       \
+#define ON_BEFORE_EACH() void OnBeforeEachTestImpl(Test* pTest) override
+#define ON_AFTER_EACH()	 void OnAfterEachTestImpl(Test* pTest) override
+
+#define TEST_SUCCESS(condition)	  _TEST_SUCCESS(, condition)
+#define W_TEST_SUCCESS(condition) _TEST_SUCCESS(pTest->, condition)
+
+#define _TEST_NOT_NULL(pre, condition)                                                                                 \
 	do                                                                                                                 \
 	{                                                                                                                  \
 		if ((condition) == nullptr)                                                                                    \
 		{                                                                                                              \
-			SetFailure("Assertion failed: " #condition " != nullptr", __FILE__, __LINE__);                             \
+			pre SetFailure("Assertion failed: " #condition " != nullptr", __FILE__, __LINE__);                         \
 			return;                                                                                                    \
 		}                                                                                                              \
 	} while (0)
+
+#define TEST_NOT_NULL(condition)   _TEST_NOT_NULL(, condition)
+#define W_TEST_NOT_NULL(condition) _TEST_NOT_NULL(pTest->, condition)

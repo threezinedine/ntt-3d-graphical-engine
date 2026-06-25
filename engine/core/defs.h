@@ -61,8 +61,8 @@
 
 #else // NTT_ENABLE_ASSERTION
 
-#define NTT_ASSERT(expr)		  ((void)0)
-#define NTT_ASSERT_MSG(expr, msg) ((void)0)
+#define NTT_ASSERT(expr)		  ((void)(expr))
+#define NTT_ASSERT_MSG(expr, msg) ((void)(expr))
 #define NTT_ASSERT_RESULT_SUCCESS(_res)                                                                                \
 	if ((_res) != RESULT_SUCCESS)                                                                                      \
 	{                                                                                                                  \
