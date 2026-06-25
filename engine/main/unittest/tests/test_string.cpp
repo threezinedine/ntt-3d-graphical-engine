@@ -192,3 +192,29 @@ TEST_CASE(StringTest, Join)
 	TEST_EQUAL(result.Length(), 15);
 	TEST_EQUAL(result, "one, two, three");
 }
+
+TEST_CASE(StringTest, JoinWithEmptyArray)
+{
+	Array<String> strings;
+	String		  delimiter(", ");
+	String		  result = String::Join(strings, delimiter);
+
+	TEST_EQUAL(result.Length(), 0);
+	TEST_EQUAL(result, "");
+}
+
+TEST_CASE(StringTest, InsertStringIntoStringArray)
+{
+	Array<String> stringArray;
+	TEST_SUCCESS(stringArray.Append(String("Hello")));
+	TEST_SUCCESS(stringArray.Append(String("World")));
+	TEST_EQUAL(stringArray.GetCount(), 2);
+	TEST_EQUAL(stringArray[0], "Hello");
+	TEST_EQUAL(stringArray[1], "World");
+
+	stringArray.Insert(String("Inserted"), 1);
+	TEST_EQUAL(stringArray.GetCount(), 3);
+	TEST_EQUAL(stringArray[0], "Hello");
+	TEST_EQUAL(stringArray[1], "Inserted");
+	TEST_EQUAL(stringArray[2], "World");
+}
