@@ -132,9 +132,53 @@ public:
 		return Iterator(m_pHead);
 	}
 
+	inline Iterator Begin()
+	{
+		return Iterator(m_pHead);
+	}
+
 	inline Iterator End() const
 	{
 		return Iterator(nullptr);
+	}
+
+	inline Iterator End()
+	{
+		return Iterator(nullptr);
+	}
+
+	inline Iterator IterBack() const
+	{
+		return Iterator(m_pTail);
+	}
+
+	inline Iterator IterBack()
+	{
+		return Iterator(m_pTail);
+	}
+
+	inline T& Front()
+	{
+		NTT_ASSERT_MSG(m_pHead != nullptr, "List is empty. Cannot access front element.");
+		return m_pHead->data;
+	}
+
+	inline const T& Front() const
+	{
+		NTT_ASSERT_MSG(m_pHead != nullptr, "List is empty. Cannot access front element.");
+		return m_pHead->data;
+	}
+
+	inline T& Back()
+	{
+		NTT_ASSERT_MSG(m_pTail != nullptr, "List is empty. Cannot access back element.");
+		return m_pTail->data;
+	}
+
+	inline const T& Back() const
+	{
+		NTT_ASSERT_MSG(m_pTail != nullptr, "List is empty. Cannot access back element.");
+		return m_pTail->data;
 	}
 
 	Result Clear();

@@ -8,6 +8,7 @@ ntt_set_source_group("src/containers"
     "containers/containers.h"
     "containers/array.h"
     "containers/list.h"
+    "containers/stack.h"
 )
 
 ntt_set_source_group("src/utils"
