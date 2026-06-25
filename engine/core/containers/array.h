@@ -69,23 +69,6 @@ public:
 		return;
 	}
 
-	Result Append(const T& value)
-	{
-		if (m_Count > m_Capacity)
-		{
-			return RESULT_UNKNOWN;
-		}
-
-		if (m_Count == m_Capacity)
-		{
-			NTT_ASSERT_RESULT_SUCCESS(Resize(m_Capacity * 2));
-		}
-
-		m_pData[m_Count] = value;
-		++m_Count;
-		return RESULT_SUCCESS;
-	}
-
 	Result Append(T&& value)
 	{
 		if (m_Count > m_Capacity)
@@ -99,6 +82,28 @@ public:
 		}
 
 		m_pData[m_Count] = (T&&)value;
+		++m_Count;
+		return RESULT_SUCCESS;
+	}
+
+	Result Insert(T&& value, u32 index)
+	{
+		if (index > m_Count)
+		{
+			return RESULT_INDEX_OUT_OF_BOUNDS;
+		}
+
+		if (m_Count == m_Capacity)
+		{
+			NTT_ASSERT_RESULT_SUCCESS(Resize(m_Capacity * 2));
+		}
+
+		for (u32 i = m_Count; i > index; --i)
+		{
+			m_pData[i] = (T&&)m_pData[i - 1];
+		}
+
+		m_pData[index] = (T&&)value;
 		++m_Count;
 		return RESULT_SUCCESS;
 	}

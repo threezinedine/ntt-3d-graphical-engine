@@ -1,58 +1,8 @@
+#include "container_test_object.h"
 #include "core.h"
 #include "utilities/utilities.h"
 
 using namespace ntt;
-
-class TestObject
-{
-public:
-	static i32 s_ConstructorCount;
-	static i32 s_DestructorCount;
-	static i32 s_CopyConstructorCount;
-	static i32 s_MoveConstructorCount;
-
-public:
-	TestObject(i32 value = 0)
-		: m_Value(value)
-	{
-		s_ConstructorCount++;
-	}
-
-	TestObject(const TestObject& other)
-		: m_Value(other.m_Value)
-	{
-		s_CopyConstructorCount++;
-	}
-
-	TestObject(TestObject&& other) noexcept
-		: m_Value(other.m_Value)
-	{
-		s_MoveConstructorCount++;
-	}
-
-	~TestObject()
-	{
-		s_DestructorCount++;
-	}
-
-	void operator=(TestObject&&) noexcept
-	{
-		s_MoveConstructorCount++;
-	}
-
-	operator i32() const
-	{
-		return m_Value;
-	}
-
-private:
-	i32 m_Value;
-};
-
-i32 TestObject::s_ConstructorCount	   = 0;
-i32 TestObject::s_DestructorCount	   = 0;
-i32 TestObject::s_CopyConstructorCount = 0;
-i32 TestObject::s_MoveConstructorCount = 0;
 
 class ArrayTest : public TestSuite
 {
@@ -292,4 +242,37 @@ TEST_CASE(ArrayTest, IsEmptyAndAnyAll)
 	TEST_EQUAL(array.Any([](const i32& value) { return value >= 40; }), false);
 	TEST_EQUAL(array.All([](const i32& value) -> bool { return value > 0; }), true);
 	TEST_EQUAL(array.All([](const i32& value) -> bool { return value < 30; }), false);
+}
+
+TEST_CASE(ArrayTest, InsertElements)
+{
+	Array<i32> array;
+
+	TEST_EQUAL(array.Append(10), RESULT_SUCCESS);
+	TEST_EQUAL(array.Append(30), RESULT_SUCCESS);
+
+	TEST_EQUAL(array.Insert(20, 1), RESULT_SUCCESS); // Insert 20 at index 1
+
+	TEST_EQUAL(array.GetCount(), 3);
+	TEST_EQUAL((i32)array[0], 10);
+	TEST_EQUAL((i32)array[1], 20);
+	TEST_EQUAL((i32)array[2], 30);
+
+	// Test inserting at the beginning
+	TEST_EQUAL(array.Insert(5, 0), RESULT_SUCCESS); // Insert 5 at index 0
+
+	TEST_EQUAL(array.GetCount(), 4);
+	TEST_EQUAL((i32)array[0], 5);
+	TEST_EQUAL((i32)array[1], 10);
+	TEST_EQUAL((i32)array[2], 20);
+	TEST_EQUAL((i32)array[3], 30);
+
+	// Test inserting at the end
+	TEST_EQUAL(array.Insert(40, array.GetCount()), RESULT_SUCCESS); // Insert 40 at the end
+
+	TEST_EQUAL(array.GetCount(), 5);
+	TEST_EQUAL((i32)array[4], 40);
+
+	// Test inserting out of bounds
+	TEST_EQUAL(array.Insert(50, array.GetCount() + 1), RESULT_INDEX_OUT_OF_BOUNDS); // Out of bounds
 }

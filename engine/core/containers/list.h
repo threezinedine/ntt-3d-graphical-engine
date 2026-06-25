@@ -60,10 +60,14 @@ public:
 			pCurrent = pNext;
 		}
 
+		m_pHead = nullptr;
+		m_pTail = nullptr;
+		m_Count = 0;
+
 		return RESULT_SUCCESS;
 	}
 
-	Result Append(const T& value)
+	Result Append(T&& value)
 	{
 		Node* pNewNode = static_cast<Node*>(ALLOCATOR_SAFE(m_pAllocator)->Allocate(sizeof(Node)));
 
@@ -72,7 +76,7 @@ public:
 			return RESULT_OUT_OF_MEMORY;
 		}
 
-		pNewNode->data	= value;
+		pNewNode->data	= static_cast<T&&>(value);
 		pNewNode->pPrev = m_pTail;
 		pNewNode->pNext = nullptr;
 

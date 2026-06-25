@@ -13,8 +13,14 @@ if (NTT_UNITTEST)
         "src/tests"
         NTT_TESTS_SOURCES
         "tests/test_malloc.cpp"
-        "tests/test_array.cpp"
-        "tests/test_list.cpp"
+    )
+
+    ntt_set_source_group(
+        "src/tests/containers"
+        NTT_CONTAINERS_SOURCES
+        "tests/containers/container_test_object.h"
+        "tests/containers/test_array.cpp"
+        "tests/containers/test_list.cpp"
     )
 
     ntt_set_source_group(
@@ -28,6 +34,7 @@ if (NTT_UNITTEST)
         ${NTT_UNITTEST_SOURCES}
         ${NTT_UTILITIES_SOURCES}
         ${NTT_TESTS_SOURCES}
+        ${NTT_CONTAINERS_SOURCES}
     )
 
     target_link_libraries(
