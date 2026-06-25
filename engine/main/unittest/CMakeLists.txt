@@ -23,6 +23,7 @@ if (NTT_UNITTEST)
         "tests/containers/test_array.cpp"
         "tests/containers/test_list.cpp"
         "tests/containers/test_stack.cpp"
+        "tests/containers/test_queue.cpp"
     )
 
     ntt_set_source_group(
