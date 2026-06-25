@@ -20,6 +20,8 @@ public:
 	const char* CStr() const;
 	void		operator=(const String& other) = delete;
 	void		operator=(String&& other) noexcept;
+	void		operator=(const char* str);
+	String		operator+(const String& other) const;
 	Result		Clear();
 
 private:

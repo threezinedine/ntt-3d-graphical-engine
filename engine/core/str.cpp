@@ -100,6 +100,26 @@ void String::operator=(String&& other) noexcept
 	}
 }
 
+void String::operator=(const char* str)
+{
+	NTT_ASSERT(Clear() == RESULT_SUCCESS); // Ensure the string is cleared before assignment
+
+	if (strlen(str) <= NTT_SHORT_STRING_OPTIMIZATION_SIZE)
+	{
+		m_IsShortString = true;
+		m_pHeapBuffer	= nullptr;
+		strncpy(m_pShortBuffer, str, NTT_SHORT_STRING_OPTIMIZATION_SIZE);
+		m_pShortBuffer[NTT_SHORT_STRING_OPTIMIZATION_SIZE] = '\0'; // Ensure null-termination
+	}
+	else
+	{
+		m_IsShortString = false;
+		m_pHeapBuffer	= (char*)ALLOCATOR_SAFE(m_pAllocator)->Allocate(strlen(str) + 1);
+		NTT_ASSERT_MSG(m_pHeapBuffer != nullptr, "Failed to allocate memory for heap string.");
+		strcpy(m_pHeapBuffer, str);
+	}
+}
+
 Result String::Clear()
 {
 	m_IsShortString = true;
@@ -110,6 +130,31 @@ Result String::Clear()
 		m_pHeapBuffer = nullptr;
 	}
 	return RESULT_SUCCESS;
+}
+
+String String::operator+(const String& other) const
+{
+	u32 newLength = Length() + other.Length();
+	if (newLength <= NTT_SHORT_STRING_OPTIMIZATION_SIZE)
+	{
+		String result(m_pAllocator);
+		result.m_IsShortString = true;
+		strncpy(result.m_pShortBuffer, CStr(), NTT_SHORT_STRING_OPTIMIZATION_SIZE);
+		strncat(
+			result.m_pShortBuffer, other.CStr(), NTT_SHORT_STRING_OPTIMIZATION_SIZE - strlen(result.m_pShortBuffer));
+		result.m_pShortBuffer[NTT_SHORT_STRING_OPTIMIZATION_SIZE] = '\0'; // Ensure null-termination
+		return result;
+	}
+	else
+	{
+		String result(m_pAllocator);
+		result.m_IsShortString = false;
+		result.m_pHeapBuffer   = (char*)ALLOCATOR_SAFE(m_pAllocator)->Allocate(newLength + 1);
+		NTT_ASSERT_MSG(result.m_pHeapBuffer != nullptr, "Failed to allocate memory for concatenated string.");
+		strcpy(result.m_pHeapBuffer, CStr());
+		strcat(result.m_pHeapBuffer, other.CStr());
+		return result;
+	}
 }
 
 } // namespace ntt

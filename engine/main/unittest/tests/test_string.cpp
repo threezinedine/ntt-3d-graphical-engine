@@ -30,6 +30,14 @@ TEST_CASE(StringTest, DefaultConstructor)
 	TEST_EQUAL(strcmp(str2.CStr(), "Test"), 0);
 }
 
+TEST_CASE(StringTest, LongString)
+{
+	const char* longStr = "This is a long string that exceeds the short string optimization size.";
+	String		str(longStr);
+	TEST_EQUAL(str.Length(), strlen(longStr));
+	TEST_EQUAL(strcmp(str.CStr(), longStr), 0);
+}
+
 TEST_CASE(StringTest, MoveConstructor)
 {
 	String str1("Hello");
@@ -38,4 +46,30 @@ TEST_CASE(StringTest, MoveConstructor)
 
 	TEST_EQUAL(str3.Length(), 5);
 	TEST_EQUAL(strcmp(str3.CStr(), "Hello"), 0);
+}
+
+TEST_CASE(StringTest, AssignmentOperator)
+{
+	String str1("Hello");
+	String str2;
+	str2 = (String&&)str1;
+
+	TEST_EQUAL(str2.Length(), 5);
+	TEST_EQUAL(strcmp(str2.CStr(), "Hello"), 0);
+
+	String str3;
+	str3 = "World";
+
+	TEST_EQUAL(str3.Length(), 5);
+	TEST_EQUAL(strcmp(str3.CStr(), "World"), 0);
+}
+
+TEST_CASE(StringTest, ConcatenationOperator)
+{
+	String str1("Hello");
+	String str2(" World");
+	String str3 = str1 + str2;
+
+	TEST_EQUAL(str3.Length(), 11);
+	TEST_EQUAL(strcmp(str3.CStr(), "Hello World"), 0);
 }
