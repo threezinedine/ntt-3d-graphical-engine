@@ -271,3 +271,159 @@ TEST_CASE(ListTest, InsertBeforeWithObjects)
 	TEST_EQUAL(TestObject::s_CopyConstructorCount, 0);
 	TEST_EQUAL(TestObject::s_MoveConstructorCount, 3);
 }
+
+// ── Remove edge cases ──
+
+TEST_CASE(ListTest, RemoveFromEmptyList)
+{
+	List<i32> list;
+
+	// Removing from an empty list should fail
+	TEST_EQUAL(list.Remove(list.End()), RESULT_INVALID_ITERATOR);
+	TEST_EQUAL(list.GetCount(), 0);
+}
+
+TEST_CASE(ListTest, RemoveOnlyElement)
+{
+	List<i32> list;
+	TEST_SUCCESS(list.Append(42));
+
+	TEST_SUCCESS(list.Remove(list.Begin()));
+	TEST_EQUAL(list.GetCount(), 0);
+}
+
+TEST_CASE(ListTest, RemoveHead)
+{
+	List<i32> list;
+	TEST_SUCCESS(list.Append(1));
+	TEST_SUCCESS(list.Append(2));
+	TEST_SUCCESS(list.Append(3));
+
+	// Remove the head (1)
+	TEST_SUCCESS(list.Remove(list.Begin()));
+	TEST_EQUAL(list.GetCount(), 2);
+	TEST_EQUAL(list[0], 2);
+	TEST_EQUAL(list[1], 3);
+}
+
+TEST_CASE(ListTest, RemoveTail)
+{
+	List<i32> list;
+	TEST_SUCCESS(list.Append(1));
+	TEST_SUCCESS(list.Append(2));
+	TEST_SUCCESS(list.Append(3));
+
+	// Remove the tail (3) — iterate to last element
+	auto it = list.Begin();
+	++it; // 2
+	++it; // 3
+	TEST_SUCCESS(list.Remove(it));
+	TEST_EQUAL(list.GetCount(), 2);
+	TEST_EQUAL(list[0], 1);
+	TEST_EQUAL(list[1], 2);
+}
+
+TEST_CASE(ListTest, RemoveNullIterator)
+{
+	List<i32> list;
+	TEST_SUCCESS(list.Append(1));
+	TEST_SUCCESS(list.Append(2));
+
+	// Attempt to remove using a null iterator (End())
+	TEST_EQUAL(list.Remove(list.End()), RESULT_INVALID_ITERATOR);
+	TEST_EQUAL(list.GetCount(), 2);
+}
+
+TEST_CASE(ListTest, RemoveMiddle)
+{
+	List<i32> list;
+	TEST_SUCCESS(list.Append(1));
+	TEST_SUCCESS(list.Append(2));
+	TEST_SUCCESS(list.Append(3));
+
+	// Remove the middle element (2)
+	auto it = list.Begin();
+	++it; // now points to 2
+	TEST_SUCCESS(list.Remove(it));
+	TEST_EQUAL(list.GetCount(), 2);
+	TEST_EQUAL(list[0], 1);
+	TEST_EQUAL(list[1], 3);
+}
+
+TEST_CASE(ListTest, RemoveAllSequentially)
+{
+	List<i32> list;
+	TEST_SUCCESS(list.Append(1));
+	TEST_SUCCESS(list.Append(2));
+	TEST_SUCCESS(list.Append(3));
+
+	// Remove head repeatedly until empty
+	TEST_SUCCESS(list.Remove(list.Begin())); // removes 1
+	TEST_EQUAL(list.GetCount(), 2);
+	TEST_EQUAL(list[0], 2);
+
+	TEST_SUCCESS(list.Remove(list.Begin())); // removes 2
+	TEST_EQUAL(list.GetCount(), 1);
+	TEST_EQUAL(list[0], 3);
+
+	TEST_SUCCESS(list.Remove(list.Begin())); // removes 3
+	TEST_EQUAL(list.GetCount(), 0);
+}
+
+TEST_CASE(ListTest, RemoveWithObjects)
+{
+	List<TestObject> list;
+	TEST_SUCCESS(list.Append(TestObject()));
+	TEST_SUCCESS(list.Append(TestObject()));
+	TEST_SUCCESS(list.Append(TestObject()));
+
+	// Remove the middle element
+	auto it = list.Begin();
+	++it;
+	TEST_SUCCESS(list.Remove(it));
+
+	TEST_EQUAL(list.GetCount(), 2);
+
+	// 3 constructed (Append temps), 1 destroyed (the removed node via ~Node),
+	// plus 3 temps destroyed = 4 total destructors
+	// 0 copies, 3 moves (moved into list via Append)
+	TEST_EQUAL(TestObject::s_ConstructorCount, 3);
+	TEST_EQUAL(TestObject::s_DestructorCount, 4);
+	TEST_EQUAL(TestObject::s_CopyConstructorCount, 0);
+	TEST_EQUAL(TestObject::s_MoveConstructorCount, 3);
+}
+
+TEST_CASE(ListTest, RemoveAndIterate)
+{
+	List<i32> list;
+	TEST_SUCCESS(list.Append(1));
+	TEST_SUCCESS(list.Append(2));
+	TEST_SUCCESS(list.Append(3));
+	TEST_SUCCESS(list.Append(4));
+
+	// Remove middle (2), then iterate to verify links
+	auto it = list.Begin();
+	++it;
+	TEST_SUCCESS(list.Remove(it));
+
+	i32 expected[] = {1, 3, 4};
+	i32 index	   = 0;
+	for (auto iter = list.Begin(); iter != list.End(); ++iter)
+	{
+		TEST_EQUAL(*iter, expected[index]);
+		index++;
+	}
+	TEST_EQUAL(index, 3);
+}
+
+TEST_CASE(ListTest, RemoveThenAppend)
+{
+	List<i32> list;
+	TEST_SUCCESS(list.Append(1));
+	TEST_SUCCESS(list.Remove(list.Begin()));
+
+	// Append again into the now-empty list
+	TEST_SUCCESS(list.Append(2));
+	TEST_EQUAL(list.GetCount(), 1);
+	TEST_EQUAL(list[0], 2);
+}

@@ -141,6 +141,7 @@ public:
 	Result Append(T&& value);
 	Result InsertAfter(Iterator position, T&& value);
 	Result InsertBefore(Iterator position, T&& value);
+	Result Remove(Iterator position);
 	T&	   operator[](u32 index);
 
 private:
@@ -287,6 +288,41 @@ Result List<T>::InsertBefore(typename List<T>::Iterator position, T&& value)
 	}
 
 	m_Count++;
+
+	return RESULT_SUCCESS;
+}
+
+template <typename T>
+Result List<T>::Remove(typename List<T>::Iterator position)
+{
+	Node* pCurrent = position.m_pCurrent;
+
+	if (pCurrent == nullptr)
+	{
+		return RESULT_INVALID_ITERATOR;
+	}
+
+	if (pCurrent->pPrev != nullptr)
+	{
+		pCurrent->pPrev->pNext = pCurrent->pNext;
+	}
+	else
+	{
+		m_pHead = pCurrent->pNext;
+	}
+
+	if (pCurrent->pNext != nullptr)
+	{
+		pCurrent->pNext->pPrev = pCurrent->pPrev;
+	}
+	else
+	{
+		m_pTail = pCurrent->pPrev;
+	}
+
+	pCurrent->~Node(); // Call the destructor for the node
+	NTT_ASSERT_RESULT_SUCCESS(ALLOCATOR_SAFE(m_pAllocator)->Free(pCurrent, sizeof(Node)));
+	m_Count--;
 
 	return RESULT_SUCCESS;
 }
