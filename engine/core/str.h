@@ -40,11 +40,7 @@ private:
 class StringView
 {
 public:
-	StringView(const char* str, u32 length)
-		: m_pData(str)
-		, m_Length(length)
-	{
-	}
+	StringView(const char* str, u32 length = -1);
 
 	StringView(const String& str)
 		: m_pData(str.CStr())

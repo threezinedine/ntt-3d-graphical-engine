@@ -238,4 +238,14 @@ bool StringView::operator!=(const char* str) const
 	return strncmp(m_pData, str, m_Length) != 0;
 }
 
+StringView::StringView(const char* str, u32 length)
+	: m_pData(str)
+	, m_Length(length)
+{
+	if (length == static_cast<u32>(-1) && str != nullptr)
+	{
+		m_Length = (u32)strlen(str);
+	}
+}
+
 } // namespace ntt
