@@ -16,8 +16,7 @@ if (NTT_ENGINE)
     target_link_libraries(
         ntt-engine
         PRIVATE
-        ntt-core
-        ntt-services
+        ntt-application
     )
 
     ntt_add_options(ntt-engine)

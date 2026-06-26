@@ -5,6 +5,7 @@
 #include "containers/array.h"
 
 #define NTT_SHORT_STRING_OPTIMIZATION_SIZE 15
+#define NTT_INVALID_INDEX				   ((u32) - 1)
 
 namespace ntt {
 
@@ -19,8 +20,10 @@ public:
 	String(String&& other) noexcept;
 	~String();
 
+	StringView		  ToStringView() const;
 	u32				  Length() const;
 	const char*		  CStr() const;
+	char*			  CStr();
 	Result			  Reserve(u32 newCapacity);
 	void			  operator=(const String& other) = delete;
 	void			  operator=(String&& other) noexcept;
@@ -29,9 +32,15 @@ public:
 	bool			  operator!=(const String& other) const;
 	String			  operator+(const String& other) const;
 	Result			  Clear();
+	Result			  Reset();
 	bool			  EndsWith(const String& suffix) const;
 	StringView		  Slice(u32 start, u32 length) const;
 	Array<StringView> Split(const String& delimiter) const;
+	u32				  Find(const String& subString) const;
+
+protected:
+	Result ResetShort();
+	Result ResetHeap();
 
 #if NTT_UNITTEST
 public:
@@ -101,9 +110,18 @@ public:
 		return m_Length;
 	}
 
+	u32		   Find(const StringView& subString) const;
+	StringView Slice(u32 start, u32 length) const;
+
 private:
 	const char* m_pData;
 	u32			m_Length;
 };
+
+template <typename T>
+StringView ToString(const T& value);
+
+template <typename T>
+StringView ToString(T& value);
 
 } // namespace ntt

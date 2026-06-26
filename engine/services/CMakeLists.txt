@@ -6,17 +6,31 @@ set(NTT_SERVICES_LIBRARY_NAME "ntt-services")
 ntt_set_source_group("src"
     NTT_SERVICES_SOURCES
     "services.h"
-    "ref_counted.h"
-    "ref_counted.cpp"
-    "object.h"
-    "object.cpp"
-    "application.h"
-    "application.cpp"
+)
+
+ntt_set_source_group("src/logging"
+    NTT_LOGGING_SOURCES
+    "logging/logging.h"
+    "logging/logging.cpp"
+    "logging/logging_level.h"
+    "logging/logging_level.cpp"
+    "logging/logging_type.h"
+    "logging/logging_type.cpp"
+    "logging/logging_message.h"
+    "logging/logging_message.cpp"
+)
+
+ntt_set_source_group("defs/logging"
+    NTT_LOGGING_DEFS_SOURCES
+    "logging/logging_type.def"
+    "logging/logging_level.def"
 )
 
 add_library(
     ${NTT_SERVICES_LIBRARY_NAME}
     ${NTT_SERVICES_SOURCES}
+    ${NTT_LOGGING_SOURCES}
+    ${NTT_LOGGING_DEFS_SOURCES}
 )
 
 target_include_directories(

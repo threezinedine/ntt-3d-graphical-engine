@@ -1,0 +1,8 @@
+#ifndef FORMAT_KEYWORD
+#define FORMAT_KEYWORD(keyword, attribute)
+#endif
+
+FORMAT_KEYWORD("%(type)", type)
+FORMAT_KEYWORD("%(level)", level)
+FORMAT_KEYWORD("%(file)", file)
+FORMAT_KEYWORD("%(line)", line)

@@ -1,5 +1,6 @@
 #include "str.h"
 #include "string.h"
+#include <string> // TODO: Remove later
 
 namespace ntt {
 
@@ -28,6 +29,11 @@ String::String(const char* str, IAllocator* pAllocator)
 		NTT_ASSERT_MSG(m_pHeapBuffer != nullptr, "Failed to allocate memory for heap string.");
 		memcpy(m_pHeapBuffer, str, (u32)strlen(str) + 1);
 	}
+}
+
+StringView String::ToStringView() const
+{
+	return StringView(*this);
 }
 
 Result String::Reserve(u32 newCapacity)
@@ -96,6 +102,11 @@ String::~String()
 }
 
 const char* String::CStr() const
+{
+	return m_IsShortString ? m_pShortBuffer : m_pHeapBuffer;
+}
+
+char* String::CStr()
 {
 	return m_IsShortString ? m_pShortBuffer : m_pHeapBuffer;
 }
@@ -210,8 +221,12 @@ bool String::EndsWith(const String& suffix) const
 
 	return strcmp(strPtr, suffixPtr) == 0;
 }
-
 StringView String::Slice(u32 start, u32 length) const
+{
+	return StringView(*this).Slice(start, length);
+}
+
+StringView StringView::Slice(u32 start, u32 length) const
 {
 	if (start >= Length())
 	{
@@ -224,7 +239,7 @@ StringView String::Slice(u32 start, u32 length) const
 		end = Length(); // Adjust end if it exceeds the string length
 	}
 
-	return StringView(CStr() + start, end - start);
+	return StringView(m_pData + start, end - start);
 }
 
 Array<StringView> String::Split(const String& delimiter) const
@@ -317,5 +332,92 @@ String String::Join(const Array<String>& strings, const String& delimiter)
 
 	return result;
 }
+
+u32 StringView::Find(const StringView& subString) const
+{
+	if (Length() == 0)
+	{
+		return NTT_INVALID_INDEX;
+	}
+
+	if (subString.Length() == 0)
+	{
+		return 0;
+	}
+
+	if (subString.Length() > Length())
+	{
+		return NTT_INVALID_INDEX;
+	}
+
+	for (u32 i = 0; i <= Length() - subString.Length(); ++i)
+	{
+		if (strncmp(m_pData + i, subString.Data(), subString.Length()) == 0)
+		{
+			return i;
+		}
+	}
+
+	return NTT_INVALID_INDEX; // Return invalid index if not found
+}
+
+u32 String::Find(const String& subString) const
+{
+	return StringView(*this).Find(StringView(subString));
+}
+
+Result String::Reset()
+{
+	NTT_ASSERT_RESULT_SUCCESS(ResetShort());
+	NTT_ASSERT_RESULT_SUCCESS(ResetHeap());
+	return RESULT_SUCCESS;
+}
+
+Result String::ResetShort()
+{
+	memset(m_pShortBuffer, 0, sizeof(m_pShortBuffer));
+	return RESULT_SUCCESS;
+}
+
+Result String::ResetHeap()
+{
+	if (m_pHeapBuffer)
+	{
+		if (m_IsShortString)
+		{
+			return RESULT_INVALID_STRING;
+		}
+
+		memset(m_pHeapBuffer, 0, strlen(m_pHeapBuffer) + 1);
+	}
+	return RESULT_SUCCESS;
+}
+
+#define DEFINE_PRIMITIVE_TO_STRING(type, function)                                                                     \
+	template <>                                                                                                        \
+	StringView ToString(const type& value)                                                                             \
+	{                                                                                                                  \
+		return StringView(function);                                                                                   \
+	}                                                                                                                  \
+	template <>                                                                                                        \
+	StringView ToString(type& value)                                                                                   \
+	{                                                                                                                  \
+		return StringView(function);                                                                                   \
+	}
+
+DEFINE_PRIMITIVE_TO_STRING(String, value.ToStringView())
+
+DEFINE_PRIMITIVE_TO_STRING(i32, std::to_string(value).c_str())
+DEFINE_PRIMITIVE_TO_STRING(i16, std::to_string(value).c_str())
+DEFINE_PRIMITIVE_TO_STRING(i8, std::to_string(value).c_str())
+
+DEFINE_PRIMITIVE_TO_STRING(u32, std::to_string(value).c_str())
+DEFINE_PRIMITIVE_TO_STRING(u16, std::to_string(value).c_str())
+DEFINE_PRIMITIVE_TO_STRING(u8, std::to_string(value).c_str())
+
+DEFINE_PRIMITIVE_TO_STRING(f64, std::to_string(value).c_str())
+DEFINE_PRIMITIVE_TO_STRING(f32, std::to_string(value).c_str())
+
+DEFINE_PRIMITIVE_TO_STRING(bool, value ? "true" : "false")
 
 } // namespace ntt

@@ -95,12 +95,10 @@ TEST_CASE(StringTest, Slice)
 	String	   str("Hello World");
 	StringView slice = str.Slice(6, 5);
 
-	TEST_EQUAL(slice.Length(), 5);
-	TEST_EQUAL(strcmp(slice.Data(), "World"), 0);
+	TEST_EQUAL(slice, "World");
 
 	StringView slice2 = str.Slice(6, 10);
-	TEST_EQUAL(slice2.Length(), 5); // Should be clamped to the end of the string
-	TEST_EQUAL(strcmp(slice2.Data(), "World"), 0);
+	TEST_EQUAL(slice2, "World");
 
 	StringView slice3 = str.Slice(13, 2);
 	TEST_EQUAL(slice3.Length(), 0);		// Out of bounds, should return empty slice
@@ -217,4 +215,46 @@ TEST_CASE(StringTest, InsertStringIntoStringArray)
 	TEST_EQUAL(stringArray[0], "Hello");
 	TEST_EQUAL(stringArray[1], "Inserted");
 	TEST_EQUAL(stringArray[2], "World");
+}
+
+TEST_CASE(StringTest, StringViewFind)
+{
+	String	   str("Hello World");
+	StringView view(str);
+
+	TEST_EQUAL(view.Find(StringView("World")), 6);
+	TEST_EQUAL(view.Find(StringView("Hello")), 0);
+	TEST_EQUAL(view.Find(StringView("NotFound")), NTT_INVALID_INDEX);
+}
+
+TEST_CASE(StringTest, StringFind)
+{
+	String str("Hello World");
+
+	TEST_EQUAL(str.Find(String("World")), 6);
+	TEST_EQUAL(str.Find(String("Hello")), 0);
+	TEST_EQUAL(str.Find(String("NotFound")), NTT_INVALID_INDEX);
+}
+
+TEST_CASE(StringTest, ToStringTest)
+{
+	String	   str("Hello");
+	StringView view = ToString(str);
+	TEST_EQUAL(view, "Hello");
+
+	i32		   intValue = 42;
+	StringView intView	= ToString(intValue);
+	TEST_EQUAL(intView, "42");
+
+	u32		   uintValue = 100;
+	StringView uintView	 = ToString(uintValue);
+	TEST_EQUAL(uintView, "100");
+
+	bool	   boolValue = true;
+	StringView boolView	 = ToString(boolValue);
+	TEST_EQUAL(boolView, "true");
+
+	f32		   floatValue = 3.14f;
+	StringView floatView  = ToString(floatValue);
+	TEST_EQUAL(floatView, "3.140000");
 }

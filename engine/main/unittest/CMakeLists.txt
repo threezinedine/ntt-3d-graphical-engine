@@ -10,20 +10,26 @@ if (NTT_UNITTEST)
     )
 
     ntt_set_source_group(
-        "src/tests"
-        NTT_TESTS_SOURCES
-        "tests/test_malloc.cpp"
-        "tests/test_string.cpp"
+        "src/tests/core"
+        NTT_CORE_TESTS_SOURCES
+        "tests/core/test_malloc.cpp"
+        "tests/core/test_string.cpp"
     )
 
     ntt_set_source_group(
         "src/tests/containers"
-        NTT_CONTAINERS_SOURCES
-        "tests/containers/container_test_object.h"
-        "tests/containers/test_array.cpp"
-        "tests/containers/test_list.cpp"
-        "tests/containers/test_stack.cpp"
-        "tests/containers/test_queue.cpp"
+        NTT_CONTAINERS_TESTS_SOURCES
+        "tests/core/containers/container_test_object.h"
+        "tests/core/containers/test_array.cpp"
+        "tests/core/containers/test_list.cpp"
+        "tests/core/containers/test_stack.cpp"
+        "tests/core/containers/test_queue.cpp"
+    )
+
+    ntt_set_source_group(
+        "src/tests/services"
+        NTT_SERVICES_TESTS_SOURCES
+        "tests/services/test_logging.cpp"
     )
 
     ntt_set_source_group(
@@ -36,14 +42,15 @@ if (NTT_UNITTEST)
         ntt-unittest
         ${NTT_UNITTEST_SOURCES}
         ${NTT_UTILITIES_SOURCES}
-        ${NTT_TESTS_SOURCES}
-        ${NTT_CONTAINERS_SOURCES}
+        ${NTT_CORE_TESTS_SOURCES}
+        ${NTT_CONTAINERS_TESTS_SOURCES}
+        ${NTT_SERVICES_TESTS_SOURCES}
     )
 
     target_link_libraries(
         ntt-unittest
         PRIVATE
-        ntt-core
+        ntt-application
     )
 
     target_include_directories(

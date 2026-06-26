@@ -11,6 +11,12 @@ ntt_set_source_group("src/containers"
     "containers/stack.h"
 )
 
+ntt_set_source_group("defs"
+    NTT_DEFS_SOURCES
+    "console_color.def"
+    "result.def"
+)
+
 ntt_set_source_group("src/utils"
     NTT_UTILS_SOURCES
     "utils/utils.h"
@@ -55,6 +61,7 @@ add_library(
     ${NTT_BACKTRACE_SOURCES}
     ${NTT_CONTAINERS_SOURCES}
     ${NTT_UTILS_SOURCES}
+    ${NTT_DEFS_SOURCES}
 )
 
 target_include_directories(

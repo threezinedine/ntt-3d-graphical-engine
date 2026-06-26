@@ -16,8 +16,7 @@ if (NTT_EDITOR)
     target_link_libraries(
         ntt-editor
         PRIVATE
-        ntt-core
-        ntt-services
+        ntt-application
     )
 
     ntt_add_options(ntt-editor)
