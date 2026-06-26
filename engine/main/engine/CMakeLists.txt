@@ -17,6 +17,7 @@ if (NTT_ENGINE)
         ntt-engine
         PRIVATE
         ntt-core
+        ntt-services
     )
 
     ntt_add_options(ntt-engine)

@@ -17,6 +17,7 @@ if (NTT_EDITOR)
         ntt-editor
         PRIVATE
         ntt-core
+        ntt-services
     )
 
     ntt_add_options(ntt-editor)

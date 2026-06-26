@@ -1,33 +1,16 @@
 #include "core.h"
+#include "services.h"
 
 using namespace ntt;
 
 int main(i32 argc, char** argv)
 {
-	g_Globals.argc = argc;
-	g_Globals.argv = argv;
+	Application app;
+	NTT_ASSERT_RESULT_SUCCESS(app.Initialize(argc, argv));
 
-	NTT_ASSERT_RESULT_SUCCESS(GlobalAllocators::Register());
-	NTT_ASSERT_RESULT_SUCCESS(GlobalAllocators::Initialize());
+	NTT_ASSERT_RESULT_SUCCESS(app.Run());
 
-	void* ptr = g_GlobalAllocators.pMalloc->Allocate(1024);
-	g_GlobalAllocators.pMalloc->Free(ptr, 1024);
-
-	void* ptr2 = g_GlobalAllocators.pMalloc->Allocate(1024);
-	g_GlobalAllocators.pMalloc->Free(ptr2, 1024);
-
-#define CONSOLE_COLOR_OPTION(option, console_value)                                                                    \
-	setConsoleColor(CONSOLE_COLOR_##option);                                                                           \
-	print("Line with %s!\n", ToString(CONSOLE_COLOR_##option));
-#define CONSOLE_COLOR_OPTION_END(option)
-#include "console_color.def"
-#undef CONSOLE_COLOR_OPTION
-#undef CONSOLE_COLOR_OPTION_END
-	resetConsoleColor();
-	print("Line with reset color!\n");
-
-	NTT_ASSERT_RESULT_SUCCESS(GlobalAllocators::Shutdown());
-	NTT_ASSERT_RESULT_SUCCESS(GlobalAllocators::Unregister());
+	NTT_ASSERT_RESULT_SUCCESS(app.Shutdown());
 
 	return 0;
 }
