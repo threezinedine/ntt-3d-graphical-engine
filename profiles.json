@@ -28,21 +28,21 @@
 	"debug": {
 		"inherit": ["editor-and-engine"],
 		"options": [],
-		"command": "cmake -B build/debug -DCMAKE_BUILD_TYPE=Debug {{ options }}"
+		"command": "cmake -B build/debug -Wno-dev -DCMAKE_BUILD_TYPE=Debug {{ options }}"
 	},
 	"release": {
 		"inherit": ["common"],
 		"options": ["NTT_ENABLE_ASSERTION=0"],
-		"command": "cmake -B build/release -DCMAKE_BUILD_TYPE=Release {{ options }}"
+		"command": "cmake -B build/release -Wno-dev -DCMAKE_BUILD_TYPE=Release {{ options }}"
 	},
 	"web-debug": {
 		"inherit": ["common"],
 		"options": [],
-		"command": "emcmake cmake -B build/web_debug -DCMAKE_BUILD_TYPE=Debug {{ options }}"
+		"command": "emcmake cmake -B build/web_debug -Wno-dev -DCMAKE_BUILD_TYPE=Debug {{ options }}"
 	},
 	"unittest": {
 		"inherit": ["only-unittest"],
 		"options": [],
-		"command": "cmake -B build/unittest -DCMAKE_BUILD_TYPE=Debug {{ options }}"
+		"command": "cmake -B build/unittest -Wno-dev -DCMAKE_BUILD_TYPE=Debug {{ options }}"
 	}
 }

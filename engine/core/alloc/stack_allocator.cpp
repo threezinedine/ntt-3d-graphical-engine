@@ -58,6 +58,8 @@ void* StackAllocator::Allocate(u32 size)
 
 Result StackAllocator::Free(void* ptr, u32 size)
 {
+	NTT_UNUSED(ptr);
+	NTT_UNUSED(size);
 	return RESULT_SUCCESS;
 }
 

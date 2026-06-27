@@ -39,10 +39,13 @@ target_include_directories(
     "${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
+ntt_find_package(ntt-glfw REQUIRED)
+
 target_link_libraries(
     ${NTT_SERVICES_LIBRARY_NAME}
     PUBLIC
     ntt-core
+    ntt-glfw
 )
 
 ntt_add_options(${NTT_SERVICES_LIBRARY_NAME})
