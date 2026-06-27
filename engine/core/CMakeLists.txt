@@ -56,6 +56,12 @@ ntt_set_source_group("src/core"
     "str.cpp"
 )
 
+ntt_set_source_group("src/smart_ptr"
+    NTT_SMART_PTR_SOURCES
+    "smart_ptr/smart_ptr.h"
+    "smart_ptr/scope.h"
+)
+
 add_library(
     ${NTT_CORE_LIBRARY_NAME}
     ${NTT_CORE_SOURCES}
@@ -64,6 +70,7 @@ add_library(
     ${NTT_CONTAINERS_SOURCES}
     ${NTT_UTILS_SOURCES}
     ${NTT_DEFS_SOURCES}
+    ${NTT_SMART_PTR_SOURCES}
 )
 
 target_include_directories(

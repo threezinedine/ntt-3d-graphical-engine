@@ -20,6 +20,14 @@ ntt_set_source_group("src/logging"
     "logging/logging_message.cpp"
 )
 
+ntt_set_source_group("src/logging/handlers"
+    NTT_LOGGING_HANDLERS_SOURCES
+    "logging/handlers/handlers.h"
+    "logging/handlers/handlers.cpp"
+    "logging/handlers/console_handler.h"
+    "logging/handlers/console_handler.cpp"
+)
+
 ntt_set_source_group("defs/logging"
     NTT_LOGGING_DEFS_SOURCES
     "logging/logging_type.def"

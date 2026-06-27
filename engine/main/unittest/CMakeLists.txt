@@ -14,6 +14,7 @@ if (NTT_UNITTEST)
         NTT_CORE_TESTS_SOURCES
         "tests/core/test_malloc.cpp"
         "tests/core/test_string.cpp"
+        "tests/core/test_smart_ptr.cpp"
     )
 
     ntt_set_source_group(

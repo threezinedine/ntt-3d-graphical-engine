@@ -8,5 +8,6 @@
 #include "defs.h"
 #include "globals.h"
 #include "result.h"
+#include "smart_ptr/smart_ptr.h"
 #include "str.h"
 #include "utils/utils.h"
