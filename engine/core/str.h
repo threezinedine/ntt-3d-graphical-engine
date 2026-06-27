@@ -51,7 +51,7 @@ public:
 
 	inline const char* GetHeapBuffer() const
 	{
-		return m_pHeapBuffer;
+		return m_pHeapBuffer.Get();
 	}
 
 	inline bool IsShortString() const
@@ -64,11 +64,11 @@ public:
 	static String Join(const Array<String>& strings, const String& delimiter);
 
 private:
-	bool		m_IsShortString;
-	char		m_pShortBuffer[NTT_SHORT_STRING_OPTIMIZATION_SIZE + 1];
-	char*		m_pHeapBuffer;
-	u32			m_ReservedCapacity; // Only used when m_IsShortString is false
-	IAllocator* m_pAllocator;
+	bool		  m_IsShortString;
+	char		  m_pShortBuffer[NTT_SHORT_STRING_OPTIMIZATION_SIZE + 1];
+	Pointer<char> m_pHeapBuffer;
+	u32			  m_ReservedCapacity; // Only used when m_IsShortString is false
+	IAllocator*	  m_pAllocator;
 };
 
 class StringView

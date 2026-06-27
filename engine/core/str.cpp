@@ -26,9 +26,9 @@ String::String(const char* str, IAllocator* pAllocator)
 	else
 	{
 		m_IsShortString = false;
-		m_pHeapBuffer	= (char*)ALLOCATOR_SAFE(m_pAllocator)->Allocate((u32)strlen(str) + 1);
+		m_pHeapBuffer	= ALLOCATOR_SAFE(m_pAllocator)->Allocate((u32)strlen(str) + 1).Cast<char>();
 		NTT_ASSERT_MSG(m_pHeapBuffer != nullptr, "Failed to allocate memory for heap string.");
-		memcpy(m_pHeapBuffer, str, (u32)strlen(str) + 1);
+		memcpy(m_pHeapBuffer.Get(), str, (u32)strlen(str) + 1);
 		m_ReservedCapacity = (u32)strlen(str);
 	}
 }
@@ -51,12 +51,12 @@ Result String::Reserve(u32 newCapacity)
 		return RESULT_SUCCESS;
 	}
 
-	char* pNewHeapBuffer = (char*)ALLOCATOR_SAFE(m_pAllocator)->Allocate(newCapacity + 1);
-	memcpy(pNewHeapBuffer, CStr(), Length() + 1); // Copy existing string including null terminator
+	Pointer<char> pNewHeapBuffer = ALLOCATOR_SAFE(m_pAllocator)->Allocate(newCapacity + 1).Cast<char>();
+	memcpy(pNewHeapBuffer.Get(), CStr(), Length() + 1); // Copy existing string including null terminator
 
 	if (m_pHeapBuffer != nullptr)
 	{
-		ALLOCATOR_SAFE(m_pAllocator)->Free(m_pHeapBuffer, (u32)(strlen(m_pHeapBuffer) + 1));
+		ALLOCATOR_SAFE(m_pAllocator)->Free(m_pHeapBuffer.Get(), (u32)(strlen(m_pHeapBuffer.Get()) + 1));
 	}
 	m_pHeapBuffer	   = pNewHeapBuffer;
 	m_IsShortString	   = false;
@@ -99,9 +99,9 @@ String::String(String&& other) noexcept
 		else
 		{
 			// If allocators are different, we need to allocate new memory and copy the string
-			m_pHeapBuffer = (char*)ALLOCATOR_SAFE(m_pAllocator)->Allocate(other.m_ReservedCapacity + 1);
-			memcpy(m_pHeapBuffer, other.m_pHeapBuffer, other.m_ReservedCapacity + 1);
-			(ALLOCATOR_SAFE(other.m_pAllocator)->Free(other.m_pHeapBuffer, other.m_ReservedCapacity + 1));
+			m_pHeapBuffer = ALLOCATOR_SAFE(m_pAllocator)->Allocate(other.m_ReservedCapacity + 1).Cast<char>();
+			memcpy(m_pHeapBuffer.Get(), other.m_pHeapBuffer.Get(), other.m_ReservedCapacity + 1);
+			(ALLOCATOR_SAFE(other.m_pAllocator)->Free(other.m_pHeapBuffer.Get(), other.m_ReservedCapacity + 1));
 			m_ReservedCapacity = other.m_ReservedCapacity;
 		}
 	}
@@ -115,24 +115,24 @@ String::~String()
 {
 	if (m_pHeapBuffer != nullptr)
 	{
-		ALLOCATOR_SAFE(m_pAllocator)->Free(m_pHeapBuffer, m_ReservedCapacity + 1);
+		ALLOCATOR_SAFE(m_pAllocator)->Free(m_pHeapBuffer.Get(), m_ReservedCapacity + 1);
 		m_pHeapBuffer = nullptr; // Prevent dangling pointer
 	}
 }
 
 const char* String::CStr() const
 {
-	return m_IsShortString ? m_pShortBuffer : m_pHeapBuffer;
+	return m_IsShortString ? m_pShortBuffer : m_pHeapBuffer.Get();
 }
 
 char* String::CStr()
 {
-	return m_IsShortString ? m_pShortBuffer : m_pHeapBuffer;
+	return m_IsShortString ? m_pShortBuffer : m_pHeapBuffer.Get();
 }
 
 u32 String::Length() const
 {
-	return m_IsShortString ? (u32)strlen(m_pShortBuffer) : (u32)strlen(m_pHeapBuffer);
+	return m_IsShortString ? (u32)strlen(m_pShortBuffer) : (u32)strlen(m_pHeapBuffer.Get());
 }
 
 void String::operator=(String&& other) noexcept
@@ -144,7 +144,7 @@ void String::operator=(String&& other) noexcept
 		// Free existing resources
 		if (!m_IsShortString && m_pHeapBuffer != nullptr)
 		{
-			ALLOCATOR_SAFE(m_pAllocator)->Free(m_pHeapBuffer, m_ReservedCapacity + 1);
+			ALLOCATOR_SAFE(m_pAllocator)->Free(m_pHeapBuffer.Get(), m_ReservedCapacity + 1);
 		}
 
 		m_IsShortString = other.m_IsShortString;
@@ -164,9 +164,9 @@ void String::operator=(String&& other) noexcept
 			else
 			{
 				// If allocators are different, we need to allocate new memory and copy the string
-				m_pHeapBuffer = (char*)ALLOCATOR_SAFE(m_pAllocator)->Allocate(other.m_ReservedCapacity + 1);
-				memcpy(m_pHeapBuffer, other.m_pHeapBuffer, other.m_ReservedCapacity + 1);
-				(ALLOCATOR_SAFE(other.m_pAllocator)->Free(other.m_pHeapBuffer, other.m_ReservedCapacity + 1));
+				m_pHeapBuffer = ALLOCATOR_SAFE(m_pAllocator)->Allocate(other.m_ReservedCapacity + 1).Cast<char>();
+				memcpy(m_pHeapBuffer.Get(), other.m_pHeapBuffer.Get(), other.m_ReservedCapacity + 1);
+				(ALLOCATOR_SAFE(other.m_pAllocator)->Free(other.m_pHeapBuffer.Get(), other.m_ReservedCapacity + 1));
 				m_ReservedCapacity = other.m_ReservedCapacity;
 			}
 		}
@@ -190,9 +190,9 @@ void String::operator=(const char* str)
 	else
 	{
 		m_IsShortString = false;
-		m_pHeapBuffer	= (char*)ALLOCATOR_SAFE(m_pAllocator)->Allocate((u32)strlen(str) + 1);
+		m_pHeapBuffer	= ALLOCATOR_SAFE(m_pAllocator)->Allocate((u32)strlen(str) + 1).Cast<char>();
 		NTT_ASSERT_MSG(m_pHeapBuffer != nullptr, "Failed to allocate memory for heap string.");
-		memcpy(m_pHeapBuffer, str, (u32)strlen(str) + 1);
+		memcpy(m_pHeapBuffer.Get(), str, (u32)strlen(str) + 1);
 		m_ReservedCapacity = (u32)strlen(str);
 	}
 }
@@ -203,7 +203,7 @@ Result String::Clear()
 	memset(m_pShortBuffer, 0, sizeof(m_pShortBuffer));
 	if (m_pHeapBuffer != nullptr)
 	{
-		NTT_ASSERT_RESULT_SUCCESS(ALLOCATOR_SAFE(m_pAllocator)->Free(m_pHeapBuffer, m_ReservedCapacity + 1));
+		NTT_ASSERT_RESULT_SUCCESS(m_pHeapBuffer.Free());
 		m_pHeapBuffer	   = nullptr;
 		m_ReservedCapacity = 0;
 	}
@@ -230,10 +230,10 @@ String String::operator+(const String& other) const
 	{
 		String result(m_pAllocator);
 		result.m_IsShortString = false;
-		result.m_pHeapBuffer   = (char*)ALLOCATOR_SAFE(m_pAllocator)->Allocate(newLength + 1);
+		result.m_pHeapBuffer   = ALLOCATOR_SAFE(m_pAllocator)->Allocate(newLength + 1).Cast<char>();
 		NTT_ASSERT_MSG(result.m_pHeapBuffer != nullptr, "Failed to allocate memory for concatenated string.");
-		memcpy(result.m_pHeapBuffer, CStr(), (size_t)Length());
-		memcpy(result.m_pHeapBuffer + (size_t)Length(), other.CStr(), (size_t)other.Length() + 1);
+		memcpy(result.m_pHeapBuffer.Get(), CStr(), (size_t)Length());
+		memcpy(result.m_pHeapBuffer.Get() + (size_t)Length(), other.CStr(), (size_t)other.Length() + 1);
 		result.m_ReservedCapacity = newLength;
 		return result;
 	}
@@ -347,7 +347,7 @@ String String::Join(const Array<String>& strings, const String& delimiter)
 	String result;
 	result.Reserve(totalLength + (strings.GetCount() - 1) * delimiter.Length());
 
-	char* pResultBuffer = result.m_IsShortString ? result.m_pShortBuffer : result.m_pHeapBuffer;
+	char* pResultBuffer = result.m_IsShortString ? result.m_pShortBuffer : result.m_pHeapBuffer.Get();
 	u32	  offset		= 0;
 
 	for (u32 i = 0; i < strings.GetCount(); ++i)
@@ -414,14 +414,14 @@ Result String::ResetShort()
 
 Result String::ResetHeap()
 {
-	if (m_pHeapBuffer)
+	if (m_pHeapBuffer != nullptr)
 	{
 		if (m_IsShortString)
 		{
 			return RESULT_INVALID_STRING;
 		}
 
-		memset(m_pHeapBuffer, 0, strlen(m_pHeapBuffer) + 1);
+		memset(m_pHeapBuffer.Get(), 0, strlen(m_pHeapBuffer.Get()) + 1);
 	}
 	return RESULT_SUCCESS;
 }

@@ -10,10 +10,10 @@ public:
 	MallocAllocator();
 	virtual ~MallocAllocator() override;
 
-	virtual Result Initialize() override;
-	virtual void*  Allocate(u32 size) override;
-	virtual Result Free(void* ptr, u32 size) override;
-	virtual Result Shutdown() override;
+	virtual Result		  Initialize() override;
+	virtual Pointer<void> Allocate(u32 size) override;
+	virtual Result		  Free(void* ptr, u32 size) override;
+	virtual Result		  Shutdown() override;
 
 #if NTT_UNITTEST
 	inline u32 GetAllocatedMemorySize() const

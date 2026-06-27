@@ -34,12 +34,11 @@ public:
 	{
 		if (ALLOCATOR_SAFE(m_pAllocator) != ALLOCATOR_SAFE(other.m_pAllocator) && other.m_Ptr != nullptr)
 		{
-			T* newPtr =
-				new (ALLOCATOR_SAFE(m_pAllocator)->Allocate(sizeof(T))) T(*other.m_Ptr); // Move construct the object
+			Pointer<T> newPtr = ALLOCATOR_SAFE(m_pAllocator)->Allocate(sizeof(T)).Cast<T>();
 
-			newPtr = (T&&)other.m_Ptr; // Move construct the object
+			MemCopy(newPtr, other.m_Ptr, sizeof(T));
 
-			NTT_ASSERT(ALLOCATOR_SAFE(other.m_pAllocator)->Free(other.m_Ptr, sizeof(T)) == RESULT_SUCCESS);
+			NTT_ASSERT(other.m_Ptr.Free() == RESULT_SUCCESS);
 			other.m_Ptr = nullptr; // Prevent double free
 			m_Ptr		= newPtr;  // Update m_Ptr to point to the newly allocated memory
 		}
@@ -62,10 +61,10 @@ public:
 
 		if (ALLOCATOR_SAFE(m_pAllocator) != ALLOCATOR_SAFE(other.m_pAllocator) && other.m_Ptr != nullptr)
 		{
-			T* newPtr = (T*)ALLOCATOR_SAFE(m_pAllocator)->Allocate(sizeof(U));
-			MemCopy(newPtr, other.m_Ptr, sizeof(U));
+			Pointer<T> newPtr = ALLOCATOR_SAFE(m_pAllocator)->Allocate(sizeof(U)).Cast<T>();
+			MemCopy(newPtr.Get(), other.m_Ptr.Get(), sizeof(U));
 
-			NTT_ASSERT(ALLOCATOR_SAFE(other.m_pAllocator)->Free(other.m_Ptr, sizeof(T)) == RESULT_SUCCESS);
+			NTT_ASSERT(other.m_Ptr.Free() == RESULT_SUCCESS);
 			other.m_Ptr = nullptr; // Prevent double free
 			m_Ptr		= newPtr;  // Update m_Ptr to point to the newly allocated memory
 		}
@@ -86,10 +85,10 @@ public:
 
 			if (ALLOCATOR_SAFE(m_pAllocator) != ALLOCATOR_SAFE(other.m_pAllocator) && other.m_Ptr != nullptr)
 			{
-				T* newPtr = (T*)ALLOCATOR_SAFE(m_pAllocator)->Allocate(sizeof(T));
-				MemCopy(newPtr, other.m_Ptr, sizeof(T));
+				T* newPtr = ALLOCATOR_SAFE(m_pAllocator)->Allocate(sizeof(T)).Cast<T>();
+				MemCopy(newPtr.Get(), other.m_Ptr.Get(), sizeof(T));
 
-				NTT_ASSERT(ALLOCATOR_SAFE(other.m_pAllocator)->Free(other.m_Ptr, sizeof(T)) == RESULT_SUCCESS);
+				NTT_ASSERT(other.m_Ptr.Free() == RESULT_SUCCESS);
 				other.m_Ptr = nullptr; // Prevent double free
 				m_Ptr		= newPtr;  // Update m_Ptr to point to the newly allocated memory
 			}
@@ -106,7 +105,7 @@ public:
 		if (m_Ptr != nullptr)
 		{
 			m_Ptr->~T();
-			NTT_ASSERT(ALLOCATOR_SAFE(m_pAllocator)->Free(m_Ptr, sizeof(T)) == RESULT_SUCCESS);
+			NTT_ASSERT(m_Ptr.Free() == RESULT_SUCCESS);
 			m_Ptr = nullptr;
 		}
 	}
@@ -120,10 +119,10 @@ public:
 
 			if (ALLOCATOR_SAFE(m_pAllocator) != ALLOCATOR_SAFE(other.m_pAllocator) && other.m_Ptr != nullptr)
 			{
-				T* newPtr = (T*)ALLOCATOR_SAFE(m_pAllocator)->Allocate(sizeof(T));
-				MemCopy(newPtr, other.m_Ptr, sizeof(U));
+				Pointer<T> newPtr = ALLOCATOR_SAFE(m_pAllocator)->Allocate(sizeof(T)).Cast<T>();
+				MemCopy(newPtr.Get(), other.m_Ptr.Get(), sizeof(U));
 
-				NTT_ASSERT(ALLOCATOR_SAFE(other.m_pAllocator)->Free(other.m_Ptr, sizeof(T)) == RESULT_SUCCESS);
+				NTT_ASSERT(other.m_Ptr.Free() == RESULT_SUCCESS);
 				other.m_Ptr = nullptr; // Prevent double free
 				m_Ptr		= newPtr;  // Update m_Ptr to point to the newly allocated memory
 			}
@@ -138,21 +137,21 @@ public:
 public:
 	inline T* Get() const
 	{
-		return m_Ptr;
+		return m_Ptr.Get();
 	}
 
 	template <typename U>
 	friend class Scope;
 
 private:
-	T*			m_Ptr;
+	Pointer<T>	m_Ptr;
 	IAllocator* m_pAllocator;
 };
 
 template <typename T, typename... Args>
 Scope<T> MakeScope(IAllocator* pAllocator, Args&&... args)
 {
-	T* ptr = new (ALLOCATOR_SAFE(pAllocator)->Allocate(sizeof(T))) T(static_cast<Args&&>(args)...);
+	T* ptr = new (ALLOCATOR_SAFE(pAllocator)->Allocate(sizeof(T)).pPtr) T(static_cast<Args&&>(args)...);
 	return Scope<T>(ptr, pAllocator);
 }
 

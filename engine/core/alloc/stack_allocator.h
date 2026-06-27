@@ -11,16 +11,16 @@ public:
 	StackAllocator(u32 size, IAllocator* pBackingAllocator = nullptr);
 	~StackAllocator();
 
-	Result Initialize() override;
-	void*  Allocate(u32 size) override;
-	Result Free(void* ptr, u32 size) override;
-	Result Shutdown() override;
+	Result		  Initialize() override;
+	Pointer<void> Allocate(u32 size) override;
+	Result		  Free(void* ptr, u32 size) override;
+	Result		  Shutdown() override;
 
 private:
-	u32			m_Size;
-	IAllocator* m_pBackingAllocator;
-	void*		m_pMemoryBlock;
-	void*		m_pCurrentPtr;
+	u32			  m_Size;
+	IAllocator*	  m_pBackingAllocator;
+	Pointer<void> m_pMemoryBlock;
+	void*		  m_pCurrentPtr;
 };
 
 } // namespace ntt

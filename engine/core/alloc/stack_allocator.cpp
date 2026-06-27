@@ -28,7 +28,7 @@ Result StackAllocator::Initialize()
 		return RESULT_OUT_OF_MEMORY;
 	}
 
-	m_pCurrentPtr = m_pMemoryBlock;
+	m_pCurrentPtr = m_pMemoryBlock.Get();
 
 	return RESULT_SUCCESS;
 }
@@ -45,15 +45,15 @@ Result StackAllocator::Shutdown()
 		return RESULT_UNKNOWN;
 	}
 
-	NTT_ASSERT_RESULT_SUCCESS(m_pBackingAllocator->Free(m_pMemoryBlock, m_Size));
+	NTT_ASSERT_RESULT_SUCCESS(m_pMemoryBlock.Free());
 
 	return RESULT_SUCCESS;
 }
 
-void* StackAllocator::Allocate(u32 size)
+Pointer<void> StackAllocator::Allocate(u32 size)
 {
 	m_pCurrentPtr = static_cast<u8*>(m_pCurrentPtr) + size;
-	return m_pCurrentPtr;
+	return Pointer<void>(m_pCurrentPtr, this, size);
 }
 
 Result StackAllocator::Free(void* ptr, u32 size)

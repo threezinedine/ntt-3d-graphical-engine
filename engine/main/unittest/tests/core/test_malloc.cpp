@@ -33,10 +33,10 @@ TEST_CASE_ISOLATED(MallocTest, AllocateAndFreeMemory)
 	TEST_SUCCESS(GlobalAllocators::Register());
 	TEST_SUCCESS(GlobalAllocators::Initialize());
 
-	void* ptr = g_GlobalAllocators.pMalloc->Allocate(1024);
+	Pointer<void> ptr = g_GlobalAllocators.pMalloc->Allocate(1024);
 	TEST_NOT_NULL(ptr);
 
-	TEST_SUCCESS(g_GlobalAllocators.pMalloc->Free(ptr, 1024));
+	TEST_SUCCESS(g_GlobalAllocators.pMalloc->Free(ptr.Get(), 1024));
 
 	TEST_SUCCESS(GlobalAllocators::Shutdown());
 	TEST_SUCCESS(GlobalAllocators::Unregister());
@@ -47,7 +47,7 @@ TEST_CASE_ISOLATED(MallocTest, NotFreeingMemory)
 	TEST_SUCCESS(GlobalAllocators::Register());
 	TEST_SUCCESS(GlobalAllocators::Initialize());
 
-	void* ptr = g_GlobalAllocators.pMalloc->Allocate(1024);
+	Pointer<void> ptr = g_GlobalAllocators.pMalloc->Allocate(1024);
 	TEST_NOT_NULL(ptr);
 
 	TEST_EQUAL(GlobalAllocators::Shutdown(), RESULT_MEMORY_LEAK);
@@ -59,10 +59,10 @@ TEST_CASE_ISOLATED(MallocTest, UnmatchedFreeSize)
 	TEST_SUCCESS(GlobalAllocators::Register());
 	TEST_SUCCESS(GlobalAllocators::Initialize());
 
-	void* ptr = g_GlobalAllocators.pMalloc->Allocate(1024);
+	Pointer<void> ptr = g_GlobalAllocators.pMalloc->Allocate(1024);
 	TEST_NOT_NULL(ptr);
 
-	TEST_EQUAL(g_GlobalAllocators.pMalloc->Free(ptr, 1000), RESULT_UNMATCHED_FREE_SIZE);
+	TEST_EQUAL(g_GlobalAllocators.pMalloc->Free(ptr.Get(), 1000), RESULT_UNMATCHED_FREE_SIZE);
 
 	TEST_SUCCESS(GlobalAllocators::Shutdown());
 	TEST_SUCCESS(GlobalAllocators::Unregister());

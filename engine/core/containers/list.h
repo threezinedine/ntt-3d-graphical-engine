@@ -11,16 +11,16 @@ class List
 private:
 	struct Node
 	{
-		T	  data;
-		Node* pPrev;
-		Node* pNext;
+		T			  data;
+		Pointer<Node> pPrev;
+		Pointer<Node> pNext;
 	};
 
 public:
 	struct Iterator
 	{
 	public:
-		Iterator(Node* pNode)
+		Iterator(Pointer<Node> pNode)
 			: m_pCurrent(pNode)
 		{
 		}
@@ -87,7 +87,7 @@ public:
 		friend class List<T>;
 
 	private:
-		Node* m_pCurrent;
+		Pointer<Node> m_pCurrent;
 	};
 
 public:
@@ -190,16 +190,16 @@ public:
 	T&	   operator[](u32 index);
 
 private:
-	Node*		m_pHead;
-	Node*		m_pTail;
-	u32			m_Count;
-	IAllocator* m_pAllocator;
+	Pointer<Node> m_pHead;
+	Pointer<Node> m_pTail;
+	u32			  m_Count;
+	IAllocator*	  m_pAllocator;
 };
 
 template <typename T>
 Result List<T>::Append(T&& value)
 {
-	Node* pNewNode = static_cast<Node*>(ALLOCATOR_SAFE(m_pAllocator)->Allocate(sizeof(Node)));
+	Pointer<Node> pNewNode = (ALLOCATOR_SAFE(m_pAllocator)->Allocate(sizeof(Node))).Cast<Node>();
 
 	if (pNewNode == nullptr)
 	{
@@ -228,13 +228,13 @@ Result List<T>::Append(T&& value)
 template <typename T>
 Result List<T>::Clear()
 {
-	Node* pCurrent = m_pHead;
+	Pointer<Node> pCurrent = m_pHead;
 
 	while (pCurrent != nullptr)
 	{
-		Node* pNext = pCurrent->pNext;
+		Pointer<Node> pNext = pCurrent->pNext;
 		pCurrent->~Node(); // Call the destructor for the node
-		NTT_ASSERT_RESULT_SUCCESS(ALLOCATOR_SAFE(m_pAllocator)->Free(pCurrent, sizeof(Node)));
+		NTT_ASSERT_RESULT_SUCCESS(pCurrent.Free());
 		pCurrent = pNext;
 	}
 
@@ -248,9 +248,9 @@ Result List<T>::Clear()
 template <typename T>
 Result List<T>::InsertAfter(typename List<T>::Iterator position, T&& value)
 {
-	Node* pCurrent = position.m_pCurrent;
+	Pointer<Node> pCurrent = position.m_pCurrent;
 
-	Node* pNewNode = (Node*)ALLOCATOR_SAFE(m_pAllocator)->Allocate(sizeof(Node));
+	Pointer<Node> pNewNode = (ALLOCATOR_SAFE(m_pAllocator)->Allocate(sizeof(Node))).Cast<Node>();
 
 	if (pNewNode == nullptr)
 	{
@@ -294,9 +294,9 @@ Result List<T>::InsertAfter(typename List<T>::Iterator position, T&& value)
 template <typename T>
 Result List<T>::InsertBefore(typename List<T>::Iterator position, T&& value)
 {
-	Node* pCurrent = position.m_pCurrent;
+	Pointer<Node> pCurrent = position.m_pCurrent;
 
-	Node* pNewNode = (Node*)ALLOCATOR_SAFE(m_pAllocator)->Allocate(sizeof(Node));
+	Pointer<Node> pNewNode = (ALLOCATOR_SAFE(m_pAllocator)->Allocate(sizeof(Node))).Cast<Node>();
 
 	if (pNewNode == nullptr)
 	{
@@ -340,7 +340,7 @@ Result List<T>::InsertBefore(typename List<T>::Iterator position, T&& value)
 template <typename T>
 Result List<T>::Remove(typename List<T>::Iterator position)
 {
-	Node* pCurrent = position.m_pCurrent;
+	Pointer<Node> pCurrent = position.m_pCurrent;
 
 	if (pCurrent == nullptr)
 	{
@@ -365,8 +365,8 @@ Result List<T>::Remove(typename List<T>::Iterator position)
 		m_pTail = pCurrent->pPrev;
 	}
 
-	pCurrent->~Node(); // Call the destructor for the node
-	NTT_ASSERT_RESULT_SUCCESS(ALLOCATOR_SAFE(m_pAllocator)->Free(pCurrent, sizeof(Node)));
+	pCurrent.Get()->~Node(); // Call the destructor for the node
+	NTT_ASSERT_RESULT_SUCCESS(pCurrent.Free());
 	m_Count--;
 
 	return RESULT_SUCCESS;
@@ -377,7 +377,7 @@ T& List<T>::operator[](u32 index)
 {
 	NTT_ASSERT_MSG(index < m_Count, "Index out of bounds");
 
-	Node* pCurrent = m_pHead;
+	Pointer<Node> pCurrent = m_pHead;
 	for (u32 i = 0; i < index; ++i)
 	{
 		pCurrent = pCurrent->pNext;

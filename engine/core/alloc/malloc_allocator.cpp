@@ -31,7 +31,7 @@ Result MallocAllocator::Initialize()
 	return RESULT_SUCCESS;
 }
 
-void* MallocAllocator::Allocate(u32 size)
+Pointer<void> MallocAllocator::Allocate(u32 size)
 {
 	m_AllocatedMemorySize += size;
 
@@ -58,7 +58,7 @@ void* MallocAllocator::Allocate(u32 size)
 	g_HeadMemoryBlock = pHeader;
 #endif // NTT_LOG_MEMORY
 
-	return static_cast<void*>(pHeader + 1);
+	return Pointer<void>(static_cast<void*>(pHeader + 1), this, size);
 }
 
 Result MallocAllocator::Free(void* ptr, u32 size)

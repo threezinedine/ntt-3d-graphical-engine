@@ -9,7 +9,7 @@ Array<Scope<Handler>> Logging::s_Handlers;
 
 Result Logging::Initialize()
 {
-	s_Handlers.Append(MakeScope<ConsoleHandler>(g_GlobalAllocators.pMalloc));
+	// s_Handlers.Append(MakeScope<ConsoleHandler>(g_GlobalAllocators.pMalloc));
 
 	return RESULT_SUCCESS;
 }
