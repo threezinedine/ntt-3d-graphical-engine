@@ -88,9 +88,22 @@ String::String(String&& other) noexcept
 	}
 	else
 	{
-		m_pHeapBuffer		= other.m_pHeapBuffer;
 		other.m_pHeapBuffer = nullptr; // Prevent double free
 		m_ReservedCapacity	= other.m_ReservedCapacity;
+
+		if (ALLOCATOR_SAFE(m_pAllocator) == ALLOCATOR_SAFE(other.m_pAllocator))
+		{
+			m_pHeapBuffer		= other.m_pHeapBuffer;
+			other.m_pHeapBuffer = nullptr; // Prevent double free
+		}
+		else
+		{
+			// If allocators are different, we need to allocate new memory and copy the string
+			m_pHeapBuffer = (char*)ALLOCATOR_SAFE(m_pAllocator)->Allocate(other.m_ReservedCapacity + 1);
+			memcpy(m_pHeapBuffer, other.m_pHeapBuffer, other.m_ReservedCapacity + 1);
+			(ALLOCATOR_SAFE(other.m_pAllocator)->Free(other.m_pHeapBuffer, other.m_ReservedCapacity + 1));
+			m_ReservedCapacity = other.m_ReservedCapacity;
+		}
 	}
 
 	// TODO: transfer ownership of the allocator
@@ -142,12 +155,21 @@ void String::operator=(String&& other) noexcept
 		}
 		else
 		{
-			m_pHeapBuffer		= other.m_pHeapBuffer;
-			other.m_pHeapBuffer = nullptr; // Prevent double free
+			if (ALLOCATOR_SAFE(m_pAllocator) == ALLOCATOR_SAFE(other.m_pAllocator))
+			{
+				m_pHeapBuffer		= other.m_pHeapBuffer;
+				other.m_pHeapBuffer = nullptr; // Prevent double free
+			}
+			else
+			{
+				// If allocators are different, we need to allocate new memory and copy the string
+				m_pHeapBuffer = (char*)ALLOCATOR_SAFE(m_pAllocator)->Allocate(other.m_ReservedCapacity + 1);
+				memcpy(m_pHeapBuffer, other.m_pHeapBuffer, other.m_ReservedCapacity + 1);
+				(ALLOCATOR_SAFE(other.m_pAllocator)->Free(other.m_pHeapBuffer, other.m_ReservedCapacity + 1));
+				m_ReservedCapacity = other.m_ReservedCapacity;
+				other.m_pAllocator = nullptr; // Prevent double free of allocator if moved
+			}
 		}
-
-		m_pAllocator	   = other.m_pAllocator;
-		other.m_pAllocator = nullptr; // Prevent double free of allocator if moved
 	}
 }
 

@@ -2,12 +2,14 @@
 
 #include "iallocator.h"
 #include "malloc_allocator.h"
+#include "stack_allocator.h"
 
 namespace ntt {
 
 struct GlobalAllocators
 {
 	IAllocator* pMalloc;
+	IAllocator* pStack;
 
 	static Result Register();
 	static Result Unregister();

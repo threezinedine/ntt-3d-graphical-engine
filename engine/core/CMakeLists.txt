@@ -30,6 +30,8 @@ ntt_set_source_group("src/alloc"
     "alloc/alloc.cpp"
     "alloc/malloc_allocator.h"
     "alloc/malloc_allocator.cpp"
+    "alloc/stack_allocator.h"
+    "alloc/stack_allocator.cpp"
 )
 
 ntt_set_source_group("src/backtrace"
