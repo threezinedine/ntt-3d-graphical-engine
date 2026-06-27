@@ -267,3 +267,26 @@ TEST_CASE(StringTest, ResetLongMessageNotBeingShortString)
 	TEST_EQUAL(str.Length(), 0);
 	TEST_EQUAL(str.IsShortString(), false); // After reset, it should be a short string
 }
+
+TEST_CASE(StringTest, ResetShortMessageBeingShortString)
+{
+	String str("Short");
+	TEST_EQUAL(str.IsShortString(), true);
+	TEST_SUCCESS(str.Reset());
+	TEST_EQUAL(str.Length(), 0);
+	TEST_EQUAL(str.IsShortString(), true); // After reset, it should still be a short string
+}
+
+TEST_CASE(StringTest, MoveStringWithDifferentAllocators)
+{
+	String str1("Hello World!!!!!!!!!!", g_GlobalAllocators.pStack);
+	String str2(g_GlobalAllocators.pMalloc);
+
+	u32 strLength	   = str1.Length();
+	u32 allocatorSize1 = ((MallocAllocator*)(g_GlobalAllocators.pMalloc))->GetAllocatedMemorySize();
+	// Move str1 into str2
+	str2			   = (String&&)str1;
+	u32 allocatorSize2 = ((MallocAllocator*)(g_GlobalAllocators.pMalloc))->GetAllocatedMemorySize();
+
+	TEST_EQUAL(allocatorSize2, allocatorSize1 + strLength + 1);
+}

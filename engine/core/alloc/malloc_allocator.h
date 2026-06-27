@@ -15,6 +15,13 @@ public:
 	virtual Result Free(void* ptr, u32 size) override;
 	virtual Result Shutdown() override;
 
+#if NTT_UNITTEST
+	inline u32 GetAllocatedMemorySize() const
+	{
+		return m_AllocatedMemorySize;
+	}
+#endif // NTT_UNITTEST
+
 private:
 	u32 m_AllocatedMemorySize = 0;
 };

@@ -107,7 +107,8 @@ String::String(String&& other) noexcept
 	}
 
 	// TODO: transfer ownership of the allocator
-	other.m_pAllocator = nullptr; // Prevent double free of allocator if moved
+	other.m_pAllocator	= nullptr; // Prevent double free of allocator if moved
+	other.m_pHeapBuffer = nullptr; // Prevent double free of heap buffer if moved
 }
 
 String::~String()
@@ -167,10 +168,12 @@ void String::operator=(String&& other) noexcept
 				memcpy(m_pHeapBuffer, other.m_pHeapBuffer, other.m_ReservedCapacity + 1);
 				(ALLOCATOR_SAFE(other.m_pAllocator)->Free(other.m_pHeapBuffer, other.m_ReservedCapacity + 1));
 				m_ReservedCapacity = other.m_ReservedCapacity;
-				other.m_pAllocator = nullptr; // Prevent double free of allocator if moved
 			}
 		}
 	}
+
+	other.m_pAllocator	= nullptr; // Prevent double free of allocator if moved
+	other.m_pHeapBuffer = nullptr; // Prevent double free of heap buffer if moved
 }
 
 void String::operator=(const char* str)
