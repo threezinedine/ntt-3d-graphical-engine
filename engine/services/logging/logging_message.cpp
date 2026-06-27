@@ -82,7 +82,7 @@ static bool StringToInteger(StringView str, i32* pResult)
 	return true;
 }
 
-#define ABS(x) ((x) < 0 ? -(x) : (x))
+#define ABS(x) (u32)((x) < 0 ? -(x) : (x))
 
 Result LoggingMessage::FormatMessage(StringView format)
 {
