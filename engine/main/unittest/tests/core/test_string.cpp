@@ -290,3 +290,16 @@ TEST_CASE(StringTest, MoveStringWithDifferentAllocators)
 
 	TEST_EQUAL(allocatorSize2, allocatorSize1 + strLength + 1);
 }
+
+TEST_CASE(StringTest, MoveStringWithSameAllocators)
+{
+	String str1("Hello World!!!!!!!!!!", g_GlobalAllocators.pMalloc);
+	String str2(g_GlobalAllocators.pMalloc);
+
+	u32 allocatorSize1 = ((MallocAllocator*)(g_GlobalAllocators.pMalloc))->GetAllocatedMemorySize();
+	// Move str1 into str2
+	str2			   = (String&&)str1;
+	u32 allocatorSize2 = ((MallocAllocator*)(g_GlobalAllocators.pMalloc))->GetAllocatedMemorySize();
+
+	TEST_EQUAL(allocatorSize2, allocatorSize1);
+}
