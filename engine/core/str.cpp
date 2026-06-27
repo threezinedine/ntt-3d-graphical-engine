@@ -430,16 +430,18 @@ Result String::ResetHeap()
 	template <>                                                                                                        \
 	StringView ToString(const type& value)                                                                             \
 	{                                                                                                                  \
-		static String temp;                                                                                            \
-		temp = String(function);                                                                                       \
-		return StringView(temp.ToStringView());                                                                        \
+		static char temp[18];                                                                                          \
+		memset(temp, 0, sizeof(temp));                                                                                 \
+		format(temp, sizeof(temp), function);                                                                          \
+		return StringView(temp);                                                                                       \
 	}                                                                                                                  \
 	template <>                                                                                                        \
 	StringView ToString(type& value)                                                                                   \
 	{                                                                                                                  \
-		static String temp;                                                                                            \
-		temp = String(function);                                                                                       \
-		return StringView(temp.ToStringView());                                                                        \
+		static char temp[18];                                                                                          \
+		memset(temp, 0, sizeof(temp));                                                                                 \
+		format(temp, sizeof(temp), function);                                                                          \
+		return StringView(temp);                                                                                       \
 	}
 
 template <>
