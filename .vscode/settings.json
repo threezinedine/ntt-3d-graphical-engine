@@ -3,6 +3,7 @@
 	"python.analysis.typeCheckingMode": "standard",
 	"chat.tools.terminal.autoApprove": {
 		"clang++": true,
-		"./build/unittest/engine/main/unittest/ntt-unittest": true
+		"./build/unittest/engine/main/unittest/ntt-unittest": true,
+		"cmake": true
 	}
 }

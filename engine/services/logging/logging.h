@@ -5,6 +5,7 @@
 #include "logging_level.h"
 #include "logging_message.h"
 #include "logging_type.h"
+#include "smart_ptr/smart_ptr.h"
 
 namespace ntt {
 
@@ -16,7 +17,7 @@ public:
 	static Result Shutdown();
 
 private:
-	static Array<Handler*> s_Handlers;
+	static Array<Scope<Handler>> s_Handlers;
 };
 
 } // namespace ntt

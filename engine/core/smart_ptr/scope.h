@@ -1,10 +1,9 @@
 #pragma once
 
-#include <new>
-
 #include "alloc/alloc.h"
 #include "common.h"
 #include "utils/utils.h"
+#include <new>
 
 namespace ntt {
 
@@ -38,6 +37,34 @@ public:
 			T* newPtr =
 				new (ALLOCATOR_SAFE(m_pAllocator)->Allocate(sizeof(T))) T(*other.m_Ptr); // Move construct the object
 
+			newPtr = (T&&)other.m_Ptr; // Move construct the object
+
+			NTT_ASSERT(ALLOCATOR_SAFE(other.m_pAllocator)->Free(other.m_Ptr, sizeof(T)) == RESULT_SUCCESS);
+			other.m_Ptr = nullptr; // Prevent double free
+			m_Ptr		= newPtr;  // Update m_Ptr to point to the newly allocated memory
+		}
+		else
+		{
+			m_Ptr		= other.m_Ptr; // Move the pointer
+			other.m_Ptr = nullptr;	   // Prevent double free
+		}
+	}
+
+	template <typename U>
+	Scope(Scope<U>&& other) noexcept
+		: m_Ptr(static_cast<T*>(other.m_Ptr))
+		, m_pAllocator(other.m_pAllocator)
+	{
+		if (m_Ptr != nullptr)
+		{
+			m_Ptr->~T();
+		}
+
+		if (ALLOCATOR_SAFE(m_pAllocator) != ALLOCATOR_SAFE(other.m_pAllocator) && other.m_Ptr != nullptr)
+		{
+			T* newPtr = (T*)ALLOCATOR_SAFE(m_pAllocator)->Allocate(sizeof(U));
+			MemCopy(newPtr, other.m_Ptr, sizeof(U));
+
 			NTT_ASSERT(ALLOCATOR_SAFE(other.m_pAllocator)->Free(other.m_Ptr, sizeof(T)) == RESULT_SUCCESS);
 			other.m_Ptr = nullptr; // Prevent double free
 			m_Ptr		= newPtr;  // Update m_Ptr to point to the newly allocated memory
@@ -59,8 +86,8 @@ public:
 
 			if (ALLOCATOR_SAFE(m_pAllocator) != ALLOCATOR_SAFE(other.m_pAllocator) && other.m_Ptr != nullptr)
 			{
-				T* newPtr = new (ALLOCATOR_SAFE(m_pAllocator)->Allocate(sizeof(T)))
-					T((T&&)*other.m_Ptr); // Move construct the object
+				T* newPtr = (T*)ALLOCATOR_SAFE(m_pAllocator)->Allocate(sizeof(T));
+				MemCopy(newPtr, other.m_Ptr, sizeof(T));
 
 				NTT_ASSERT(ALLOCATOR_SAFE(other.m_pAllocator)->Free(other.m_Ptr, sizeof(T)) == RESULT_SUCCESS);
 				other.m_Ptr = nullptr; // Prevent double free
@@ -84,11 +111,38 @@ public:
 		}
 	}
 
+	template <typename U>
+	Scope& operator=(Scope<U>&& other)
+	{
+		if (m_Ptr != nullptr)
+		{
+			m_Ptr->~T();
+
+			if (ALLOCATOR_SAFE(m_pAllocator) != ALLOCATOR_SAFE(other.m_pAllocator) && other.m_Ptr != nullptr)
+			{
+				T* newPtr = (T*)ALLOCATOR_SAFE(m_pAllocator)->Allocate(sizeof(T));
+				MemCopy(newPtr, other.m_Ptr, sizeof(U));
+
+				NTT_ASSERT(ALLOCATOR_SAFE(other.m_pAllocator)->Free(other.m_Ptr, sizeof(T)) == RESULT_SUCCESS);
+				other.m_Ptr = nullptr; // Prevent double free
+				m_Ptr		= newPtr;  // Update m_Ptr to point to the newly allocated memory
+			}
+			else
+			{
+				m_Ptr		= other.m_Ptr; // Move the pointer
+				other.m_Ptr = nullptr;	   // Prevent double free
+			}
+		}
+	}
+
 public:
 	inline T* Get() const
 	{
 		return m_Ptr;
 	}
+
+	template <typename U>
+	friend class Scope;
 
 private:
 	T*			m_Ptr;
@@ -103,3 +157,6 @@ Scope<T> MakeScope(IAllocator* pAllocator, Args&&... args)
 }
 
 } // namespace ntt
+
+void* operator new(size_t size);
+void  operator delete(void* ptr);

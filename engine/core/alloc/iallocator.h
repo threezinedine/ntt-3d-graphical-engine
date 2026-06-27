@@ -5,6 +5,8 @@
 
 namespace ntt {
 
+class IAllocator;
+
 class IAllocator
 {
 public:
