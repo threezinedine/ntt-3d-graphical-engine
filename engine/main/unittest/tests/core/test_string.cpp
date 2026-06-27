@@ -258,3 +258,12 @@ TEST_CASE(StringTest, ToStringTest)
 	StringView floatView  = ToString(floatValue);
 	TEST_EQUAL(floatView, "3.140000");
 }
+
+TEST_CASE(StringTest, ResetLongMessageNotBeingShortString)
+{
+	String str("This is a long string that exceeds the short string optimization size.");
+	TEST_EQUAL(str.IsShortString(), false);
+	TEST_SUCCESS(str.Reset());
+	TEST_EQUAL(str.Length(), 0);
+	TEST_EQUAL(str.IsShortString(), false); // After reset, it should be a short string
+}

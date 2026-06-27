@@ -21,6 +21,7 @@ String::String(const char* str, IAllocator* pAllocator)
 		m_pHeapBuffer	= nullptr;
 		memcpy(m_pShortBuffer, str, NTT_SHORT_STRING_OPTIMIZATION_SIZE);
 		m_pShortBuffer[NTT_SHORT_STRING_OPTIMIZATION_SIZE] = '\0'; // Ensure null-termination
+		m_ReservedCapacity								   = 0;
 	}
 	else
 	{
@@ -28,6 +29,7 @@ String::String(const char* str, IAllocator* pAllocator)
 		m_pHeapBuffer	= (char*)ALLOCATOR_SAFE(m_pAllocator)->Allocate((u32)strlen(str) + 1);
 		NTT_ASSERT_MSG(m_pHeapBuffer != nullptr, "Failed to allocate memory for heap string.");
 		memcpy(m_pHeapBuffer, str, (u32)strlen(str) + 1);
+		m_ReservedCapacity = (u32)strlen(str);
 	}
 }
 
@@ -38,7 +40,7 @@ StringView String::ToStringView() const
 
 Result String::Reserve(u32 newCapacity)
 {
-	if (newCapacity <= Length())
+	if (newCapacity <= m_ReservedCapacity)
 	{
 		return RESULT_NEW_CAPACITY_TOO_SMALL;
 	}
@@ -56,8 +58,9 @@ Result String::Reserve(u32 newCapacity)
 	{
 		ALLOCATOR_SAFE(m_pAllocator)->Free(m_pHeapBuffer, (u32)(strlen(m_pHeapBuffer) + 1));
 	}
-	m_pHeapBuffer	= pNewHeapBuffer;
-	m_IsShortString = false;
+	m_pHeapBuffer	   = pNewHeapBuffer;
+	m_IsShortString	   = false;
+	m_ReservedCapacity = newCapacity;
 	return RESULT_SUCCESS;
 }
 
@@ -87,8 +90,10 @@ String::String(String&& other) noexcept
 	{
 		m_pHeapBuffer		= other.m_pHeapBuffer;
 		other.m_pHeapBuffer = nullptr; // Prevent double free
+		m_ReservedCapacity	= other.m_ReservedCapacity;
 	}
 
+	// TODO: transfer ownership of the allocator
 	other.m_pAllocator = nullptr; // Prevent double free of allocator if moved
 }
 
@@ -96,7 +101,7 @@ String::~String()
 {
 	if (m_pHeapBuffer != nullptr)
 	{
-		ALLOCATOR_SAFE(m_pAllocator)->Free(m_pHeapBuffer, (u32)(strlen(m_pHeapBuffer) + 1));
+		ALLOCATOR_SAFE(m_pAllocator)->Free(m_pHeapBuffer, m_ReservedCapacity + 1);
 		m_pHeapBuffer = nullptr; // Prevent dangling pointer
 	}
 }
@@ -125,7 +130,7 @@ void String::operator=(String&& other) noexcept
 		// Free existing resources
 		if (!m_IsShortString && m_pHeapBuffer != nullptr)
 		{
-			ALLOCATOR_SAFE(m_pAllocator)->Free(m_pHeapBuffer, (u32)(strlen(m_pHeapBuffer) + 1));
+			ALLOCATOR_SAFE(m_pAllocator)->Free(m_pHeapBuffer, m_ReservedCapacity + 1);
 		}
 
 		m_IsShortString = other.m_IsShortString;
@@ -163,6 +168,7 @@ void String::operator=(const char* str)
 		m_pHeapBuffer	= (char*)ALLOCATOR_SAFE(m_pAllocator)->Allocate((u32)strlen(str) + 1);
 		NTT_ASSERT_MSG(m_pHeapBuffer != nullptr, "Failed to allocate memory for heap string.");
 		memcpy(m_pHeapBuffer, str, (u32)strlen(str) + 1);
+		m_ReservedCapacity = (u32)strlen(str);
 	}
 }
 
@@ -172,8 +178,9 @@ Result String::Clear()
 	memset(m_pShortBuffer, 0, sizeof(m_pShortBuffer));
 	if (m_pHeapBuffer != nullptr)
 	{
-		NTT_ASSERT_RESULT_SUCCESS(ALLOCATOR_SAFE(m_pAllocator)->Free(m_pHeapBuffer, (u32)strlen(m_pHeapBuffer) + 1));
-		m_pHeapBuffer = nullptr;
+		NTT_ASSERT_RESULT_SUCCESS(ALLOCATOR_SAFE(m_pAllocator)->Free(m_pHeapBuffer, m_ReservedCapacity + 1));
+		m_pHeapBuffer	   = nullptr;
+		m_ReservedCapacity = 0;
 	}
 	return RESULT_SUCCESS;
 }
@@ -202,6 +209,7 @@ String String::operator+(const String& other) const
 		NTT_ASSERT_MSG(result.m_pHeapBuffer != nullptr, "Failed to allocate memory for concatenated string.");
 		memcpy(result.m_pHeapBuffer, CStr(), (size_t)Length());
 		memcpy(result.m_pHeapBuffer + (size_t)Length(), other.CStr(), (size_t)other.Length() + 1);
+		result.m_ReservedCapacity = newLength;
 		return result;
 	}
 }
@@ -234,7 +242,7 @@ StringView StringView::Slice(u32 start, u32 length) const
 	}
 
 	u32 end = start + length;
-	if (end > Length())
+	if (end > Length() || length == u32(-1))
 	{
 		end = Length(); // Adjust end if it exceeds the string length
 	}
@@ -397,15 +405,28 @@ Result String::ResetHeap()
 	template <>                                                                                                        \
 	StringView ToString(const type& value)                                                                             \
 	{                                                                                                                  \
-		return StringView(function);                                                                                   \
+		static String temp;                                                                                            \
+		temp = String(function);                                                                                       \
+		return StringView(temp.ToStringView());                                                                        \
 	}                                                                                                                  \
 	template <>                                                                                                        \
 	StringView ToString(type& value)                                                                                   \
 	{                                                                                                                  \
-		return StringView(function);                                                                                   \
+		static String temp;                                                                                            \
+		temp = String(function);                                                                                       \
+		return StringView(temp.ToStringView());                                                                        \
 	}
 
-DEFINE_PRIMITIVE_TO_STRING(String, value.ToStringView())
+template <>
+StringView ToString(const String& value)
+{
+	return StringView(value.ToStringView());
+}
+template <>
+StringView ToString(String& value)
+{
+	return StringView(value.ToStringView());
+}
 
 DEFINE_PRIMITIVE_TO_STRING(i32, std::to_string(value).c_str())
 DEFINE_PRIMITIVE_TO_STRING(i16, std::to_string(value).c_str())

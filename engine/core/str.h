@@ -67,6 +67,7 @@ private:
 	bool		m_IsShortString;
 	char		m_pShortBuffer[NTT_SHORT_STRING_OPTIMIZATION_SIZE + 1];
 	char*		m_pHeapBuffer;
+	u32			m_ReservedCapacity; // Only used when m_IsShortString is false
 	IAllocator* m_pAllocator;
 };
 
@@ -111,7 +112,7 @@ public:
 	}
 
 	u32		   Find(const StringView& subString) const;
-	StringView Slice(u32 start, u32 length) const;
+	StringView Slice(u32 start, u32 length = u32(-1)) const;
 
 private:
 	const char* m_pData;
