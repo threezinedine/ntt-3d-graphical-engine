@@ -283,15 +283,22 @@ Result Array<T>::Resize(u32 newCapacity)
 		return RESULT_OUT_OF_MEMORY;
 	}
 
-	for (u32 i = 0; i < m_Count; ++i)
+	if constexpr (__is_trivially_copyable(T))
 	{
-		pNewData.Get()[i] = (T&&)m_pData.Get()[i];
+		MemCopy(pNewData.Get(), m_pData.Get(), sizeof(T) * m_Count);
+	}
+	else
+	{
+		for (u32 i = 0; i < m_Count; ++i)
+		{
+			pNewData.Get()[i] = (T&&)m_pData.Get()[i];
+		}
 	}
 
 	NTT_ASSERT_MSG(m_pData.Free() == RESULT_SUCCESS, "Failed to free memory for Array.");
-
 	m_pData	   = pNewData;
 	m_Capacity = newCapacity;
+
 	return RESULT_SUCCESS;
 }
 

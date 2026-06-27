@@ -101,7 +101,7 @@ Result MallocAllocator::Free(void* ptr, u32 size)
 #endif // NTT_LOG_MEMORY
 
 	m_AllocatedMemorySize -= pHeader->size;
-	free(pHeader);
+	free((void*)pHeader);
 
 	return result;
 }
@@ -130,6 +130,9 @@ Result MallocAllocator::Shutdown()
 
 		return RESULT_MEMORY_LEAK;
 	}
+
+	m_AllocatedMemorySize = 0;
+	g_HeadMemoryBlock	  = nullptr;
 
 	return RESULT_SUCCESS;
 }

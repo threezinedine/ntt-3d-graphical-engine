@@ -42,7 +42,7 @@
 	},
 	"unittest": {
 		"inherit": ["only-unittest"],
-		"options": [],
+		"options": ["NTT_LOG_MEMORY=0"],
 		"command": "cmake -B build/unittest -Wno-dev -DCMAKE_BUILD_TYPE=Debug {{ options }}"
 	}
 }

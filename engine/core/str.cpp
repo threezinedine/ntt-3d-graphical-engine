@@ -115,7 +115,7 @@ String::~String()
 {
 	if (m_pHeapBuffer != nullptr)
 	{
-		ALLOCATOR_SAFE(m_pAllocator)->Free(m_pHeapBuffer.Get(), m_ReservedCapacity + 1);
+		NTT_ASSERT(m_pHeapBuffer.Free() == RESULT_SUCCESS);
 		m_pHeapBuffer = nullptr; // Prevent dangling pointer
 	}
 }
