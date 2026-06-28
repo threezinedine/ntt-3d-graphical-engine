@@ -33,7 +33,7 @@ Result Application::Run()
 
 Result Application::Shutdown()
 {
-	NTT_APPLICATION_INFO("Application shut down successfully.");
+	NTT_APPLICATION_INFO("Application shut down successfully.", 3);
 
 	NTT_ASSERT_RESULT_SUCCESS(Logging::Shutdown());
 
