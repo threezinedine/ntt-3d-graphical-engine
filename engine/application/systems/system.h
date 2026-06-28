@@ -7,6 +7,8 @@ namespace ntt {
 
 class System : public Object
 {
+	NTT_OBJECT_DERIVED_DECLARE(System, Object)
+
 public:
 	System();
 	virtual ~System();

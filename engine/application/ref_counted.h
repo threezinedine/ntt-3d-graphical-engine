@@ -7,6 +7,8 @@ namespace ntt {
 
 class RefCounted : public Object
 {
+	NTT_OBJECT_DERIVED_DECLARE(RefCounted, Object)
+
 public:
 	RefCounted();
 	virtual ~RefCounted();

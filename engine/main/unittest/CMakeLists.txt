@@ -33,6 +33,12 @@ if (NTT_UNITTEST)
     )
 
     ntt_set_source_group(
+        "src/tests/application"
+        NTT_APPLICATION_TESTS_SOURCES
+        "tests/applications/test_object.cpp"
+    )
+
+    ntt_set_source_group(
         "src/tests/services"
         NTT_SERVICES_TESTS_SOURCES
         "tests/services/test_logging.cpp"
@@ -51,6 +57,7 @@ if (NTT_UNITTEST)
         ${NTT_CORE_TESTS_SOURCES}
         ${NTT_CONTAINERS_TESTS_SOURCES}
         ${NTT_SERVICES_TESTS_SOURCES}
+        ${NTT_APPLICATION_TESTS_SOURCES}
     )
 
     target_link_libraries(

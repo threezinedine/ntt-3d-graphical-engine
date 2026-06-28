@@ -7,6 +7,7 @@ ntt_project(NTT_APPLICATION_LIBRARY_NAME)
 ntt_set_source_group("src"
     NTT_APPLICATION_SOURCES
     "applications.h"
+    "applications.cpp"
     "ref_counted.h"
     "ref_counted.cpp"
     "object.h"
