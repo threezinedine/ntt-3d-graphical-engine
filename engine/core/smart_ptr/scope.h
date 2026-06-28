@@ -90,6 +90,21 @@ public:
 		}
 	}
 
+	Result Transfer(IAllocator* pNewAllocator)
+	{
+		if (m_Ptr == nullptr)
+		{
+			return RESULT_NULL_POINTER;
+		}
+
+		Pointer<T> pNewPtr = ALLOCATOR_SAFE(pNewAllocator)->Allocate(sizeof(T)).Cast<T>();
+		MemCopy(pNewPtr.Get(), m_Ptr.Get(), (u32)sizeof(T));
+		NTT_ASSERT(m_Ptr.Free() == RESULT_SUCCESS);
+		m_Ptr = pNewPtr;
+
+		return RESULT_SUCCESS;
+	}
+
 	template <typename U>
 	friend class Scope;
 

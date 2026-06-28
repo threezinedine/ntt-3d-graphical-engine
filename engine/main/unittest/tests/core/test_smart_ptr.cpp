@@ -92,3 +92,29 @@ TEST_CASE(SmartPtrTest, ResetSmartPtr)
 	TEST_EQUAL(TestObject::s_CopyConstructorCount, 0);
 	TEST_EQUAL(TestObject::s_MoveConstructorCount, 0);
 }
+
+TEST_CASE(SmartPtrTest, TransferAllocator)
+{
+	Scope<TestObject> smartPtr = MakeScope<TestObject>(g_GlobalAllocators.pStack, 500);
+	TEST_EQUAL(static_cast<i32>(*smartPtr.Get()), 500);
+
+	u32 allocatedSize = ((MallocAllocator*)(g_GlobalAllocators.pMalloc))->GetAllocatedMemorySize();
+
+	// Transfer the smart pointer to a different allocator
+	Result result = smartPtr.Transfer(g_GlobalAllocators.pMalloc);
+	TEST_SUCCESS(result);
+
+	u32 allocatedSizeAfter = ((MallocAllocator*)(g_GlobalAllocators.pMalloc))->GetAllocatedMemorySize();
+	TEST_ASSERT(allocatedSizeAfter ==
+				allocatedSize + sizeof(TestObject)); // Ensure memory was allocated in the new allocator
+
+	// After transfer, the smart pointer should still be valid
+	TEST_NOT_NULL(smartPtr.Get());
+	TEST_EQUAL(static_cast<i32>(*smartPtr.Get()), 500);
+
+	// After transfer, the destructor should not have been called yet
+	TEST_EQUAL(TestObject::s_ConstructorCount, 1);
+	TEST_EQUAL(TestObject::s_DestructorCount, 0);
+	TEST_EQUAL(TestObject::s_CopyConstructorCount, 0);
+	TEST_EQUAL(TestObject::s_MoveConstructorCount, 0);
+}
