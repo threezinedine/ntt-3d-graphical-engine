@@ -35,6 +35,20 @@ TEST_CASE(ArrayTest, AppendElements)
 	TEST_EQUAL(array.GetCapacity(), 4); // Capacity should have doubled from 2 to
 }
 
+TEST_CASE(ArrayTest, AssignValue)
+{
+	Array<i32> array(2, g_GlobalAllocators.pMalloc);
+
+	TEST_SUCCESS(array.Append(10));
+	TEST_SUCCESS(array.Append(20));
+
+	array[0] = 100;
+	array[1] = 200;
+
+	TEST_EQUAL((i32)array[0], 100);
+	TEST_EQUAL((i32)array[1], 200);
+}
+
 TEST_CASE(ArrayTest, AppendObjects)
 {
 	Array<TestObject> array;

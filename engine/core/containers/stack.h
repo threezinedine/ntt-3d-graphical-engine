@@ -33,7 +33,8 @@ public:
 		return m_List.GetCount() == 0;
 	}
 
-	Result Push(T&& value);
+	Result Push(const T& value) = delete;
+	Result Push(T&& value) noexcept;
 	Result Pop();
 
 	T& Top()
@@ -48,12 +49,22 @@ public:
 		return m_List.Back();
 	}
 
+	inline u32 GetCount() const
+	{
+		return m_List.GetCount();
+	}
+
+	inline Result Clear()
+	{
+		return m_List.Clear();
+	}
+
 private:
 	List<T> m_List;
 };
 
 template <typename T>
-Result Stack<T>::Push(T&& value)
+Result Stack<T>::Push(T&& value) noexcept
 {
 	return m_List.Append((T&&)value);
 }

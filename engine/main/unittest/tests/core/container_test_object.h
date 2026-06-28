@@ -39,8 +39,9 @@ public:
 		s_DestructorCount++;
 	}
 
-	void operator=(TestObject&&) noexcept
+	void operator=(TestObject&& other) noexcept
 	{
+		m_Value = other.m_Value;
 		s_MoveConstructorCount++;
 	}
 

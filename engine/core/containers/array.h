@@ -177,6 +177,8 @@ public:
 	Result Clear();
 
 	Result Append(T&& value);
+	template <typename... Args>
+	Result Emplace(Args&&... args);
 	Result Insert(T&& value, u32 index);
 	Result Insert(T&& value, Iterator iter);
 
@@ -364,6 +366,25 @@ bool Array<T>::All(Predicate predicate) const
 		}
 	}
 	return true;
+}
+
+template <typename T>
+template <typename... Args>
+Result Array<T>::Emplace(Args&&... args)
+{
+	if (m_Count > m_Capacity)
+	{
+		return RESULT_UNKNOWN;
+	}
+
+	if (m_Count == m_Capacity)
+	{
+		NTT_ASSERT_RESULT_SUCCESS(Resize(m_Capacity * 2));
+	}
+
+	new (&m_pData.Get()[m_Count]) T(static_cast<Args&&>(args)...);
+	++m_Count;
+	return RESULT_SUCCESS;
 }
 
 } // namespace ntt
