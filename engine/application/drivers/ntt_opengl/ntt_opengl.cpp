@@ -30,11 +30,14 @@ static Result OpenGLDriver_Initialize()
 	}
 #endif // !NTT_PLATFORM_WEB
 
+	NTT_RENDER_INFO("OpenGL context initialized successfully.");
 	return RESULT_SUCCESS;
 }
 
 static Result OpenGLDriver_Shutdown()
 {
+	NTT_RENDER_INFO("OpenGL context shut down successfully.");
+
 	return RESULT_SUCCESS;
 }
 

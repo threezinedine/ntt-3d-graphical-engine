@@ -48,6 +48,8 @@ static Result GLFWDisplayDriver_Initialize()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
+	NTT_DISPLAY_INFO("GLFW loaded with OpenGL version: %s", glfwGetVersionString());
+
 	GLFWwindow* pWindow = glfwCreateWindow(500, 600, "NTT GLFW Driver", nullptr, nullptr);
 	if (pWindow == nullptr)
 	{
