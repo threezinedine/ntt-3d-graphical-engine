@@ -16,6 +16,7 @@ ntt_set_source_group("defs"
     NTT_DEFS_SOURCES
     "console_color.def"
     "result.def"
+    "id.def"
 )
 
 ntt_set_source_group("src/utils"
@@ -55,6 +56,8 @@ ntt_set_source_group("src/core"
     "globals.cpp"
     "str.h"
     "str.cpp"
+    "id.h"
+    "id.cpp"
 )
 
 ntt_set_source_group("src/smart_ptr"

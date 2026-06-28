@@ -234,6 +234,19 @@ extern TestSuite* g_TailTestSuite;
 #define TEST_EQUAL(expected, actual)   _TEST_EQUAL(, expected, actual)
 #define W_TEST_EQUAL(expected, actual) _TEST_EQUAL(pTest->, expected, actual)
 
+#define _TEST_NOT_EQUAL(pre, expected, actual)                                                                         \
+	do                                                                                                                 \
+	{                                                                                                                  \
+		if ((expected) == (actual))                                                                                    \
+		{                                                                                                              \
+			pre SetFailure("Assertion failed: " #expected " != " #actual, __FILE__, __LINE__);                         \
+			return;                                                                                                    \
+		}                                                                                                              \
+	} while (0)
+
+#define TEST_NOT_EQUAL(expected, actual)   _TEST_NOT_EQUAL(, expected, actual)
+#define W_TEST_NOT_EQUAL(expected, actual) _TEST_NOT_EQUAL(pTest->, expected, actual)
+
 #define _TEST_SUCCESS(pre, condition)                                                                                  \
 	do                                                                                                                 \
 	{                                                                                                                  \

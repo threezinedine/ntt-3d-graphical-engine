@@ -19,6 +19,7 @@ if (NTT_UNITTEST)
         "tests/core/test_string.cpp"
         "tests/core/test_smart_ptr.cpp"
         "tests/core/container_test_object.h"
+        "tests/core/test_id.cpp"
     )
 
     ntt_set_source_group(

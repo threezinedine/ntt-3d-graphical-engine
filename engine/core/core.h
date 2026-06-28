@@ -7,6 +7,7 @@
 #include "containers/containers.h"
 #include "defs.h"
 #include "globals.h"
+#include "id.h"
 #include "result.h"
 #include "smart_ptr/smart_ptr.h"
 #include "str.h"

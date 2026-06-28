@@ -1,0 +1,10 @@
+#ifndef ID_TYPE_OPTION
+#define ID_TYPE_OPTION(option)
+#endif
+
+#ifndef ID_TYPE_OPTION_END
+#define ID_TYPE_OPTION_END(option)
+#endif
+
+ID_TYPE_OPTION(OBJECT_TYPE)
+ID_TYPE_OPTION_END(COUNT)
