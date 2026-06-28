@@ -250,9 +250,15 @@ extern TestSuite* g_TailTestSuite;
 #define _TEST_SUCCESS(pre, condition)                                                                                  \
 	do                                                                                                                 \
 	{                                                                                                                  \
-		if ((condition) != ::ntt::RESULT_SUCCESS)                                                                      \
+		Result _test_success_result = (condition);                                                                     \
+		if (_test_success_result != ::ntt::RESULT_SUCCESS)                                                             \
 		{                                                                                                              \
-			pre SetFailure("Assertion failed: " #condition, __FILE__, __LINE__);                                       \
+			char _test_success_buffer[1024];                                                                           \
+			format(_test_success_buffer,                                                                               \
+				   sizeof(_test_success_buffer),                                                                       \
+				   "Assertion failed: " #condition " returned %s",                                                     \
+				   ToString(_test_success_result));                                                                    \
+			pre SetFailure(_test_success_buffer, __FILE__, __LINE__);                                                  \
 			return;                                                                                                    \
 		}                                                                                                              \
 	} while (0)

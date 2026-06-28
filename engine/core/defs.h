@@ -62,6 +62,18 @@
 
 #define NTT_ASSERT_RESULT_SUCCESS(_res) NTT_ASSERT_MSG((_res) == RESULT_SUCCESS, "Result is %s.", ToString(_res))
 
+#define NTT_UNREACHABLE()                                                                                              \
+	do                                                                                                                 \
+	{                                                                                                                  \
+		setConsoleColor(CONSOLE_COLOR_RED);                                                                            \
+		print("Unreachable code reached: file: %s, line: %d\n", __FILE__, __LINE__);                                   \
+		resetConsoleColor();                                                                                           \
+		Backtrace _backtrace;                                                                                          \
+		_backtrace.Capture();                                                                                          \
+		_backtrace.Print();                                                                                            \
+		debug_break();                                                                                                 \
+	} while (0)
+
 #else // NTT_ENABLE_ASSERTION
 
 #define NTT_ASSERT(expr)		  ((void)(expr))
@@ -71,6 +83,8 @@
 	{                                                                                                                  \
 		return (_res);                                                                                                 \
 	}
+
+#define NTT_UNREACHABLE() ((void)0)
 
 #endif // NTT_ENABLE_ASSERTION
 

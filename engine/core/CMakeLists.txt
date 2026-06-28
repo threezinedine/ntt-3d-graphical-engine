@@ -10,6 +10,9 @@ ntt_set_source_group("src/containers"
     "containers/array.h"
     "containers/list.h"
     "containers/stack.h"
+    "containers/queue.h"
+    "containers/storage.h"
+    "containers/map.h"
 )
 
 ntt_set_source_group("defs"

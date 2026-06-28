@@ -8,8 +8,8 @@ namespace ntt {
 
 struct GlobalAllocators
 {
-	IAllocator* pMalloc;
-	IAllocator* pStack;
+	MallocAllocator* pMalloc;
+	StackAllocator*	 pStack;
 
 	static Result Register();
 	static Result Unregister();

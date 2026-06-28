@@ -30,6 +30,7 @@ if (NTT_UNITTEST)
         "tests/core/containers/test_stack.cpp"
         "tests/core/containers/test_queue.cpp"
         "tests/core/containers/test_storage.cpp"
+        "tests/core/containers/test_map.cpp"
     )
 
     ntt_set_source_group(
