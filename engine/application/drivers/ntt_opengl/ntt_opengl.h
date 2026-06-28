@@ -5,4 +5,6 @@ namespace ntt {
 
 Result RegisterOpenGLDriver();
 
+Result RegisterOpenGLRenderer();
+
 } // namespace ntt

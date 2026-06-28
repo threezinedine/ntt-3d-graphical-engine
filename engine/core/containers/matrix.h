@@ -6,27 +6,8 @@
 namespace ntt {
 
 template <typename T, int Rows, int Cols>
-class Matrix
+struct Matrix
 {
-public:
-	Matrix()
-	{
-		MemSet(m_Data, 0, sizeof(m_Data));
-	}
-
-	Matrix(const Matrix<T, Rows, Cols>& other)
-	{
-		MemCopy(m_Data, other.m_Data, sizeof(m_Data));
-	}
-
-	Matrix(Matrix<T, Rows, Cols>&& other) noexcept
-	{
-		MemCopy(m_Data, other.m_Data, sizeof(m_Data));
-		MemSet(other.m_Data, 0, sizeof(other.m_Data));
-	}
-
-	~Matrix() = default;
-
 	T& operator()(i32 row, i32 col)
 	{
 		return m_Data[row][col];
@@ -52,25 +33,6 @@ public:
 		return m_Data[0][0];
 	}
 
-	Matrix<T, Rows, Cols>& operator=(const Matrix<T, Rows, Cols>& other)
-	{
-		if (this != &other)
-		{
-			MemCopy(m_Data, other.m_Data, sizeof(m_Data));
-		}
-		return *this;
-	}
-
-	Matrix<T, Rows, Cols>& operator=(Matrix<T, Rows, Cols>&& other) noexcept
-	{
-		if (this != &other)
-		{
-			MemCopy(m_Data, other.m_Data, sizeof(m_Data));
-			MemSet(other.m_Data, 0, sizeof(other.m_Data));
-		}
-		return *this;
-	}
-
 	Matrix<T, Rows, Cols> operator+(const Matrix<T, Rows, Cols>& other) const;
 	Matrix<T, Rows, Cols> operator-(const Matrix<T, Rows, Cols>& other) const;
 	Matrix<T, Rows, Cols> operator*(const Matrix<T, Rows, Cols>& other) const;
@@ -86,7 +48,6 @@ public:
 	template <int OtherCols>
 	Matrix<T, Rows, OtherCols> dot(const Matrix<T, Cols, OtherCols>& other) const;
 
-private:
 	T m_Data[Rows][Cols];
 };
 

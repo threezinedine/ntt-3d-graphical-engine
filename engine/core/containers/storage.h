@@ -13,6 +13,7 @@ public:
 	Storage(u32 capacity = NTT_ARRAY_DEFAULT_CAPACITY, IAllocator* pAllocator = nullptr)
 		: m_Nodes(capacity, pAllocator)
 		, m_CurrentIndex(0)
+		, m_FreeIndices(pAllocator)
 	{
 	}
 
@@ -53,6 +54,7 @@ public:
 	u32 Add(Args&&... args) noexcept;
 
 	Result Remove(u32 index);
+	bool   IsActive(u32 index) const;
 
 private:
 	struct Node
@@ -119,6 +121,12 @@ Result Storage<DataType>::Remove(u32 index)
 	NTT_ASSERT_RESULT_SUCCESS(m_FreeIndices.Push(static_cast<u32&&>(index)));
 
 	return RESULT_SUCCESS;
+}
+
+template <typename DataType>
+bool Storage<DataType>::IsActive(u32 index) const
+{
+	return (index < m_CurrentIndex) && m_Nodes[index].active;
 }
 
 } // namespace ntt

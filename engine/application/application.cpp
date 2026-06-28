@@ -6,6 +6,7 @@
 namespace ntt {
 
 static WindowID g_WindowID = INVALID_WINDOW_ID;
+static MeshID	g_MeshID   = INVALID_MESH_ID;
 
 Application::Application()
 	: Object()
@@ -48,6 +49,13 @@ Result Application::Initialize(i32 argc, char** argv)
 
 	m_pEcs = MakeScope<ECS>(g_GlobalAllocators.pMalloc);
 	NTT_ASSERT_RESULT_SUCCESS(m_pEcs->Initialize());
+
+	Mesh mesh;
+	mesh.vertices.Emplace(Vec3f{0.0f, 0.5f, 0.0f}, Vec2f{0.5f, 1.0f}, Color{1.0f, 0.0f, 0.0f, 1.0f});
+	mesh.vertices.Emplace(Vec3f{0.5f, -0.5f, 0.0f}, Vec2f{1.0f, 0.0f}, Color{0.0f, 1.0f, 0.0f, 1.0f});
+	mesh.vertices.Emplace(Vec3f{-0.5f, -0.5f, 0.0f}, Vec2f{0.0f, 0.0f}, Color{0.0f, 0.0f, 1.0f, 1.0f});
+
+	g_MeshID = g_RenderGlobals.pMeshStorage->AddMesh(static_cast<Mesh&&>(mesh));
 
 	return InitializeImpl();
 }

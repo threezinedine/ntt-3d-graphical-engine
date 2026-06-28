@@ -1,6 +1,7 @@
 #include "render_system.h"
 #include "drivers/ntt_opengl/ntt_opengl.h"
 #include "render_driver.h"
+#include "render_globals.h"
 
 namespace ntt {
 
@@ -20,11 +21,24 @@ Result RenderSystem::InitializeImpl()
 
 	NTT_ASSERT_RESULT_SUCCESS(g_RenderDriver.Initialize());
 
+	NTT_ASSERT_RESULT_SUCCESS(RegisterOpenGLRenderer());
+
+	if (g_RenderGlobals.pMeshStorage == nullptr)
+	{
+		NTT_RENDER_ERROR("Failed to initialize mesh storage.");
+		return RESULT_REGISTER_OPENGL_RENDERER_FAILED;
+	}
+
+	g_RenderGlobals.pMeshStorage->Initialize();
+
 	return RESULT_SUCCESS;
 }
 
 Result RenderSystem::ShutdownImpl()
 {
+	NTT_ASSERT_RESULT_SUCCESS(g_RenderGlobals.pMeshStorage->Shutdown());
+
+	NTT_ASSERT_RESULT_SUCCESS(g_RenderGlobals.Shutdown());
 	NTT_ASSERT_RESULT_SUCCESS(g_RenderDriver.Shutdown());
 
 	return RESULT_SUCCESS;

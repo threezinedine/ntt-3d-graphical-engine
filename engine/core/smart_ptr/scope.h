@@ -146,7 +146,7 @@ template <typename T, typename... Args>
 Scope<T> MakeScope(IAllocator* pAllocator, Args&&... args)
 {
 	T* ptrRaw = new (ALLOCATOR_SAFE(pAllocator)->Allocate(sizeof(T)).pPtr) T(static_cast<Args&&>(args)...);
-	return Scope<T>(Pointer<T>(ptrRaw, pAllocator, sizeof(T)));
+	return Scope<T>(Pointer<T>(ptrRaw, ALLOCATOR_SAFE(pAllocator), sizeof(T)));
 }
 
 } // namespace ntt
