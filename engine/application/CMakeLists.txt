@@ -47,6 +47,15 @@ ntt_set_source_group("src/systems/render"
     "systems/render/render_system.cpp"
 )
 
+ntt_set_source_group("src/systems/render/components"
+    NTT_APPLICATION_SOURCES
+    "systems/render/components/components.h"
+    "systems/render/components/mesh.h"
+    "systems/render/components/mesh.cpp"
+    "systems/render/components/vertex.h"
+    "systems/render/components/vertex.cpp"
+)
+
 ntt_set_source_group("src/systems"
     NTT_APPLICATION_SOURCES
     "systems/systems.h"
