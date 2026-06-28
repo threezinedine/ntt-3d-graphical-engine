@@ -40,13 +40,16 @@
 		}                                                                                                              \
 	} while (0)
 
-#define NTT_ASSERT_MSG(expr, msg)                                                                                      \
+#define NTT_ASSERT_MSG(expr, msg, ...)                                                                                 \
 	do                                                                                                                 \
 	{                                                                                                                  \
 		if (!(expr))                                                                                                   \
 		{                                                                                                              \
+			char _buffer[1024];                                                                                        \
+			format(_buffer, sizeof(_buffer), "(%s, %d): " msg "\n", __FILE__, __LINE__, ##__VA_ARGS__);                \
+			setConsoleColor(CONSOLE_COLOR_RED);                                                                        \
 			char buffer[1024];                                                                                         \
-			format(buffer, sizeof(buffer), "(%s, %d): %s\n", __FILE__, __LINE__, msg);                                 \
+			format(buffer, sizeof(buffer), "(%s, %d): %s\n", __FILE__, __LINE__, _buffer);                             \
 			setConsoleColor(CONSOLE_COLOR_RED);                                                                        \
 			print("%s", buffer);                                                                                       \
 			resetConsoleColor();                                                                                       \
@@ -57,7 +60,7 @@
 		}                                                                                                              \
 	} while (0)
 
-#define NTT_ASSERT_RESULT_SUCCESS(_res) NTT_ASSERT_MSG((_res) == RESULT_SUCCESS, "Result is not success.")
+#define NTT_ASSERT_RESULT_SUCCESS(_res) NTT_ASSERT_MSG((_res) == RESULT_SUCCESS, "Result is %s.", ToString(_res))
 
 #else // NTT_ENABLE_ASSERTION
 

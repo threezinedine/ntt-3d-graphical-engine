@@ -80,7 +80,7 @@ struct Pointer
 
 	T operator*() const
 	{
-		return pPtr;
+		return *pPtr;
 	}
 
 	T* operator->() const

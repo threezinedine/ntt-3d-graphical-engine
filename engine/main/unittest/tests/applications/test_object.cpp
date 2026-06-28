@@ -10,12 +10,14 @@ class ObjectTest : public TestSuite
 		W_TEST_SUCCESS(GlobalAllocators::Register());
 		W_TEST_SUCCESS(GlobalAllocators::Initialize());
 		W_TEST_SUCCESS(IDSystem::Initialize());
+		W_TEST_SUCCESS(Logging::Initialize());
 		W_TEST_SUCCESS(RegisterApplicationType());
 	}
 
 	ON_AFTER_EACH()
 	{
 		W_TEST_SUCCESS(UnregisterApplicationType());
+		W_TEST_SUCCESS(Logging::Shutdown());
 		W_TEST_SUCCESS(IDSystem::Shutdown());
 		W_TEST_SUCCESS(GlobalAllocators::Shutdown());
 		W_TEST_SUCCESS(GlobalAllocators::Unregister());

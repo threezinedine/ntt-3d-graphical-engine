@@ -49,4 +49,18 @@ private:
 #define NTT_APPLICATION_ERROR(format, ...) NTT_LOG_ERROR(LOGGING_TYPE_APPLICATION, format, ##__VA_ARGS__)
 #define NTT_APPLICATION_FATAL(format, ...) NTT_LOG_FATAL(LOGGING_TYPE_APPLICATION, format, ##__VA_ARGS__)
 
+#define NTT_DISPLAY_TRACE(format, ...) NTT_LOG_TRACE(LOGGING_TYPE_DISPLAY, format, ##__VA_ARGS__)
+#define NTT_DISPLAY_DEBUG(format, ...) NTT_LOG_DEBUG(LOGGING_TYPE_DISPLAY, format, ##__VA_ARGS__)
+#define NTT_DISPLAY_INFO(format, ...)  NTT_LOG_INFO(LOGGING_TYPE_DISPLAY, format, ##__VA_ARGS__)
+#define NTT_DISPLAY_WARN(format, ...)  NTT_LOG_WARN(LOGGING_TYPE_DISPLAY, format, ##__VA_ARGS__)
+#define NTT_DISPLAY_ERROR(format, ...) NTT_LOG_ERROR(LOGGING_TYPE_DISPLAY, format, ##__VA_ARGS__)
+#define NTT_DISPLAY_FATAL(format, ...) NTT_LOG_FATAL(LOGGING_TYPE_DISPLAY, format, ##__VA_ARGS__)
+
+#define NTT_OBJECT_TRACE(format, ...) NTT_LOG_TRACE(LOGGING_TYPE_OBJECT, format, ##__VA_ARGS__)
+#define NTT_OBJECT_DEBUG(format, ...) NTT_LOG_DEBUG(LOGGING_TYPE_OBJECT, format, ##__VA_ARGS__)
+#define NTT_OBJECT_INFO(format, ...)  NTT_LOG_INFO(LOGGING_TYPE_OBJECT, format, ##__VA_ARGS__)
+#define NTT_OBJECT_WARN(format, ...)  NTT_LOG_WARN(LOGGING_TYPE_OBJECT, format, ##__VA_ARGS__)
+#define NTT_OBJECT_ERROR(format, ...) NTT_LOG_ERROR(LOGGING_TYPE_OBJECT, format, ##__VA_ARGS__)
+#define NTT_OBJECT_FATAL(format, ...) NTT_LOG_FATAL(LOGGING_TYPE_OBJECT, format, ##__VA_ARGS__)
+
 } // namespace ntt

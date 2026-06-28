@@ -23,6 +23,8 @@ Result Application::Initialize(i32 argc, char** argv)
 	NTT_ASSERT_RESULT_SUCCESS(Logging::Initialize());
 	NTT_ASSERT_RESULT_SUCCESS(RegisterApplicationType());
 
+	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::Initialize());
+
 	NTT_APPLICATION_INFO("Application initialized successfully.");
 
 	return InitializeImpl();
@@ -36,6 +38,8 @@ Result Application::Run()
 Result Application::Shutdown()
 {
 	NTT_APPLICATION_INFO("Application shut down successfully.", 3);
+
+	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::Shutdown());
 
 	NTT_ASSERT_RESULT_SUCCESS(UnregisterApplicationType());
 	NTT_ASSERT_RESULT_SUCCESS(Logging::Shutdown());

@@ -11,6 +11,10 @@ class DisplaySystem : public System
 public:
 	DisplaySystem();
 	virtual ~DisplaySystem();
+
+protected:
+	virtual Result InitializeImpl() override;
+	virtual Result ShutdownImpl() override;
 };
 
 } // namespace ntt

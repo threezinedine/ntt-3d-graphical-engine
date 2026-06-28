@@ -19,8 +19,11 @@ ntt_set_source_group("src"
 ntt_set_source_group("src/systems"
     NTT_SYSTEMS_SOURCES
     "systems/systems.h"
+    "systems/systems.cpp"
     "systems/system.h"
     "systems/system.cpp"
+    "systems/system_globals.h"
+    "systems/system_globals.cpp"
 )
 
 ntt_set_source_group("src/systems/display"

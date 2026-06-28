@@ -12,6 +12,14 @@ class System : public Object
 public:
 	System();
 	virtual ~System();
+
+public:
+	Result Initialize();
+	Result Shutdown();
+
+protected:
+	virtual Result InitializeImpl() = 0;
+	virtual Result ShutdownImpl()	= 0;
 };
 
 } // namespace ntt

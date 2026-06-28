@@ -1,3 +1,12 @@
 #pragma once
 
+#include "display/display.h"
 #include "system.h"
+#include "system_globals.h"
+
+namespace ntt {
+
+Result RegisterSystemTypes();
+Result UnregisterSystemTypes();
+
+} // namespace ntt

@@ -63,12 +63,14 @@ public:                                                                         
 		{                                                                                                              \
 			return RESULT_OUT_OF_IDS;                                                                                  \
 		}                                                                                                              \
+		NTT_OBJECT_DEBUG("Registered object type: %s with ID: %u", #className, s_IDInfo.id.value);                     \
 		return RESULT_SUCCESS;                                                                                         \
 	}                                                                                                                  \
 	static Result UnregisterType()                                                                                     \
 	{                                                                                                                  \
 		NTT_ASSERT_RESULT_SUCCESS(IDSystem::FreeID(s_IDInfo.id));                                                      \
 		s_IDInfo.pParentInfo = nullptr;                                                                                \
+		NTT_OBJECT_DEBUG("Unregistered object type: %s with ID: %u", #className, s_IDInfo.id.value);                   \
 		return RESULT_SUCCESS;                                                                                         \
 	}                                                                                                                  \
 	NTT_OBJECT_TYPE_CHECK_METHOD(className)

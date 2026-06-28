@@ -12,4 +12,14 @@ System::~System()
 {
 }
 
+Result System::Initialize()
+{
+	return InitializeImpl();
+}
+
+Result System::Shutdown()
+{
+	return ShutdownImpl();
+}
+
 } // namespace ntt
