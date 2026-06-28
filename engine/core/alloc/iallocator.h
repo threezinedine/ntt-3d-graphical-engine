@@ -22,6 +22,13 @@ struct Pointer
 	{
 	}
 
+	Pointer(decltype(nullptr))
+		: pPtr(nullptr)
+		, pAllocator(nullptr)
+		, size(0)
+	{
+	}
+
 	Pointer(const Pointer& other)
 		: pPtr(other.pPtr)
 		, pAllocator(other.pAllocator)
