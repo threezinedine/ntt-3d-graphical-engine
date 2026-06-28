@@ -1,0 +1,10 @@
+#ifndef ARG_OPTION
+#define ARG_OPTION(type, name, long, short, description)
+#endif
+
+#ifndef ARG_OPTION_DEFAULT
+#define ARG_OPTION_DEFAULT(type, name, long, short, description, default_value)
+#endif
+
+ARG_OPTION(FLAG, HELP   , "--help"   , "-h", "Display this help message")
+ARG_OPTION(FLAG, VERBOSE, "--verbose", "-v", "Enable verbose output")

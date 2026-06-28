@@ -1,6 +1,7 @@
 #pragma once
 
 #include "alloc/alloc.h"
+#include "argparser/argparser.h"
 #include "backtrace/backtrace.h"
 #include "common.h"
 #include "console.h"

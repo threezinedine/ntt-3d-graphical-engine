@@ -20,6 +20,14 @@ ntt_set_source_group("defs"
     "console_color.def"
     "result.def"
     "id.def"
+    "argparser/arg_type.def"
+    "argparser/arg_options.def"
+)
+
+ntt_set_source_group("src/argparser"
+    NTT_ARGPARSER_SOURCES
+    "argparser/argparser.h"
+    "argparser/argparser.cpp"
 )
 
 ntt_set_source_group("src/utils"
@@ -78,6 +86,7 @@ add_library(
     ${NTT_UTILS_SOURCES}
     ${NTT_DEFS_SOURCES}
     ${NTT_SMART_PTR_SOURCES}
+    ${NTT_ARGPARSER_SOURCES}
 )
 
 target_include_directories(

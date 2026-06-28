@@ -16,6 +16,8 @@ public:
 	static Result Log(LoggingType type, LoggingLevel level, const char* file, u32 line, const char* format, ...);
 	static Result Shutdown();
 
+	static Result SetLogLevel(LoggingLevel level);
+
 private:
 	static Scope<Array<Scope<Handler>>> s_pHandlers;
 };

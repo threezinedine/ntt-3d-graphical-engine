@@ -13,7 +13,6 @@ Result Logging::Initialize()
 
 #if !NTT_UNITTEST
 	s_pHandlers->Append(MakeScope<ConsoleHandler>(g_GlobalAllocators.pMalloc, "[%(type):-7!] %(message)"));
-	(*(s_pHandlers.Get()))[0]->SetLevel(LOGGING_LEVEL_DEBUG);
 #endif // !NTT_UNITTEST
 
 	return RESULT_SUCCESS;
@@ -49,6 +48,18 @@ Result Logging::Shutdown()
 {
 	NTT_ASSERT_RESULT_SUCCESS(s_pHandlers->Clear());
 	s_pHandlers.Reset();
+	return RESULT_SUCCESS;
+}
+
+Result Logging::SetLogLevel(LoggingLevel level)
+{
+	for (const auto& handler : *(s_pHandlers.Get()))
+	{
+		if (handler != nullptr)
+		{
+			handler->SetLevel(level);
+		}
+	}
 	return RESULT_SUCCESS;
 }
 

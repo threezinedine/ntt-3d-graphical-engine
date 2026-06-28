@@ -40,7 +40,8 @@ def main():
         source_file=os.path.join(ENGINE_DIR, "core", "core.h"),
         include_dirs=[os.path.join(ENGINE_DIR, "core")],
     )
-    print(parser.enums)
+    print("Enums:")
+    print("\n".join(["\t" + str(enum) for enum in parser.enums]))
 
     if final_path is not None:
         with open(CACHE_FILE, "w") as file:

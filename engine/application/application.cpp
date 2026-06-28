@@ -26,6 +26,12 @@ Result Application::Initialize(i32 argc, char** argv)
 	NTT_ASSERT_RESULT_SUCCESS(IDSystem::Initialize());
 
 	NTT_ASSERT_RESULT_SUCCESS(Logging::Initialize());
+
+	if (ArgParser::GetArgInfo(ARG_OPTION_VERBOSE)->value.boolValue)
+	{
+		NTT_ASSERT_RESULT_SUCCESS(Logging::SetLogLevel(LOGGING_LEVEL_DEBUG));
+	}
+
 	NTT_ASSERT_RESULT_SUCCESS(RegisterApplicationType());
 
 	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::Initialize());
