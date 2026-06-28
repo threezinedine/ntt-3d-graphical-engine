@@ -214,3 +214,27 @@ TEST_CASE(MatrixTest, DotProduct)
 	 *  [139, 154]]
 	 */
 }
+
+TEST_CASE(MatrixTest, AccessVector)
+{
+	Vec3i vector;
+	vector[0] = 1;
+	vector[1] = 2;
+	vector[2] = 3;
+
+	TEST_EQUAL(vector[0], 1);
+	TEST_EQUAL(vector[1], 2);
+	TEST_EQUAL(vector[2], 3);
+}
+
+TEST_CASE(MatrixTest, AccessScalar)
+{
+	Vec3i vector;
+	vector[0] = 1;
+	vector[1] = 2;
+	vector[2] = 3;
+
+	auto scalar = vector.Transpose().dot(vector);
+
+	TEST_EQUAL((i32)scalar[0], 14); // 1*1 + 2*2 + 3*3 = 14
+}

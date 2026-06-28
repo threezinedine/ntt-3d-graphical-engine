@@ -37,6 +37,21 @@ public:
 		return m_Data[row][col];
 	}
 
+	T& operator[](i32 index)
+	{
+		return m_Data[index][0];
+	}
+
+	const T& operator[](i32 index) const
+	{
+		return m_Data[index][0];
+	}
+
+	operator T() const
+	{
+		return m_Data[0][0];
+	}
+
 	Matrix<T, Rows, Cols>& operator=(const Matrix<T, Rows, Cols>& other)
 	{
 		if (this != &other)
@@ -147,5 +162,21 @@ Matrix<T, Rows, OtherCols> Matrix<T, Rows, Cols>::dot(const Matrix<T, Cols, Othe
 	}
 	return result;
 }
+
+typedef Matrix<i32, 2, 2> Mat2x2i;
+typedef Matrix<i32, 3, 3> Mat3x3i;
+typedef Matrix<i32, 4, 4> Mat4x4i;
+
+typedef Matrix<f32, 2, 2> Mat2x2f;
+typedef Matrix<f32, 3, 3> Mat3x3f;
+typedef Matrix<f32, 4, 4> Mat4x4f;
+
+typedef Matrix<i32, 2, 1> Vec2i;
+typedef Matrix<i32, 3, 1> Vec3i;
+typedef Matrix<i32, 4, 1> Vec4i;
+
+typedef Matrix<f32, 2, 1> Vec2f;
+typedef Matrix<f32, 3, 1> Vec3f;
+typedef Matrix<f32, 4, 1> Vec4f;
 
 } // namespace ntt
