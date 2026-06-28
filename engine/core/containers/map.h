@@ -105,6 +105,16 @@ public:
 			return m_pNode->data.value;
 		}
 
+		bool operator==(const Iterator& other) const
+		{
+			return m_pNode == other.m_pNode;
+		}
+
+		bool operator!=(const Iterator& other) const
+		{
+			return !(*this == other);
+		}
+
 		~Iterator() = default;
 
 	private:
@@ -177,16 +187,19 @@ public:
 	}
 
 public:
-	Result Insert(const K& key, V&& value) noexcept;
-	V&	   operator[](const K& key);
-	Result Clear();
-	Result Remap(u32 newBucketCount);
+	Result	 Insert(const K& key, V&& value) noexcept;
+	V&		 operator[](const K& key);
+	Result	 Clear();
+	Result	 Remap(u32 newBucketCount);
+	Iterator begin() const;
+	Iterator end() const;
 
 public:
 	friend struct Iterator;
 
 private:
 	Result InsertNode(const K& key, V&& value, Bucket* pBucket, u32 bucketIndex);
+	Result ClearImpl(bool destructValues = true);
 
 private:
 	u32				m_BucketCount;
@@ -287,6 +300,12 @@ V& Map<K, V>::operator[](const K& key)
 template <typename K, typename V>
 Result Map<K, V>::Clear()
 {
+	return ClearImpl(true);
+}
+
+template <typename K, typename V>
+Result Map<K, V>::ClearImpl(bool destructValues)
+{
 	for (u32 i = 0; i < m_BucketCount; ++i)
 	{
 		Bucket*		  pBucket  = &m_pData.Get()[i];
@@ -295,7 +314,10 @@ Result Map<K, V>::Clear()
 		while (pCurrent != nullptr)
 		{
 			Pointer<Node> pNext = pCurrent->pNext;
-			pCurrent.Get()->~Node(); // Call the destructor for the node
+			if (destructValues)
+			{
+				pCurrent.Get()->~Node(); // Call the destructor for the node
+			}
 			NTT_ASSERT_MSG(pCurrent.Free() == RESULT_SUCCESS, "Failed to free memory for Node.");
 			pCurrent = pNext;
 		}
@@ -350,13 +372,33 @@ Result Map<K, V>::Remap(u32 newBucketCount)
 		}
 	}
 
-	NTT_ASSERT_MSG(Clear() == RESULT_SUCCESS, "Failed to clear Map.");
+	NTT_ASSERT_MSG(ClearImpl(false) == RESULT_SUCCESS, "Failed to clear Map.");
 	NTT_ASSERT_MSG(m_pData.Free() == RESULT_SUCCESS, "Failed to free memory for Map.");
 
 	m_pData		  = pNewData;
 	m_BucketCount = newBucketCount;
 
 	return RESULT_SUCCESS;
+}
+
+template <typename K, typename V>
+typename Map<K, V>::Iterator Map<K, V>::begin() const
+{
+	for (u32 i = 0; i < m_BucketCount; ++i)
+	{
+		Bucket* pBucket = &m_pData.Get()[i];
+		if (pBucket->pHead != nullptr)
+		{
+			return Iterator(pBucket->pHead.Get());
+		}
+	}
+	return Iterator(nullptr);
+}
+
+template <typename K, typename V>
+typename Map<K, V>::Iterator Map<K, V>::end() const
+{
+	return Iterator(nullptr);
 }
 
 } // namespace ntt
