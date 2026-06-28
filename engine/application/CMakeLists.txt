@@ -14,6 +14,8 @@ ntt_set_source_group("src"
     "object.cpp"
     "application.h"
     "application.cpp"
+    "ecs.h"
+    "ecs.cpp"
 )
 
 ntt_set_source_group("src/drivers"

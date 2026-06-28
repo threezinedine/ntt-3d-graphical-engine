@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core.h"
+#include "ecs.h"
 #include "object.h"
 #include "services.h"
 
@@ -34,6 +35,7 @@ protected:
 	}
 
 private:
+	Scope<ECS> m_pEcs;
 };
 
 } // namespace ntt

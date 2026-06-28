@@ -38,6 +38,9 @@ Result Application::Initialize(i32 argc, char** argv)
 		return RESULT_UNKNOWN;
 	}
 
+	m_pEcs = MakeScope<ECS>(g_GlobalAllocators.pMalloc);
+	NTT_ASSERT_RESULT_SUCCESS(m_pEcs->Initialize());
+
 	return InitializeImpl();
 }
 
@@ -63,6 +66,9 @@ Result Application::Run()
 
 Result Application::Shutdown()
 {
+	NTT_ASSERT_RESULT_SUCCESS(m_pEcs->Shutdown());
+	m_pEcs.Reset();
+
 	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pDisplaySystem->DestroyWindow(g_WindowID));
 	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pDisplaySystem->Shutdown());
 
