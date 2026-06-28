@@ -23,9 +23,9 @@ private:
 #define NTT_LOG(type, level, _format, ...)                                                                             \
 	do                                                                                                                 \
 	{                                                                                                                  \
-		char _buffer[1024];                                                                                            \
-		format(_buffer, sizeof(_buffer), _format, ##__VA_ARGS__);                                                      \
-		NTT_ASSERT_RESULT_SUCCESS(Logging::Log(type, level, __FILE__, __LINE__, _buffer));                             \
+		char _log_buffer[1024];                                                                                            \
+		format(_log_buffer, sizeof(_log_buffer), _format, ##__VA_ARGS__);                                                      \
+		NTT_ASSERT_RESULT_SUCCESS(Logging::Log(type, level, __FILE__, __LINE__, _log_buffer));                             \
 	} while (0)
 
 #define NTT_LOG_TRACE(type, format, ...) NTT_LOG(type, LOGGING_LEVEL_TRACE, format, ##__VA_ARGS__)
