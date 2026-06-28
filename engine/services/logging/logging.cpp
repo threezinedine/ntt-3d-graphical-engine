@@ -10,7 +10,7 @@ Scope<Array<Scope<Handler>>> Logging::s_pHandlers;
 Result Logging::Initialize()
 {
 	s_pHandlers = MakeScope<Array<Scope<Handler>>>(g_GlobalAllocators.pMalloc);
-	s_pHandlers->Append(MakeScope<ConsoleHandler>(g_GlobalAllocators.pMalloc, "[%(type)] %(message)"));
+	s_pHandlers->Append(MakeScope<ConsoleHandler>(g_GlobalAllocators.pMalloc, "[%(type):-6!] %(message)"));
 
 	return RESULT_SUCCESS;
 }

@@ -6,9 +6,9 @@ const char* ToString(LoggingType type)
 {
 	switch (type)
 	{
-#define LOGGING_TYPE_OPTION(option)                                                                                    \
+#define LOGGING_TYPE_OPTION(option, abbrev)                                                                            \
 	case LOGGING_TYPE_##option:                                                                                        \
-		return #option;
+		return abbrev;
 #define LOGGING_TYPE_OPTION_END(option)                                                                                \
 	default:                                                                                                           \
 		return "Unknown";
