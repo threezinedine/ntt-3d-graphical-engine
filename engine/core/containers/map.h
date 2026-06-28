@@ -180,12 +180,13 @@ public:
 	Result Insert(const K& key, V&& value) noexcept;
 	V&	   operator[](const K& key);
 	Result Clear();
+	Result Remap(u32 newBucketCount);
 
 public:
 	friend struct Iterator;
 
 private:
-	Result InsertNode(const K& key, V&& value, u32 bucketIndex);
+	Result InsertNode(const K& key, V&& value, Bucket* pBucket, u32 bucketIndex);
 
 private:
 	u32				m_BucketCount;
@@ -202,18 +203,17 @@ Result Map<K, V>::Insert(const K& key, V&& value) noexcept
 	u32 hashValue	= m_HashFunction(key);
 	u32 bucketIndex = hashValue % m_BucketCount;
 
-	return InsertNode(key, static_cast<V&&>(value), bucketIndex);
+	Bucket* pBucket = &m_pData.Get()[bucketIndex];
+	return InsertNode(key, static_cast<V&&>(value), pBucket, bucketIndex);
 }
 
 template <typename K, typename V>
-Result Map<K, V>::InsertNode(const K& key, V&& value, u32 bucketIndex)
+Result Map<K, V>::InsertNode(const K& key, V&& value, Bucket* pBucket, u32 bucketIndex)
 {
 	if (bucketIndex >= m_BucketCount)
 	{
 		return RESULT_INDEX_OUT_OF_BOUNDS;
 	}
-
-	Bucket* pBucket = &m_pData.Get()[bucketIndex];
 
 	if (pBucket->pHead == nullptr)
 	{
@@ -304,6 +304,57 @@ Result Map<K, V>::Clear()
 		pBucket->pTail = nullptr;
 		pBucket->count = 0;
 	}
+
+	return RESULT_SUCCESS;
+}
+
+template <typename K, typename V>
+Result Map<K, V>::Remap(u32 newBucketCount)
+{
+	if (newBucketCount <= m_BucketCount)
+	{
+		return RESULT_SUCCESS;
+	}
+
+	Pointer<Bucket> pNewData =
+		(ALLOCATOR_SAFE(m_pAllocator)->Allocate((u32)sizeof(Bucket) * newBucketCount)).Cast<Bucket>();
+
+	for (u32 i = 0; i < newBucketCount; ++i)
+	{
+		pNewData.Get()[i].pMap		  = this;
+		pNewData.Get()[i].bucketIndex = i;
+		pNewData.Get()[i].count		  = 0;
+	}
+
+	for (u32 i = 0; i < m_BucketCount; ++i)
+	{
+		if (m_pData.Get()[i].pHead != nullptr)
+		{
+			Pointer<Node> pCurrent = m_pData.Get()[i].pHead;
+
+			while (pCurrent != nullptr)
+			{
+				u32		hashValue	   = m_HashFunction(pCurrent->data.key);
+				u32		newBucketIndex = hashValue % newBucketCount;
+				Bucket* pNewBucket	   = &pNewData.Get()[newBucketIndex];
+
+				Result result =
+					InsertNode(pCurrent->data.key, static_cast<V&&>(pCurrent->data.value), pNewBucket, newBucketIndex);
+				if (result != RESULT_SUCCESS)
+				{
+					return result;
+				}
+
+				pCurrent = pCurrent->pNext;
+			}
+		}
+	}
+
+	NTT_ASSERT_MSG(Clear() == RESULT_SUCCESS, "Failed to clear Map.");
+	NTT_ASSERT_MSG(m_pData.Free() == RESULT_SUCCESS, "Failed to free memory for Map.");
+
+	m_pData		  = pNewData;
+	m_BucketCount = newBucketCount;
 
 	return RESULT_SUCCESS;
 }

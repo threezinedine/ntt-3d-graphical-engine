@@ -66,3 +66,20 @@ TEST_CASE(MapTest, TestObject)
 	// After clearing the map, destructors should have been called
 	TEST_EQUAL(TestObject::s_DestructorCount, 4);
 }
+
+TEST_CASE(MapTest, Remap)
+{
+	Map<i32, i32> map(4, [](const i32& key) { return static_cast<u32>(key); });
+
+	TEST_SUCCESS(map.Insert(1, 100));
+	TEST_SUCCESS(map.Insert(2, 200));
+	TEST_SUCCESS(map.Insert(3, 300));
+
+	// Remap to a larger bucket count
+	TEST_SUCCESS(map.Remap(33));
+
+	// Verify that the elements are still accessible after remapping
+	TEST_EQUAL(map[1], 100);
+	TEST_EQUAL(map[2], 200);
+	TEST_EQUAL(map[3], 300);
+}
