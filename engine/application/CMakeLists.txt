@@ -15,9 +15,26 @@ ntt_set_source_group("src"
     "application.cpp"
 )
 
+ntt_set_source_group("src/systems"
+    NTT_SYSTEMS_SOURCES
+    "systems/systems.h"
+    "systems/system.h"
+    "systems/system.cpp"
+)
+
+ntt_set_source_group("src/systems/display"
+    NTT_DISPLAY_SYSTEM_SOURCES
+    "systems/display/display.h"
+    "systems/display/display_system.h"
+    "systems/display/display_system.cpp"
+)
+
 add_library(
     ${NTT_APPLICATION_LIBRARY_NAME}
+    STATIC
     ${NTT_APPLICATION_SOURCES}
+    ${NTT_SYSTEMS_SOURCES}
+    ${NTT_DISPLAY_SYSTEM_SOURCES}
 )
 
 target_include_directories(
