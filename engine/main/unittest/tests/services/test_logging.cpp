@@ -23,32 +23,32 @@ TEST_SUITE(LoggingTest)
 TEST_CASE(LoggingTest, LoggingMessageFormat)
 {
 	LoggingMessage message;
-	message.type  = LOGGING_TYPE_OBJECT;
+	message.type  = LOGGING_TYPE_CORE;
 	message.level = LOGGING_LEVEL_INFO;
 	message.file  = "test_file.cpp";
 	message.line  = 42;
 
 	// Format the message with a simple string
 	TEST_SUCCESS(message.FormatMessage("%(type)"));
-	TEST_EQUAL(message.finalMessage, "OBJECT");
+	TEST_EQUAL(message.finalMessage, "CORE");
 
 	TEST_SUCCESS(message.FormatMessage("[%(type)]"));
-	TEST_EQUAL(message.finalMessage, "[OBJECT]");
+	TEST_EQUAL(message.finalMessage, "[CORE]");
 
 	TEST_SUCCESS(message.FormatMessage("%(type) - %(level)"));
-	TEST_EQUAL(message.finalMessage, "OBJECT - INFO");
+	TEST_EQUAL(message.finalMessage, "CORE - INFO");
 
 	TEST_SUCCESS(message.FormatMessage("%(not)"));
 	TEST_EQUAL(message.finalMessage, "%(not)"); // Unrecognized keyword should remain unchanged
 
 	TEST_SUCCESS(message.FormatMessage("%(type) - %(level) - %(file):%(line)"));
-	TEST_EQUAL(message.finalMessage, "OBJECT - INFO - test_file.cpp:42");
+	TEST_EQUAL(message.finalMessage, "CORE - INFO - test_file.cpp:42");
 }
 
 TEST_CASE(LoggingTest, LoggingMessageFormatEmpty)
 {
 	LoggingMessage message;
-	message.type  = LOGGING_TYPE_OBJECT;
+	message.type  = LOGGING_TYPE_CORE;
 	message.level = LOGGING_LEVEL_INFO;
 	message.file  = "test_file.cpp";
 	message.line  = 42;
@@ -61,14 +61,14 @@ TEST_CASE(LoggingTest, LoggingMessageFormatEmpty)
 TEST_CASE(LoggingTest, LoggingMessageFormatWithAlignment)
 {
 	LoggingMessage message;
-	message.type  = LOGGING_TYPE_OBJECT;
+	message.type  = LOGGING_TYPE_CORE;
 	message.level = LOGGING_LEVEL_INFO;
 	message.file  = "test_file.cpp";
 	message.line  = 42;
 
 	// Format the message with alignment
 	TEST_SUCCESS(message.FormatMessage("%(type):8!"));
-	TEST_EQUAL(message.finalMessage, "  OBJECT");
+	TEST_EQUAL(message.finalMessage, "    CORE");
 
 	TEST_SUCCESS(message.FormatMessage("%(level):-10!"));
 	TEST_EQUAL(message.finalMessage, "INFO      ");
