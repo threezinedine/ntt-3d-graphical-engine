@@ -1,5 +1,5 @@
 {
-	"liveServer.settings.root": "/build/web_debug/engine/main",
+	"liveServer.settings.root": "/build/web_debug/engine/main/engine/",
 	"python.analysis.typeCheckingMode": "standard",
 	"chat.tools.terminal.autoApprove": {
 		"clang++": true,

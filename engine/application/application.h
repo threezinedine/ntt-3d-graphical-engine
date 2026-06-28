@@ -34,6 +34,8 @@ protected:
 		return RESULT_SUCCESS;
 	}
 
+	Result Update();
+
 private:
 	Scope<ECS> m_pEcs;
 };

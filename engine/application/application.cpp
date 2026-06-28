@@ -1,5 +1,8 @@
 #include "applications.h"
 
+#if NTT_PLATFORM_WEB
+#include <emscripten/emscripten.h>
+#endif // NTT_PLATFORM_WEB
 namespace ntt {
 
 static WindowID g_WindowID = INVALID_WINDOW_ID;
@@ -44,6 +47,17 @@ Result Application::Initialize(i32 argc, char** argv)
 	return InitializeImpl();
 }
 
+Result Application::Update()
+{
+	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pDisplaySystem->OnBeginFrame());
+
+	// Application logic goes here
+
+	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pDisplaySystem->OnEndFrame());
+
+	return RESULT_SUCCESS;
+} // namespace ntt
+
 Result Application::Run()
 {
 	if (g_WindowID == INVALID_WINDOW_ID)
@@ -52,15 +66,21 @@ Result Application::Run()
 		return RESULT_UNKNOWN;
 	}
 
+#if NTT_PLATFORM_WEB
+	emscripten_set_main_loop_arg(
+		[](void* arg) {
+			Application* pApp = static_cast<Application*>(arg);
+			NTT_ASSERT_RESULT_SUCCESS(pApp->Update());
+		},
+		this,
+		0,
+		1);
+#else  // NTT_PLATFORM_WEB
 	while (!SystemGlobals::pDisplaySystem->ShouldCloseWindow(g_WindowID))
 	{
-		NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pDisplaySystem->OnBeginFrame());
-
-		// Application logic goes here
-
-		NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pDisplaySystem->OnEndFrame());
+		NTT_ASSERT_RESULT_SUCCESS(Update());
 	}
-
+#endif // NTT_PLATFORM_WEB
 	return RESULT_SUCCESS;
 }
 
