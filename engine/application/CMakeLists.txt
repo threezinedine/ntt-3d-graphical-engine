@@ -16,6 +16,18 @@ ntt_set_source_group("src"
     "application.cpp"
 )
 
+ntt_set_source_group("src/drivers"
+    NTT_DRIVERS_SOURCES
+    "drivers/drivers.h"
+)
+
+ntt_set_source_group("src/drivers/ntt-glfw"
+    NTT_GLFW_DRIVER_SOURCES
+    "drivers/ntt_glfw/ntt_glfw.h"
+    "drivers/ntt_glfw/ntt_glfw_driver.h"
+    "drivers/ntt_glfw/ntt_glfw_driver.cpp"
+)
+
 ntt_set_source_group("src/systems"
     NTT_SYSTEMS_SOURCES
     "systems/systems.h"
@@ -31,6 +43,8 @@ ntt_set_source_group("src/systems/display"
     "systems/display/display.h"
     "systems/display/display_system.h"
     "systems/display/display_system.cpp"
+    "systems/display/display_driver.h"
+    "systems/display/display_driver.cpp"
 )
 
 add_library(
@@ -39,6 +53,8 @@ add_library(
     ${NTT_APPLICATION_SOURCES}
     ${NTT_SYSTEMS_SOURCES}
     ${NTT_DISPLAY_SYSTEM_SOURCES}
+    ${NTT_DRIVERS_SOURCES}
+    ${NTT_GLFW_DRIVER_SOURCES}
 )
 
 target_include_directories(

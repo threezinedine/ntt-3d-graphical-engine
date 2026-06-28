@@ -2,6 +2,8 @@
 
 namespace ntt {
 
+static WindowID g_WindowID = INVALID_WINDOW_ID;
+
 Application::Application()
 	: Object()
 {
@@ -27,16 +29,43 @@ Result Application::Initialize(i32 argc, char** argv)
 
 	NTT_APPLICATION_INFO("Application initialized successfully.");
 
+	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pDisplaySystem->Initialize());
+	g_WindowID = SystemGlobals::pDisplaySystem->CreateWindow(800, 600, "NTT Application");
+
+	if (g_WindowID == INVALID_WINDOW_ID)
+	{
+		NTT_APPLICATION_ERROR("Failed to create window. Invalid window ID.");
+		return RESULT_UNKNOWN;
+	}
+
 	return InitializeImpl();
 }
 
 Result Application::Run()
 {
+	if (g_WindowID == INVALID_WINDOW_ID)
+	{
+		NTT_APPLICATION_ERROR("Invalid window ID. Cannot run the application.");
+		return RESULT_UNKNOWN;
+	}
+
+	while (!SystemGlobals::pDisplaySystem->ShouldCloseWindow(g_WindowID))
+	{
+		NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pDisplaySystem->OnBeginFrame());
+
+		// Application logic goes here
+
+		NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pDisplaySystem->OnEndFrame());
+	}
+
 	return RESULT_SUCCESS;
 }
 
 Result Application::Shutdown()
 {
+	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pDisplaySystem->DestroyWindow(g_WindowID));
+	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pDisplaySystem->Shutdown());
+
 	NTT_APPLICATION_INFO("Application shut down successfully.", 3);
 
 	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::Shutdown());
