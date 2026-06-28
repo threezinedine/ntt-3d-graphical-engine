@@ -1,6 +1,7 @@
 #pragma once
 
 #include "display/display.h"
+#include "render/render.h"
 #include "system.h"
 #include "system_globals.h"
 

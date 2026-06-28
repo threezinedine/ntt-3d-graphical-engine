@@ -38,7 +38,6 @@ Result Application::Initialize(i32 argc, char** argv)
 
 	NTT_APPLICATION_INFO("Application initialized successfully.");
 
-	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pDisplaySystem->Initialize());
 	g_WindowID = SystemGlobals::pDisplaySystem->CreateWindow(800, 600, "NTT Application");
 
 	if (g_WindowID == INVALID_WINDOW_ID)
@@ -55,11 +54,11 @@ Result Application::Initialize(i32 argc, char** argv)
 
 Result Application::Update()
 {
-	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pDisplaySystem->OnBeginFrame());
+	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pDisplaySystem->OnBeginFrame(g_WindowID));
 
 	// Application logic goes here
 
-	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pDisplaySystem->OnEndFrame());
+	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pDisplaySystem->OnEndFrame(g_WindowID));
 
 	return RESULT_SUCCESS;
 } // namespace ntt
@@ -96,7 +95,6 @@ Result Application::Shutdown()
 	m_pEcs.Reset();
 
 	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pDisplaySystem->DestroyWindow(g_WindowID));
-	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pDisplaySystem->Shutdown());
 
 	NTT_APPLICATION_INFO("Application shut down successfully.", 3);
 

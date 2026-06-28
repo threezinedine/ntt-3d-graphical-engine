@@ -5,6 +5,8 @@ if (NTT_EDITOR)
     set(NTT_EDITOR_EXECUTABLE_NAME "ntt-editor")
     ntt_project(NTT_EDITOR_EXECUTABLE_NAME)
 
+    set(NTT_EDITOR_SOURCES)
+
     ntt_set_source_group(
         "src"
         NTT_EDITOR_SOURCES

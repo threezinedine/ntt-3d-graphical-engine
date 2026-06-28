@@ -4,6 +4,8 @@ ntt_config()
 set(NTT_APPLICATION_LIBRARY_NAME "ntt-application")
 ntt_project(NTT_APPLICATION_LIBRARY_NAME)
 
+set(NTT_APPLICATION_SOURCES)
+
 ntt_set_source_group("src"
     NTT_APPLICATION_SOURCES
     "applications.h"
@@ -19,19 +21,34 @@ ntt_set_source_group("src"
 )
 
 ntt_set_source_group("src/drivers"
-    NTT_DRIVERS_SOURCES
+    NTT_APPLICATION_SOURCES
     "drivers/drivers.h"
 )
 
 ntt_set_source_group("src/drivers/ntt-glfw"
-    NTT_GLFW_DRIVER_SOURCES
+    NTT_APPLICATION_SOURCES
     "drivers/ntt_glfw/ntt_glfw.h"
     "drivers/ntt_glfw/ntt_glfw_driver.h"
     "drivers/ntt_glfw/ntt_glfw_driver.cpp"
 )
 
+ntt_set_source_group("src/drivers/ntt-opengl"
+    NTT_APPLICATION_SOURCES
+    "drivers/ntt_opengl/ntt_opengl.h"
+    "drivers/ntt_opengl/ntt_opengl.cpp"
+)
+
+ntt_set_source_group("src/systems/render"
+    NTT_APPLICATION_SOURCES
+    "systems/render/render.h"
+    "systems/render/render_driver.h"
+    "systems/render/render_driver.cpp"
+    "systems/render/render_system.h"
+    "systems/render/render_system.cpp"
+)
+
 ntt_set_source_group("src/systems"
-    NTT_SYSTEMS_SOURCES
+    NTT_APPLICATION_SOURCES
     "systems/systems.h"
     "systems/systems.cpp"
     "systems/system.h"
@@ -41,7 +58,7 @@ ntt_set_source_group("src/systems"
 )
 
 ntt_set_source_group("src/systems/display"
-    NTT_DISPLAY_SYSTEM_SOURCES
+    NTT_APPLICATION_SOURCES
     "systems/display/display.h"
     "systems/display/display_system.h"
     "systems/display/display_system.cpp"
@@ -53,10 +70,6 @@ add_library(
     ${NTT_APPLICATION_LIBRARY_NAME}
     STATIC
     ${NTT_APPLICATION_SOURCES}
-    ${NTT_SYSTEMS_SOURCES}
-    ${NTT_DISPLAY_SYSTEM_SOURCES}
-    ${NTT_DRIVERS_SOURCES}
-    ${NTT_GLFW_DRIVER_SOURCES}
 )
 
 target_include_directories(
@@ -65,10 +78,13 @@ target_include_directories(
     "${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
+ntt_find_package(ntt-glfw REQUIRED)
+
 target_link_libraries(
     ${NTT_APPLICATION_LIBRARY_NAME}
     PUBLIC
     ntt-services
+    ntt-glfw
 )
 
 ntt_add_options(${NTT_APPLICATION_LIBRARY_NAME})

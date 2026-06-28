@@ -5,16 +5,18 @@ if (NTT_UNITTEST)
     set(NTT_UNITTEST_EXECUTABLE_NAME "ntt-unittest")
     ntt_project(NTT_UNITTEST_EXECUTABLE_NAME)
 
+    set(NTT_UNITTEST_SOURCES)
+
     ntt_set_source_group(
         "src/utilities"
-        NTT_UTILITIES_SOURCES
+        NTT_UNITTEST_SOURCES
         "utilities/utilities.h"
         "utilities/utilities.cpp"
     )
 
     ntt_set_source_group(
         "src/tests/core"
-        NTT_CORE_TESTS_SOURCES
+        NTT_UNITTEST_SOURCES
         "tests/core/test_malloc.cpp"
         "tests/core/test_string.cpp"
         "tests/core/test_smart_ptr.cpp"
@@ -25,7 +27,7 @@ if (NTT_UNITTEST)
 
     ntt_set_source_group(
         "src/tests/containers"
-        NTT_CONTAINERS_TESTS_SOURCES
+        NTT_UNITTEST_SOURCES
         "tests/core/containers/test_array.cpp"
         "tests/core/containers/test_list.cpp"
         "tests/core/containers/test_stack.cpp"
@@ -36,13 +38,13 @@ if (NTT_UNITTEST)
 
     ntt_set_source_group(
         "src/tests/application"
-        NTT_APPLICATION_TESTS_SOURCES
+        NTT_UNITTEST_SOURCES
         "tests/applications/test_object.cpp"
     )
 
     ntt_set_source_group(
         "src/tests/services"
-        NTT_SERVICES_TESTS_SOURCES
+        NTT_UNITTEST_SOURCES
         "tests/services/test_logging.cpp"
     )
 
@@ -55,11 +57,6 @@ if (NTT_UNITTEST)
     add_executable(
         ${NTT_UNITTEST_EXECUTABLE_NAME}
         ${NTT_UNITTEST_SOURCES}
-        ${NTT_UTILITIES_SOURCES}
-        ${NTT_CORE_TESTS_SOURCES}
-        ${NTT_CONTAINERS_TESTS_SOURCES}
-        ${NTT_SERVICES_TESTS_SOURCES}
-        ${NTT_APPLICATION_TESTS_SOURCES}
     )
 
     target_link_libraries(

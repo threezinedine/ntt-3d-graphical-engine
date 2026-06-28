@@ -5,6 +5,8 @@ if (NTT_ENGINE)
     set(NTT_ENGINE_EXECUTABLE_NAME "ntt-engine")
     ntt_project(NTT_ENGINE_EXECUTABLE_NAME)
 
+    set(NTT_ENGINE_SOURCES)
+
     ntt_set_source_group(
         "src"
         NTT_ENGINE_SOURCES

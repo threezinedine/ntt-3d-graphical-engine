@@ -65,4 +65,11 @@ private:
 #define NTT_OBJECT_ERROR(format, ...) NTT_LOG_ERROR(LOGGING_TYPE_OBJECT, format, ##__VA_ARGS__)
 #define NTT_OBJECT_FATAL(format, ...) NTT_LOG_FATAL(LOGGING_TYPE_OBJECT, format, ##__VA_ARGS__)
 
+#define NTT_RENDER_TRACE(format, ...) NTT_LOG_TRACE(LOGGING_TYPE_RENDER, format, ##__VA_ARGS__)
+#define NTT_RENDER_DEBUG(format, ...) NTT_LOG_DEBUG(LOGGING_TYPE_RENDER, format, ##__VA_ARGS__)
+#define NTT_RENDER_INFO(format, ...)  NTT_LOG_INFO(LOGGING_TYPE_RENDER, format, ##__VA_ARGS__)
+#define NTT_RENDER_WARN(format, ...)  NTT_LOG_WARN(LOGGING_TYPE_RENDER, format, ##__VA_ARGS__)
+#define NTT_RENDER_ERROR(format, ...) NTT_LOG_ERROR(LOGGING_TYPE_RENDER, format, ##__VA_ARGS__)
+#define NTT_RENDER_FATAL(format, ...) NTT_LOG_FATAL(LOGGING_TYPE_RENDER, format, ##__VA_ARGS__)
+
 } // namespace ntt

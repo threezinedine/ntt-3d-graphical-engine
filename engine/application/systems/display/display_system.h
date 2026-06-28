@@ -25,8 +25,8 @@ public:
 	bool	 ShouldCloseWindow(WindowID windowID);
 
 public:
-	Result OnBeginFrame();
-	Result OnEndFrame();
+	Result OnBeginFrame(WindowID windowID);
+	Result OnEndFrame(WindowID windowID);
 
 public:
 	struct WindowInfo

@@ -170,8 +170,8 @@ macro(ntt_option option default_value)
     list(APPEND NTT_OPTIONS ${option})
 endmacro()
 
-macro(ntt_set_source_group source_group_name variable)
-    set(${variable} ${ARGN})
+macro(ntt_set_source_group source_group_name added_variables)
+    list(APPEND ${added_variables} ${ARGN})
 
     if (MSVC)
         source_group(${source_group_name} FILES ${ARGN})

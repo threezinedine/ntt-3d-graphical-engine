@@ -14,10 +14,20 @@ if (NOT NTT_PLATFORM_WEB)
         GIT_REPOSITORY
         https://github.com/glfw/glfw.git
         SOURCE_DIR
-        "${CMAKE_SOURCE_DIR}/externals"
+        "${CMAKE_SOURCE_DIR}/externals/glfw"
     )
 
     FetchContent_MakeAvailable(glfw)
 
-    target_link_libraries(${TARGET_NAME} INTERFACE glfw)
+    FetchContent_Declare(
+        glad
+        GIT_REPOSITORY
+        https://github.com/threezinedine/glad.git
+        SOURCE_DIR
+        "${CMAKE_SOURCE_DIR}/externals/glad"
+    )
+
+    FetchContent_MakeAvailable(glad)
+
+    target_link_libraries(${TARGET_NAME} INTERFACE glfw glad)
 endif()

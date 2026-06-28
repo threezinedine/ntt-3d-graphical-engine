@@ -93,7 +93,7 @@ bool DisplaySystem::ShouldCloseWindow(WindowID windowID)
 	return g_DisplayDriver.ShouldCloseWindow(pWindowInfo->pWindowHandle);
 }
 
-Result DisplaySystem::OnBeginFrame()
+Result DisplaySystem::OnBeginFrame(WindowID windowID)
 {
 	if (g_DisplayDriver.OnBeginFrame == nullptr)
 	{
@@ -101,10 +101,10 @@ Result DisplaySystem::OnBeginFrame()
 		return RESULT_DISPLAY_DRIVER_NOT_INITIALIZED;
 	}
 
-	return g_DisplayDriver.OnBeginFrame(g_DisplayDriver.pDriverHandle);
+	return g_DisplayDriver.OnBeginFrame(m_pWindowIDStorage->Get(windowID)->pWindowHandle);
 }
 
-Result DisplaySystem::OnEndFrame()
+Result DisplaySystem::OnEndFrame(WindowID windowID)
 {
 	if (g_DisplayDriver.OnEndFrame == nullptr)
 	{
@@ -112,7 +112,7 @@ Result DisplaySystem::OnEndFrame()
 		return RESULT_DISPLAY_DRIVER_NOT_INITIALIZED;
 	}
 
-	return g_DisplayDriver.OnEndFrame(g_DisplayDriver.pDriverHandle);
+	return g_DisplayDriver.OnEndFrame(m_pWindowIDStorage->Get(windowID)->pWindowHandle);
 }
 
 } // namespace ntt

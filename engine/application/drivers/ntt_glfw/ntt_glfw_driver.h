@@ -6,4 +6,6 @@ namespace ntt {
 
 Result RegisterGLFWDisplayDriver();
 
+extern void* g_DefaultGLFWDriverHandle;
+
 } // namespace ntt
