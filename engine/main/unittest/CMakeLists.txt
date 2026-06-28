@@ -18,12 +18,12 @@ if (NTT_UNITTEST)
         "tests/core/test_malloc.cpp"
         "tests/core/test_string.cpp"
         "tests/core/test_smart_ptr.cpp"
+        "tests/core/container_test_object.h"
     )
 
     ntt_set_source_group(
         "src/tests/containers"
         NTT_CONTAINERS_TESTS_SOURCES
-        "tests/core/containers/container_test_object.h"
         "tests/core/containers/test_array.cpp"
         "tests/core/containers/test_list.cpp"
         "tests/core/containers/test_stack.cpp"

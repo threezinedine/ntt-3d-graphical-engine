@@ -4,6 +4,18 @@
 	"chat.tools.terminal.autoApprove": {
 		"clang++": true,
 		"./build/unittest/engine/main/unittest/ntt-unittest": true,
-		"cmake": true
+		"cmake": true,
+		"/^ar t /home/threezinedine/Projects/ntt-3d-graphical-engine/build/debug/services/libntt-services\\.a 2>&1 \\| grep -E \"handler\\|Handler\\|console\"$/": {
+			"approve": true,
+			"matchCommandLine": true
+		},
+		"/^ar t /home/threezinedine/Projects/ntt-3d-graphical-engine/build/debug/services/libntt-services\\.a 2>&1$/": {
+			"approve": true,
+			"matchCommandLine": true
+		},
+		"/^ar t /home/threezinedine/Projects/ntt-3d-graphical-engine/build/debug/engine/services/libntt-services\\.a$/": {
+			"approve": true,
+			"matchCommandLine": true
+		}
 	}
 }

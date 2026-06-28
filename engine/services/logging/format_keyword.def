@@ -2,7 +2,8 @@
 #define FORMAT_KEYWORD(keyword, attribute)
 #endif
 
-FORMAT_KEYWORD("%(type)", type)
-FORMAT_KEYWORD("%(level)", level)
-FORMAT_KEYWORD("%(file)", file)
-FORMAT_KEYWORD("%(line)", line)
+FORMAT_KEYWORD("%(type)"   , type)
+FORMAT_KEYWORD("%(level)"  , level)
+FORMAT_KEYWORD("%(message)", message)
+FORMAT_KEYWORD("%(file)"   , file)
+FORMAT_KEYWORD("%(line)"   , line)

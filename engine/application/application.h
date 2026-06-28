@@ -2,6 +2,7 @@
 
 #include "core.h"
 #include "object.h"
+#include "services.h"
 
 namespace ntt {
 

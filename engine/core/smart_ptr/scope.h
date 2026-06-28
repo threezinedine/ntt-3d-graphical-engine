@@ -79,6 +79,36 @@ public:
 		return m_Ptr;
 	}
 
+	T* operator*() const
+	{
+		return m_Ptr.Get();
+	}
+
+	T* operator->() const
+	{
+		return m_Ptr.Get();
+	}
+
+	bool operator==(const Scope& other) const
+	{
+		return m_Ptr == other.m_Ptr;
+	}
+
+	bool operator!=(const Scope& other) const
+	{
+		return m_Ptr != other.m_Ptr;
+	}
+
+	bool operator==(decltype(nullptr)) const
+	{
+		return m_Ptr == nullptr;
+	}
+
+	bool operator!=(decltype(nullptr)) const
+	{
+		return m_Ptr != nullptr;
+	}
+
 public:
 	void Reset()
 	{

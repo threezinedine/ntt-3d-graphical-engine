@@ -1,5 +1,5 @@
-#include "container_test_object.h"
 #include "core.h"
+#include "tests/core/container_test_object.h"
 #include "utilities/utilities.h"
 
 using namespace ntt;
@@ -11,10 +11,7 @@ class ListTest : public TestSuite
 		W_TEST_SUCCESS(GlobalAllocators::Register());
 		W_TEST_SUCCESS(GlobalAllocators::Initialize());
 
-		TestObject::s_ConstructorCount	   = 0;
-		TestObject::s_DestructorCount	   = 0;
-		TestObject::s_CopyConstructorCount = 0;
-		TestObject::s_MoveConstructorCount = 0;
+		ResetCounters();
 	}
 
 	ON_AFTER_EACH()

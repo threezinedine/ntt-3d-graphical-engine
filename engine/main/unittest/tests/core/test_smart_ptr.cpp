@@ -1,4 +1,4 @@
-#include "containers/container_test_object.h"
+#include "container_test_object.h"
 #include "core.h"
 #include "utilities/utilities.h"
 
@@ -11,10 +11,7 @@ class SmartPtrTest : public TestSuite
 		W_TEST_SUCCESS(GlobalAllocators::Register());
 		W_TEST_SUCCESS(GlobalAllocators::Initialize());
 
-		TestObject::s_ConstructorCount	   = 0;
-		TestObject::s_DestructorCount	   = 0;
-		TestObject::s_CopyConstructorCount = 0;
-		TestObject::s_MoveConstructorCount = 0;
+		ResetCounters();
 	}
 
 	ON_AFTER_EACH()
@@ -117,4 +114,28 @@ TEST_CASE(SmartPtrTest, TransferAllocator)
 	TEST_EQUAL(TestObject::s_DestructorCount, 0);
 	TEST_EQUAL(TestObject::s_CopyConstructorCount, 0);
 	TEST_EQUAL(TestObject::s_MoveConstructorCount, 0);
+}
+
+TEST_CASE(SmartPtrTest, InheritTestObject)
+{
+	Scope<TestObject> smartPtr = MakeScope<InheritTestObject>(g_GlobalAllocators.pMalloc, 600);
+
+	TEST_EQUAL(static_cast<i32>(*smartPtr.Get()), 600);
+
+	TEST_EQUAL(TestObject::s_ConstructorCount, 1);
+	TEST_EQUAL(TestObject::s_DestructorCount, 0);
+	TEST_EQUAL(TestObject::s_CopyConstructorCount, 0);
+	TEST_EQUAL(TestObject::s_MoveConstructorCount, 0);
+
+	TEST_EQUAL(InheritTestObject::s_ConstructorCount, 1);
+	TEST_EQUAL(InheritTestObject::s_DestructorCount, 0);
+	TEST_EQUAL(InheritTestObject::s_CopyConstructorCount, 0);
+	TEST_EQUAL(InheritTestObject::s_MoveConstructorCount, 0);
+	// After the scope ends, the destructor should be called
+}
+
+TEST_CASE(SmartPtrTest, ArrayTest)
+{
+	Array<Scope<TestObject>> smartPtrArray(3, g_GlobalAllocators.pMalloc);
+	smartPtrArray.Append(MakeScope<TestObject>(g_GlobalAllocators.pMalloc, 700));
 }

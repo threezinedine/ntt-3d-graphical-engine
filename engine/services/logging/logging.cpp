@@ -5,11 +5,12 @@
 
 namespace ntt {
 
-Array<Scope<Handler>> Logging::s_Handlers;
+Scope<Array<Scope<Handler>>> Logging::s_pHandlers;
 
 Result Logging::Initialize()
 {
-	// s_Handlers.Append(MakeScope<ConsoleHandler>(g_GlobalAllocators.pMalloc));
+	s_pHandlers = MakeScope<Array<Scope<Handler>>>(g_GlobalAllocators.pMalloc);
+	s_pHandlers->Append(MakeScope<ConsoleHandler>(g_GlobalAllocators.pMalloc, "[%(type)] %(message)"));
 
 	return RESULT_SUCCESS;
 }
@@ -29,11 +30,11 @@ Result Logging::Log(LoggingType type, LoggingLevel level, const char* file, u32 
 	message.line	= line;
 	message.message = String(buffer);
 
-	for (const auto& handler : s_Handlers)
+	for (const auto& handler : *(s_pHandlers.Get()))
 	{
-		if (handler.Get() != nullptr)
+		if (handler != nullptr)
 		{
-			handler.Get()->Handle(message);
+			handler->Handle(message);
 		}
 	}
 
@@ -42,6 +43,8 @@ Result Logging::Log(LoggingType type, LoggingLevel level, const char* file, u32 
 
 Result Logging::Shutdown()
 {
+	NTT_ASSERT_RESULT_SUCCESS(s_pHandlers->Clear());
+	s_pHandlers.Reset();
 	return RESULT_SUCCESS;
 }
 
