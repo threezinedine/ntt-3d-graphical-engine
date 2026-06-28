@@ -2,6 +2,9 @@ include(ntt-config)
 ntt_config()
 
 if (NTT_EDITOR)
+    set(NTT_EDITOR_EXECUTABLE_NAME "ntt-editor")
+    ntt_project(NTT_EDITOR_EXECUTABLE_NAME)
+
     ntt_set_source_group(
         "src"
         NTT_EDITOR_SOURCES
@@ -9,23 +12,23 @@ if (NTT_EDITOR)
     )
 
     add_executable(
-        ntt-editor
+        ${NTT_EDITOR_EXECUTABLE_NAME}
         ${NTT_EDITOR_SOURCES}
     )
 
     target_link_libraries(
-        ntt-editor
+        ${NTT_EDITOR_EXECUTABLE_NAME}
         PRIVATE
         ntt-application
     )
 
-    ntt_add_options(ntt-editor)
-    ntt_add_link_flags(ntt-editor)
-    ntt_add_compile_options(ntt-editor)
+    ntt_add_options(${NTT_EDITOR_EXECUTABLE_NAME})
+    ntt_add_link_flags(${NTT_EDITOR_EXECUTABLE_NAME})
+    ntt_add_compile_options(${NTT_EDITOR_EXECUTABLE_NAME})
 
     if (NTT_PLATFORM_WEB)
         add_custom_command(
-            TARGET ntt-editor POST_BUILD
+            TARGET ${NTT_EDITOR_EXECUTABLE_NAME} POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
                 ${CMAKE_SOURCE_DIR}/engine/assets/html/editor.html
                 ${CMAKE_CURRENT_BINARY_DIR}/index.html

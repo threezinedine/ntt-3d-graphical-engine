@@ -1,5 +1,18 @@
 include(ntt-assert)
 
+
+macro(ntt_project name)
+    if (NTT_FIRST_LEVEL_PROJECT)
+        set(NTT_PROJECT_NAME ${name})
+    endif()
+
+    project(${name} LANGUAGES CXX)
+    # c++ 17 is the minimum standard for this project
+    set(CMAKE_CXX_STANDARD 17)
+    set(CMAKE_CXX_STANDARD_REQUIRED ON)
+    set(CMAKE_CXX_EXTENSIONS ON)
+endmacro()
+
 macro(ntt_config)
     if (NOT NTT_CONFIGURED)
         set(NTT_OPTIONS)

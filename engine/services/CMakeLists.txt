@@ -2,6 +2,7 @@ include(ntt-config)
 ntt_config()
 
 set(NTT_SERVICES_LIBRARY_NAME "ntt-services")
+ntt_project(NTT_SERVICES_LIBRARY_NAME)
 
 ntt_set_source_group("src"
     NTT_SERVICES_SOURCES

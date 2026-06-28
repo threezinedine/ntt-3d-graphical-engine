@@ -2,6 +2,7 @@ include(ntt-config)
 ntt_config()
 
 set(NTT_CORE_LIBRARY_NAME "ntt-core")
+ntt_project(NTT_CORE_LIBRARY_NAME)
 
 ntt_set_source_group("src/containers"
     NTT_CONTAINERS_SOURCES

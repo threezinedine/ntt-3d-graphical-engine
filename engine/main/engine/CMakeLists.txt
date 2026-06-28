@@ -2,6 +2,9 @@ include(ntt-config)
 ntt_config()
 
 if (NTT_ENGINE)
+    set(NTT_ENGINE_EXECUTABLE_NAME "ntt-engine")
+    ntt_project(NTT_ENGINE_EXECUTABLE_NAME)
+
     ntt_set_source_group(
         "src"
         NTT_ENGINE_SOURCES
@@ -9,23 +12,23 @@ if (NTT_ENGINE)
     )
 
     add_executable(
-        ntt-engine
+        ${NTT_ENGINE_EXECUTABLE_NAME}
         ${NTT_ENGINE_SOURCES}
     )
 
     target_link_libraries(
-        ntt-engine
+        ${NTT_ENGINE_EXECUTABLE_NAME}
         PRIVATE
         ntt-application
     )
 
-    ntt_add_options(ntt-engine)
-    ntt_add_link_flags(ntt-engine)
-    ntt_add_compile_options(ntt-engine)
+    ntt_add_options(${NTT_ENGINE_EXECUTABLE_NAME})
+    ntt_add_link_flags(${NTT_ENGINE_EXECUTABLE_NAME})
+    ntt_add_compile_options(${NTT_ENGINE_EXECUTABLE_NAME})
 
     if (NTT_PLATFORM_WEB)
         add_custom_command(
-            TARGET ntt-engine POST_BUILD
+            TARGET ${NTT_ENGINE_EXECUTABLE_NAME} POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
                 ${CMAKE_SOURCE_DIR}/engine/assets/html/engine.html
                 ${CMAKE_CURRENT_BINARY_DIR}/index.html

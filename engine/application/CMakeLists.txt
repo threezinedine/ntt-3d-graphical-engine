@@ -2,6 +2,7 @@ include(ntt-config)
 ntt_config()
 
 set(NTT_APPLICATION_LIBRARY_NAME "ntt-application")
+ntt_project(NTT_APPLICATION_LIBRARY_NAME)
 
 ntt_set_source_group("src"
     NTT_APPLICATION_SOURCES

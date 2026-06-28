@@ -2,6 +2,9 @@ include(ntt-config)
 ntt_config()
 
 if (NTT_UNITTEST)
+    set(NTT_UNITTEST_EXECUTABLE_NAME "ntt-unittest")
+    ntt_project(NTT_UNITTEST_EXECUTABLE_NAME)
+
     ntt_set_source_group(
         "src/utilities"
         NTT_UTILITIES_SOURCES
@@ -40,7 +43,7 @@ if (NTT_UNITTEST)
     )
 
     add_executable(
-        ntt-unittest
+        ${NTT_UNITTEST_EXECUTABLE_NAME}
         ${NTT_UNITTEST_SOURCES}
         ${NTT_UTILITIES_SOURCES}
         ${NTT_CORE_TESTS_SOURCES}
@@ -49,24 +52,24 @@ if (NTT_UNITTEST)
     )
 
     target_link_libraries(
-        ntt-unittest
+        ${NTT_UNITTEST_EXECUTABLE_NAME}
         PRIVATE
         ntt-application
     )
 
     target_include_directories(
-        ntt-unittest
+        ${NTT_UNITTEST_EXECUTABLE_NAME}
         PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}"
     )
 
-    ntt_add_options(ntt-unittest)
-    ntt_add_link_flags(ntt-unittest)
-    ntt_add_compile_options(ntt-unittest)
+    ntt_add_options(${NTT_UNITTEST_EXECUTABLE_NAME})
+    ntt_add_link_flags(${NTT_UNITTEST_EXECUTABLE_NAME})
+    ntt_add_compile_options(${NTT_UNITTEST_EXECUTABLE_NAME})
 
     if (NTT_PLATFORM_WEB)
         add_custom_command(
-            TARGET ntt-engine POST_BUILD
+            TARGET ${NTT_UNITTEST_EXECUTABLE_NAME} POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
                 ${CMAKE_SOURCE_DIR}/engine/assets/html/engine.html
                 ${CMAKE_CURRENT_BINARY_DIR}/index.html
