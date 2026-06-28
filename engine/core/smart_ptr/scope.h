@@ -84,7 +84,7 @@ public:
 	{
 		if (m_Ptr != nullptr)
 		{
-			m_Ptr->~T();
+			m_Ptr.Get()->~T();
 			NTT_ASSERT(m_Ptr.Free() == RESULT_SUCCESS);
 			m_Ptr = nullptr;
 		}

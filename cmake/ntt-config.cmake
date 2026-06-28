@@ -82,6 +82,7 @@ macro(ntt_platform_detect)
                     "/W4"
                     "/WX"
                     "/wd6387"
+                    "/wd28251"
                     "/permissive-")
             endif()
             
