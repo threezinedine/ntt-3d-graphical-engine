@@ -68,7 +68,13 @@ macro(ntt_platform_detect)
         if (EMSCRIPTEN)
             set(NTT_PLATFORM_WEB ON)
             list(APPEND NTT_OPTIONS NTT_PLATFORM_WEB)
-            list(APPEND NTT_LINK_FLAGS "-sUSE_GLFW=3" "-sMAX_WEBGL_VERSION=2" "-sALLOW_MEMORY_GROWTH=1")
+            list(APPEND 
+                NTT_LINK_FLAGS 
+                "-sUSE_GLFW=3" 
+                "-sUSE_WEBGL2=1"
+                "-sFULL_ES3=1"
+                "-sALLOW_MEMORY_GROWTH=1" 
+                "-sSTACK_SIZE=20MB")
 
             if (NTT_UNITTEST)
                 message(FATAL_ERROR "Unit test is not supported on web platform")

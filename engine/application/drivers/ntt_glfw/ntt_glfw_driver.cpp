@@ -47,9 +47,15 @@ static Result GLFWDisplayDriver_Initialize()
 		return RESULT_GLFW_INIT_FAILED;
 	}
 
+#if !NTT_PLATFORM_WEB
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#else  // NTT_PLATFORM_WEB
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+	glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+#endif // !NTT_PLATFORM_WEB
 
 	NTT_DISPLAY_INFO("GLFW loaded with OpenGL version: %s", glfwGetVersionString());
 

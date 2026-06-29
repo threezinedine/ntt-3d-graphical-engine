@@ -60,6 +60,41 @@ Result Application::Initialize(i32 argc, char** argv)
 	mesh.vertices.Emplace(Vec3f{-0.5f, -0.5f, 0.0f}, Vec2f{0.0f, 0.0f}, Color{0.0f, 0.0f, 1.0f, 1.0f});
 	g_MeshID = g_RenderGlobals.pMeshStorage->AddMesh(static_cast<Mesh&&>(mesh));
 
+#if NTT_PLATFORM_WEB
+	const char* vertexShaderSource = R"(#version 300 es
+    	// 'in' replaces 'attribute' in GLSL ES 3.00
+    	in vec3 aPos;
+    	in vec2 aTexCoord;
+    	in vec4 aColor;
+
+    	// 'out' passes data to the fragment shader
+		out vec2 TexCoord;
+		out vec4 VertexColor;
+
+		void main()
+		{
+			gl_Position = vec4(aPos, 1.0);
+			TexCoord = aTexCoord;
+			VertexColor = aColor;
+		}
+	)";
+
+	const char* fragmentShaderSource = R"(#version 300 es
+		precision mediump float;
+
+		// Custom output variable replaces gl_FragColor
+		out vec4 FragColor;
+
+		// 'in' receives data from the vertex shader (must match names exactly)
+		in vec2 TexCoord;
+		in vec4 VertexColor;
+
+		void main()
+		{
+			FragColor = VertexColor; 
+		}
+	)";
+#else
 	const char* vertexShaderSource = R"(
 		#version 330 core
 		layout(location = 0) in vec3 aPos;
@@ -89,6 +124,7 @@ Result Application::Initialize(i32 argc, char** argv)
 			FragColor = VertexColor; // Use the vertex color for the fragment color
 		}
 	)";
+#endif // NTT_PLATFORM_WEB
 
 	g_ShaderID = g_RenderGlobals.pShaderStorage->AddShader(vertexShaderSource, fragmentShaderSource);
 
