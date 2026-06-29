@@ -11,26 +11,33 @@
 
 namespace ntt {
 
-void*		g_DefaultGLFWDriverHandle = nullptr;
-static bool s_FirstWindowRequired	  = false;
+GLFWwindow* g_pDefaultWindow	  = nullptr;
+static bool s_FirstWindowRequired = false;
+
+struct GLFWDriverHandle
+{
+	GLFWwindow* pWindow;
+};
 
 static Result GLFWDisplayDriver_Initialize();
 static Result GLFWDisplayDriver_Shutdown();
-static Result GLFWDisplayDriver_CreateWindow(u32 width, u32 height, const char* title, void** pWindowHandle);
-static bool	  GLFWDisplayDriver_ShouldCloseWindow(void* pWindowHandle);
-static Result GLFWDisplayDriver_DestroyWindow(void* pWindowHandle);
-static Result GLFWDisplayDriver_OnBeginFrame(void* pDriverHandle);
-static Result GLFWDisplayDriver_OnEndFrame(void* pDriverHandle);
+static Result GLFWDisplayDriver_CreateWindow(u32 width, u32 height, const char* title, Pointer<void>& pWindowHandle);
+static bool	  GLFWDisplayDriver_ShouldCloseWindow(Pointer<void> pWindowHandle);
+static Result GLFWDisplayDriver_DestroyWindow(Pointer<void> pWindowHandle);
+static Result GLFWDisplayDriver_OnBeginFrame(Pointer<void> pDriverHandle);
+static Result GLFWDisplayDriver_OnEndFrame(Pointer<void> pDriverHandle);
+static u32	  GLFWDisplayDriver_GetWindowHandleSize();
 
 Result RegisterGLFWDisplayDriver()
 {
-	g_DisplayDriver.Initialize		  = GLFWDisplayDriver_Initialize;
-	g_DisplayDriver.Shutdown		  = GLFWDisplayDriver_Shutdown;
-	g_DisplayDriver.CreateWindow	  = GLFWDisplayDriver_CreateWindow;
-	g_DisplayDriver.ShouldCloseWindow = GLFWDisplayDriver_ShouldCloseWindow;
-	g_DisplayDriver.DestroyWindow	  = GLFWDisplayDriver_DestroyWindow;
-	g_DisplayDriver.OnBeginFrame	  = GLFWDisplayDriver_OnBeginFrame;
-	g_DisplayDriver.OnEndFrame		  = GLFWDisplayDriver_OnEndFrame;
+	g_DisplayDriver.Initialize			= GLFWDisplayDriver_Initialize;
+	g_DisplayDriver.Shutdown			= GLFWDisplayDriver_Shutdown;
+	g_DisplayDriver.CreateWindow		= GLFWDisplayDriver_CreateWindow;
+	g_DisplayDriver.ShouldCloseWindow	= GLFWDisplayDriver_ShouldCloseWindow;
+	g_DisplayDriver.DestroyWindow		= GLFWDisplayDriver_DestroyWindow;
+	g_DisplayDriver.OnBeginFrame		= GLFWDisplayDriver_OnBeginFrame;
+	g_DisplayDriver.OnEndFrame			= GLFWDisplayDriver_OnEndFrame;
+	g_DisplayDriver.GetWindowHandleSize = GLFWDisplayDriver_GetWindowHandleSize;
 	return RESULT_SUCCESS;
 }
 
@@ -60,7 +67,7 @@ static Result GLFWDisplayDriver_Initialize()
 
 	glfwMakeContextCurrent(pWindow);
 
-	g_DefaultGLFWDriverHandle = (void*)pWindow;
+	g_pDefaultWindow = pWindow;
 
 	return RESULT_SUCCESS;
 }
@@ -71,12 +78,14 @@ static Result GLFWDisplayDriver_Shutdown()
 	return RESULT_SUCCESS;
 }
 
-static Result GLFWDisplayDriver_CreateWindow(u32 width, u32 height, const char* title, void** pWindowHandle)
+static Result GLFWDisplayDriver_CreateWindow(u32 width, u32 height, const char* title, Pointer<void>& pWindowHandle)
 {
+	Pointer<GLFWDriverHandle> pHandle = pWindowHandle.Cast<GLFWDriverHandle>();
+
 	if (!s_FirstWindowRequired)
 	{
 		s_FirstWindowRequired = true;
-		*pWindowHandle		  = g_DefaultGLFWDriverHandle;
+		pHandle->pWindow	  = g_pDefaultWindow;
 		return RESULT_SUCCESS;
 	}
 
@@ -92,38 +101,42 @@ static Result GLFWDisplayDriver_CreateWindow(u32 width, u32 height, const char* 
 		return RESULT_GLFW_WINDOW_CREATION_FAILED;
 	}
 
-	*pWindowHandle = pWindow;
+	pHandle->pWindow = pWindow;
 
 	glfwMakeContextCurrent(pWindow);
 
 	return RESULT_SUCCESS;
 }
 
-static Result GLFWDisplayDriver_DestroyWindow(void* pWindowHandle)
+static Result GLFWDisplayDriver_DestroyWindow(Pointer<void> pWindowHandle)
 {
-	if (pWindowHandle == nullptr)
+	Pointer<GLFWDriverHandle> pHandle = pWindowHandle.Cast<GLFWDriverHandle>();
+
+	if (pHandle == nullptr)
 	{
 		return RESULT_NULL_POINTER;
 	}
 
-	GLFWwindow* pWindow = static_cast<GLFWwindow*>(pWindowHandle);
+	GLFWwindow* pWindow = static_cast<GLFWwindow*>(pHandle->pWindow);
 	glfwDestroyWindow(pWindow);
 
 	return RESULT_SUCCESS;
 }
 
-static bool GLFWDisplayDriver_ShouldCloseWindow(void* pWindowHandle)
+static bool GLFWDisplayDriver_ShouldCloseWindow(Pointer<void> pWindowHandle)
 {
-	if (pWindowHandle == nullptr)
+	Pointer<GLFWDriverHandle> pHandle = pWindowHandle.Cast<GLFWDriverHandle>();
+
+	if (pHandle == nullptr)
 	{
 		return true; // If the window handle is null, consider it should close
 	}
 
-	GLFWwindow* pWindow = static_cast<GLFWwindow*>(pWindowHandle);
+	GLFWwindow* pWindow = static_cast<GLFWwindow*>(pHandle->pWindow);
 	return glfwWindowShouldClose(pWindow);
 }
 
-static Result GLFWDisplayDriver_OnBeginFrame(void* pDriverHandle)
+static Result GLFWDisplayDriver_OnBeginFrame(Pointer<void> pDriverHandle)
 {
 	NTT_UNUSED(pDriverHandle);
 	glfwPollEvents();
@@ -132,12 +145,27 @@ static Result GLFWDisplayDriver_OnBeginFrame(void* pDriverHandle)
 	return RESULT_SUCCESS;
 }
 
-static Result GLFWDisplayDriver_OnEndFrame(void* pDriverHandle)
+static Result GLFWDisplayDriver_OnEndFrame(Pointer<void> pDriverHandle)
 {
-	glfwSwapBuffers(static_cast<GLFWwindow*>(pDriverHandle));
-	// For GLFW, we don't have a specific driver handle to use here.
-	// This function can be used for any per-frame cleanup if needed.
+#if 0
+	NTT_UNUSED(pDriverHandle);
+#else
+	Pointer<GLFWDriverHandle> pHandle = pDriverHandle.Cast<GLFWDriverHandle>();
+
+	if (pHandle == nullptr)
+	{
+		return RESULT_NULL_POINTER;
+	}
+
+	GLFWwindow* pWindow = static_cast<GLFWwindow*>(pHandle->pWindow);
+	glfwSwapBuffers(pWindow);
+#endif
 	return RESULT_SUCCESS;
+}
+
+static u32 GLFWDisplayDriver_GetWindowHandleSize()
+{
+	return (u32)sizeof(GLFWDriverHandle);
 }
 
 } // namespace ntt

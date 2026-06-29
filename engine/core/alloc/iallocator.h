@@ -119,6 +119,11 @@ struct Pointer
 		return Pointer<U>{static_cast<U*>(pPtr), pAllocator, size};
 	}
 
+	void Assign(T* ptr)
+	{
+		pPtr = ptr;
+	}
+
 	Result Free();
 };
 

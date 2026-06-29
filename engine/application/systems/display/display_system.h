@@ -31,7 +31,7 @@ public:
 public:
 	struct WindowInfo
 	{
-		void* pWindowHandle;
+		Pointer<void> pWindowHandle;
 	};
 
 private:

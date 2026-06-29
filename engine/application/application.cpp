@@ -96,8 +96,13 @@ Result Application::Update()
 {
 	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pDisplaySystem->OnBeginFrame(g_WindowID));
 
-	// NTT_ASSERT_RESULT_SUCCESS(g_RenderGlobals.pShaderStorage->UseShader(g_ShaderID));
-	// NTT_ASSERT_RESULT_SUCCESS(g_RenderGlobals.pMeshStorage->DrawMesh(g_MeshID));
+	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pRenderSystem->BeginRender());
+
+	NTT_ASSERT_RESULT_SUCCESS(g_RenderGlobals.pShaderStorage->UseShader(g_ShaderID));
+	NTT_ASSERT_RESULT_SUCCESS(g_RenderGlobals.pMeshStorage->DrawMesh(g_MeshID));
+
+	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pRenderSystem->EndRender());
+	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pRenderSystem->Present());
 
 	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pDisplaySystem->OnEndFrame(g_WindowID));
 

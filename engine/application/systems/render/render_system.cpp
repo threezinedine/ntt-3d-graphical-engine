@@ -46,4 +46,19 @@ Result RenderSystem::ShutdownImpl()
 	return RESULT_SUCCESS;
 }
 
+Result RenderSystem::BeginRender()
+{
+	return g_RenderDriver.StartRender(nullptr);
+}
+
+Result RenderSystem::EndRender()
+{
+	return g_RenderDriver.EndRender(nullptr);
+}
+
+Result RenderSystem::Present()
+{
+	return g_RenderDriver.Present(nullptr);
+}
+
 } // namespace ntt

@@ -12,6 +12,12 @@ public:
 	RenderSystem();
 	virtual ~RenderSystem();
 
+public:
+public:
+	Result BeginRender();
+	Result EndRender();
+	Result Present();
+
 protected:
 	virtual Result InitializeImpl() override;
 	virtual Result ShutdownImpl() override;
