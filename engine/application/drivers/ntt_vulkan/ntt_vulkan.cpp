@@ -82,10 +82,13 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityF
 													void*										pUserData);
 #endif // NTT_DEBUG
 
+static u32										 s_PhysicalDeviceCount = 0;
 static Scope<Array<VkPhysicalDevice>>			 s_pPhysicalDevices;
 static Scope<Array<VkPhysicalDeviceProperties*>> s_pPhysicalDeviceProperties;
+static VkPhysicalDevice							 g_PhysicalDevice = VK_NULL_HANDLE;
 static Result									 enumeratePhysicalDevices();
 static Result									 destroyPhysicalDevices();
+static Result									 choosePhysicalDevice();
 
 static Result VulkanDriver_Initialize()
 {
@@ -110,6 +113,7 @@ static Result VulkanDriver_Initialize()
 #endif // NTT_DEBUG
 
 	NTT_ASSERT_RESULT_SUCCESS(enumeratePhysicalDevices());
+	NTT_ASSERT_RESULT_SUCCESS(choosePhysicalDevice());
 
 	NTT_VULKAN_INFO("Vulkan driver initialized.");
 
@@ -369,6 +373,7 @@ static Result enumeratePhysicalDevices()
 	s_pPhysicalDevices->Resize(deviceCount);
 	s_pPhysicalDeviceProperties->Resize(deviceCount);
 	VK_ASSERT(vkEnumeratePhysicalDevices(g_Instance, &deviceCount, &(*s_pPhysicalDevices.Get())[0]));
+	s_PhysicalDeviceCount = deviceCount;
 
 	NTT_VULKAN_INFO("Found %u Vulkan physical devices:", deviceCount);
 
@@ -388,10 +393,58 @@ static Result destroyPhysicalDevices()
 {
 	s_pPhysicalDeviceProperties.Reset();
 	s_pPhysicalDevices.Reset();
+	s_PhysicalDeviceCount = 0;
 
 	NTT_VULKAN_DEBUG("Vulkan physical devices destroyed.");
 
 	return RESULT_SUCCESS;
+}
+
+static u32 ratePhysicalDeviceScore(u32 index);
+
+static Result choosePhysicalDevice()
+{
+	u32 bestScore = 0;
+	u32 bestIndex = 0;
+
+	for (u32 i = 0; i < s_PhysicalDeviceCount; ++i)
+	{
+		u32 score = ratePhysicalDeviceScore(i);
+
+		NTT_VULKAN_DEBUG("Physical device %s score: %u", (*s_pPhysicalDeviceProperties.Get())[i]->deviceName, score);
+
+		if (score > bestScore)
+		{
+			bestScore = score;
+			bestIndex = i;
+		}
+	}
+
+	g_PhysicalDevice = (*s_pPhysicalDevices.Get())[bestIndex];
+
+	NTT_VULKAN_INFO("Chosen Vulkan physical device: %s", (*s_pPhysicalDeviceProperties.Get())[bestIndex]->deviceName);
+
+	return RESULT_SUCCESS;
+}
+
+static u32 ratePhysicalDeviceScore(u32 index)
+{
+	VkPhysicalDeviceProperties* pProperties = (*s_pPhysicalDeviceProperties.Get())[index];
+
+	if (pProperties->deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+	{
+		return 1000 + pProperties->limits.maxImageDimension2D;
+	}
+	else if (pProperties->deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU)
+	{
+		return 500 + pProperties->limits.maxImageDimension2D;
+	}
+	else
+	{
+		return 0;
+	}
+
+	return 0;
 }
 
 } // namespace ntt
