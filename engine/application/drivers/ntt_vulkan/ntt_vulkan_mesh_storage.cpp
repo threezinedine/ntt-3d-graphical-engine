@@ -1,3 +1,5 @@
+#if NTT_VULKAN
+
 #include "ntt_vulkan_mesh_storage.h"
 
 namespace ntt {
@@ -54,3 +56,5 @@ u32 VulkanMeshStorage::GetMeshHandleSize() const
 }
 
 } // namespace ntt
+
+#endif // NTT_VULKAN

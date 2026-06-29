@@ -1,3 +1,5 @@
+#if NTT_VULKAN
+
 #pragma once
 
 #include "systems/render/mesh_storage.h"
@@ -23,3 +25,5 @@ protected:
 };
 
 } // namespace ntt
+
+#endif // NTT_VULKAN

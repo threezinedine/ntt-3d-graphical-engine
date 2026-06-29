@@ -1,3 +1,5 @@
+#if NTT_VULKAN
+
 #pragma once
 
 #include "vulkan/vulkan.h"
@@ -19,3 +21,5 @@
 #define VK_ASSERT_B(exp) _VK_ASSERT(exp, false)
 
 #define VK_ASSERT(exp) _VK_ASSERT(exp, RESULT_VULKAN_ERROR)
+
+#endif // NTT_VULKAN

@@ -1,3 +1,5 @@
+#if NTT_VULKAN
+
 #include "ntt_vulkan.h"
 #include "ntt_vulkan_mesh_storage.h"
 #include "ntt_vulkan_shader_storage.h"
@@ -446,3 +448,5 @@ static u32 ratePhysicalDeviceScore(u32 index)
 }
 
 } // namespace ntt
+
+#endif // NTT_VULKAN

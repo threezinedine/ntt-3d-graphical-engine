@@ -1,3 +1,5 @@
+#if NTT_VULKAN
+
 #include "ntt_vulkan_shader_storage.h"
 
 namespace ntt {
@@ -57,3 +59,5 @@ u32 VulkanShaderStorage::GetShaderHandleSize() const
 }
 
 } // namespace ntt
+
+#endif // NTT_VULKAN

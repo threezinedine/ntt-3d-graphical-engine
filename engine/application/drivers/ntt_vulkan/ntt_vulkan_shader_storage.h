@@ -1,3 +1,5 @@
+#if NTT_VULKAN
+
 #include "systems/render/shader_storage.h"
 
 namespace ntt {
@@ -19,7 +21,9 @@ protected:
 	virtual Result RemoveShaderImpl(const Pointer<void>& pShaderHandle) override;
 
 protected:
-	virtual u32 GetShaderHandleSize() const;
+	virtual u32 GetShaderHandleSize() const override;
 };
 
 } // namespace ntt
+
+#endif // NTT_VULKAN

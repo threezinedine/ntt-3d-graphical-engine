@@ -33,6 +33,8 @@ macro(ntt_config)
         ntt_option(NTT_ENGINE ON)
         ntt_option(NTT_UNITTEST OFF)
 
+        ntt_option(NTT_VULKAN ON)
+
         ntt_assert_max_one_is_on(NTT_ENGINE NTT_UNITTEST)
         ntt_assert_max_one_is_on(NTT_EDITOR NTT_UNITTEST)
         ntt_assert_at_least_one_is_on(NTT_EDITOR NTT_ENGINE NTT_UNITTEST)
@@ -84,6 +86,7 @@ macro(ntt_platform_detect)
                 "-sALLOW_MEMORY_GROWTH=1" 
                 "-sSTACK_SIZE=20MB")
 
+            set(NTT_VULKAN OFF)
             if (NTT_UNITTEST)
                 message(FATAL_ERROR "Unit test is not supported on web platform")
             endif()

@@ -22,22 +22,26 @@ Result RenderSystem::InitializeImpl()
 {
 	m_pRenderContextStorage = MakeScope<Storage<RenderContext>>(g_GlobalAllocators.pMalloc);
 
+#if NTT_VULKAN
 	if (NTT_ARG_BOOL(USE_VULKAN))
 	{
 		NTT_ASSERT_RESULT_SUCCESS(RegisterVulkanDriver());
 	}
 	else
+#endif // NTT_VULKAN
 	{
 		NTT_ASSERT_RESULT_SUCCESS(RegisterOpenGLDriver());
 	}
 
 	NTT_ASSERT_RESULT_SUCCESS(g_RenderDriver.Initialize());
 
+#if NTT_VULKAN
 	if (NTT_ARG_BOOL(USE_VULKAN))
 	{
 		NTT_ASSERT_RESULT_SUCCESS(RegisterVulkanRenderer());
 	}
 	else
+#endif // NTT_VULKAN
 	{
 		NTT_ASSERT_RESULT_SUCCESS(RegisterOpenGLRenderer());
 	}
