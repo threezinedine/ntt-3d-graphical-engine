@@ -443,8 +443,6 @@ static u32 ratePhysicalDeviceScore(u32 index)
 	{
 		return 0;
 	}
-
-	return 0;
 }
 
 } // namespace ntt
