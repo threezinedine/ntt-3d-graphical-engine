@@ -230,6 +230,6 @@ macro(ntt_embed_asset asset_folder added_variables)
 
     if (MSVC)
         source_group(${asset_folder} FILES ${INPUT_FILES})
-        source_group("generated_${asset_folder}" FILES ${OUTPUT_FILES})
+        source_group("${asset_folder}_generated" FILES ${OUTPUT_FILES})
     endif()
 endmacro()
