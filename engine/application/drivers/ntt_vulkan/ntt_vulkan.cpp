@@ -46,6 +46,9 @@ Result RegisterVulkanRenderer()
 // clang-format off
 static const char* s_InstanceExtensions[] = {
 	VK_KHR_SURFACE_EXTENSION_NAME,
+#if NTT_DEBUG
+	VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
+#endif // NTT_DEBUG
 };
 
 static const char* s_InstanceLayers[] = {
@@ -55,17 +58,28 @@ static const char* s_InstanceLayers[] = {
 };
 // clang-format on
 
+#if NTT_DEBUG
+static PFN_vkCreateDebugUtilsMessengerEXT  s_pfnCreateDebugUtilsMessengerEXT  = nullptr;
+static PFN_vkDestroyDebugUtilsMessengerEXT s_pfnDestroyDebugUtilsMessengerEXT = nullptr;
+#endif // NTT_DEBUG
+
+static bool	  checkInstanceAllExtensionsSupport();
+static bool	  checkInstanceAllLayersSupport();
+static Result loadVulkanInstanceMethods();
+
 static VkInstance g_Instance = VK_NULL_HANDLE;
-
-static bool checkInstanceAllExtensionsSupport();
-static bool checkInstanceAllLayersSupport();
-
-static Result createInstance();
-static Result destroyInstance();
+static Result	  createInstance();
+static Result	  destroyInstance();
 
 #if NTT_DEBUG
-static Result setupDebugMessenger();
-static Result destroyDebugMessenger();
+static Result					setupDebugMessenger();
+static Result					destroyDebugMessenger();
+static VkDebugUtilsMessengerEXT g_DebugMessenger = VK_NULL_HANDLE;
+
+static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT		messageSeverity,
+													VkDebugUtilsMessageTypeFlagsEXT				messageType,
+													const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+													void*										pUserData);
 #endif // NTT_DEBUG
 
 static Result VulkanDriver_Initialize()
@@ -83,6 +97,8 @@ static Result VulkanDriver_Initialize()
 	}
 
 	NTT_ASSERT_RESULT_SUCCESS(createInstance());
+
+	NTT_ASSERT_RESULT_SUCCESS(loadVulkanInstanceMethods());
 
 #if NTT_DEBUG
 	NTT_ASSERT_RESULT_SUCCESS(setupDebugMessenger());
@@ -140,6 +156,24 @@ static Result VulkanDriver_Present(Pointer<void> pDriverHandle)
 static u32 VulkanDriver_GetRenderContextHandleSize()
 {
 	return sizeof(VulkanContextHandle);
+}
+
+static Result loadVulkanInstanceMethods()
+{
+#define LOAD_INSTANCE_METHOD(name)                                                                                     \
+	s_pfn##name = reinterpret_cast<PFN_vk##name>(vkGetInstanceProcAddr(g_Instance, "vk" #name));                       \
+	if (s_pfn##name == nullptr)                                                                                        \
+	{                                                                                                                  \
+		NTT_VULKAN_ERROR("Failed to load Vulkan instance method: %s", "vk" #name);                                     \
+		return RESULT_VULKAN_ERROR;                                                                                    \
+	}
+
+#if NTT_DEBUG
+	LOAD_INSTANCE_METHOD(CreateDebugUtilsMessengerEXT);
+	LOAD_INSTANCE_METHOD(DestroyDebugUtilsMessengerEXT);
+#endif // NTT_DEBUG
+
+	return RESULT_SUCCESS;
 }
 
 static bool checkInstanceExtensionSupport(const char* extensionName);
@@ -263,12 +297,55 @@ static Result destroyInstance()
 #if NTT_DEBUG
 static Result setupDebugMessenger()
 {
+	VkDebugUtilsMessengerCreateInfoEXT createInfo{};
+	createInfo.sType		   = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+	createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+								 VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+								 VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+	createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+							 VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+							 VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+	createInfo.pfnUserCallback = DebugCallback;
+	createInfo.pUserData	   = nullptr;
+
+	VK_ASSERT(s_pfnCreateDebugUtilsMessengerEXT(g_Instance, &createInfo, nullptr, &g_DebugMessenger));
+
+	NTT_VULKAN_DEBUG("Vulkan debug messenger created.");
+
 	return RESULT_SUCCESS;
 }
 
 static Result destroyDebugMessenger()
 {
+	s_pfnDestroyDebugUtilsMessengerEXT(g_Instance, g_DebugMessenger, nullptr);
+
+	NTT_VULKAN_DEBUG("Vulkan debug messenger destroyed.");
+
 	return RESULT_SUCCESS;
+}
+
+static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT		messageSeverity,
+													VkDebugUtilsMessageTypeFlagsEXT				messageType,
+													const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+													void*										pUserData)
+{
+	NTT_UNUSED(messageType);
+	NTT_UNUSED(pUserData);
+
+	if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
+	{
+		NTT_VULKAN_ERROR("Vulkan validation layer: %s", pCallbackData->pMessage);
+	}
+	else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
+	{
+		NTT_VULKAN_WARN("Vulkan validation layer: %s", pCallbackData->pMessage);
+	}
+	else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT)
+	{
+		NTT_VULKAN_INFO("Vulkan validation layer: %s", pCallbackData->pMessage);
+	}
+
+	return VK_FALSE;
 }
 #endif // NTT_DEBUG
 
