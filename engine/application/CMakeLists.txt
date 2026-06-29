@@ -43,6 +43,16 @@ ntt_set_source_group("src/drivers/ntt-opengl"
     "drivers/ntt_opengl/ntt_opengl_shader_storage.cpp"
 )
 
+ntt_set_source_group("src/drivers/ntt-vulkan"
+    NTT_APPLICATION_SOURCES
+    "drivers/ntt_vulkan/ntt_vulkan.h"
+    "drivers/ntt_vulkan/ntt_vulkan.cpp"
+    "drivers/ntt_vulkan/ntt_vulkan_mesh_storage.h"
+    "drivers/ntt_vulkan/ntt_vulkan_mesh_storage.cpp"
+    "drivers/ntt_vulkan/ntt_vulkan_shader_storage.h"
+    "drivers/ntt_vulkan/ntt_vulkan_shader_storage.cpp"
+)
+
 ntt_set_source_group("src/systems/render"
     NTT_APPLICATION_SOURCES
     "systems/render/render.h"
@@ -114,7 +124,7 @@ target_include_directories(
     "${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
-ntt_find_package(ntt-glfw REQUIRED)
+ntt_find_package(ntt-glfw REQUIRED "Dependencies")
 
 target_link_libraries(
     ${NTT_APPLICATION_LIBRARY_NAME}
@@ -122,6 +132,16 @@ target_link_libraries(
     ntt-services
     ntt-glfw
 )
+
+if (NOT NTT_PLATFORM_WEB)
+    ntt_find_package(ntt-vulkan REQUIRED "Dependencies")
+
+    target_link_libraries(
+        ${NTT_APPLICATION_LIBRARY_NAME}
+        PUBLIC
+        ntt-vulkan
+    )
+endif()
 
 ntt_add_options(${NTT_APPLICATION_LIBRARY_NAME})
 ntt_add_link_flags(${NTT_APPLICATION_LIBRARY_NAME})

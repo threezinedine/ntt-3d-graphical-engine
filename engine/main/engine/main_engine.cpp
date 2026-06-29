@@ -6,7 +6,7 @@ int main(i32 argc, char** argv)
 {
 	NTT_ASSERT_RESULT_SUCCESS(ArgParser::Parse(argc, argv));
 
-	if (ArgParser::GetArgInfo(ARG_OPTION_HELP)->value.boolValue)
+	if (NTT_ARG_BOOL(HELP))
 	{
 		NTT_ASSERT_RESULT_SUCCESS(ArgParser::PrintHelp());
 		return 0;

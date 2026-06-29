@@ -10,6 +10,15 @@
 			"cwd": "${workspaceRoot}/build/debug/engine/main"
 		},
 		{
+			"name": "Engine (linux-Vulkan)",
+			"type": "cppdbg",
+			"request": "launch",
+			"program": "${workspaceRoot}/build/debug/engine/main/engine/ntt-engine",
+			"args": ["--vulkan"],
+			"preLaunchTask": "Build Engine (linux-debug)",
+			"cwd": "${workspaceRoot}/build/debug/engine/main"
+		},
+		{
 			"name": "Editor (linux-debug)",
 			"type": "cppdbg",
 			"request": "launch",

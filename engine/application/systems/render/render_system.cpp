@@ -1,5 +1,6 @@
 #include "render_system.h"
 #include "drivers/ntt_opengl/ntt_opengl.h"
+#include "drivers/ntt_vulkan/ntt_vulkan.h"
 #include "render_driver.h"
 #include "render_globals.h"
 #include "systems/display/display_driver.h"
@@ -21,11 +22,25 @@ Result RenderSystem::InitializeImpl()
 {
 	m_pRenderContextStorage = MakeScope<Storage<RenderContext>>(g_GlobalAllocators.pMalloc);
 
-	NTT_ASSERT_RESULT_SUCCESS(RegisterOpenGLDriver());
+	if (NTT_ARG_BOOL(USE_VULKAN))
+	{
+		NTT_ASSERT_RESULT_SUCCESS(RegisterVulkanDriver());
+	}
+	else
+	{
+		NTT_ASSERT_RESULT_SUCCESS(RegisterOpenGLDriver());
+	}
 
 	NTT_ASSERT_RESULT_SUCCESS(g_RenderDriver.Initialize());
 
-	NTT_ASSERT_RESULT_SUCCESS(RegisterOpenGLRenderer());
+	if (NTT_ARG_BOOL(USE_VULKAN))
+	{
+		NTT_ASSERT_RESULT_SUCCESS(RegisterVulkanRenderer());
+	}
+	else
+	{
+		NTT_ASSERT_RESULT_SUCCESS(RegisterOpenGLRenderer());
+	}
 
 	if (g_RenderGlobals.pMeshStorage == nullptr)
 	{

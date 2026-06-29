@@ -48,16 +48,24 @@ static Result GLFWDisplayDriver_Initialize()
 	}
 
 #if !NTT_PLATFORM_WEB
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	if (NTT_ARG_BOOL(USE_VULKAN))
+	{
+		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+		glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE); // TODO: Make this configurable
+	}
+	else
+	{
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	}
 #else  // NTT_PLATFORM_WEB
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
 #endif // !NTT_PLATFORM_WEB
 
-	NTT_DISPLAY_INFO("GLFW loaded with OpenGL version: %s", glfwGetVersionString());
+	NTT_DISPLAY_INFO("GLFW loaded with version: %s", glfwGetVersionString());
 
 	GLFWwindow* pWindow = glfwCreateWindow(500, 600, "NTT GLFW Driver", nullptr, nullptr);
 	if (pWindow == nullptr)

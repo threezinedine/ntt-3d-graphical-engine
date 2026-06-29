@@ -51,4 +51,6 @@ private:
 	static ArgInfo m_ArgInfos[];
 };
 
+#define NTT_ARG_BOOL(option) (::ntt::ArgParser::GetArgInfo(ARG_OPTION_##option)->value.boolValue)
+
 } // namespace ntt

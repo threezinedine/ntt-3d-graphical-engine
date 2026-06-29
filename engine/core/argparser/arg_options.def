@@ -6,5 +6,6 @@
 #define ARG_OPTION_DEFAULT(type, name, long, short, description, default_value)
 #endif
 
-ARG_OPTION(FLAG, HELP   , "--help"   , "-h", "Display this help message")
-ARG_OPTION(FLAG, VERBOSE, "--verbose", "-v", "Enable verbose output")
+ARG_OPTION(FLAG, HELP      , "--help"   , "-h", "Display this help message")
+ARG_OPTION(FLAG, VERBOSE   , "--verbose", "-v", "Enable verbose output")
+ARG_OPTION(FLAG, USE_VULKAN, "--vulkan", "-V", "Use Vulkan as the rendering backend")
