@@ -82,6 +82,11 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityF
 													void*										pUserData);
 #endif // NTT_DEBUG
 
+static Scope<Array<VkPhysicalDevice>>			 s_pPhysicalDevices;
+static Scope<Array<VkPhysicalDeviceProperties*>> s_pPhysicalDeviceProperties;
+static Result									 enumeratePhysicalDevices();
+static Result									 destroyPhysicalDevices();
+
 static Result VulkanDriver_Initialize()
 {
 	if (!checkInstanceAllExtensionsSupport())
@@ -104,6 +109,8 @@ static Result VulkanDriver_Initialize()
 	NTT_ASSERT_RESULT_SUCCESS(setupDebugMessenger());
 #endif // NTT_DEBUG
 
+	NTT_ASSERT_RESULT_SUCCESS(enumeratePhysicalDevices());
+
 	NTT_VULKAN_INFO("Vulkan driver initialized.");
 
 	return RESULT_SUCCESS;
@@ -111,6 +118,8 @@ static Result VulkanDriver_Initialize()
 
 static Result VulkanDriver_Shutdown()
 {
+	NTT_ASSERT_RESULT_SUCCESS(destroyPhysicalDevices());
+
 #if NTT_DEBUG
 	NTT_ASSERT_RESULT_SUCCESS(destroyDebugMessenger());
 #endif // NTT_DEBUG
@@ -348,5 +357,41 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityF
 	return VK_FALSE;
 }
 #endif // NTT_DEBUG
+
+static Result enumeratePhysicalDevices()
+{
+	s_pPhysicalDevices			= MakeScope<Array<VkPhysicalDevice>>(g_GlobalAllocators.pMalloc);
+	s_pPhysicalDeviceProperties = MakeScope<Array<VkPhysicalDeviceProperties*>>(g_GlobalAllocators.pMalloc);
+
+	u32 deviceCount = 0;
+	VK_ASSERT(vkEnumeratePhysicalDevices(g_Instance, &deviceCount, nullptr));
+
+	s_pPhysicalDevices->Resize(deviceCount);
+	s_pPhysicalDeviceProperties->Resize(deviceCount);
+	VK_ASSERT(vkEnumeratePhysicalDevices(g_Instance, &deviceCount, &(*s_pPhysicalDevices.Get())[0]));
+
+	NTT_VULKAN_INFO("Found %u Vulkan physical devices:", deviceCount);
+
+	for (u32 i = 0; i < deviceCount; ++i)
+	{
+		VkPhysicalDeviceProperties* pProperties = new VkPhysicalDeviceProperties();
+		vkGetPhysicalDeviceProperties((*s_pPhysicalDevices.Get())[i], pProperties);
+		(*s_pPhysicalDeviceProperties.Get())[i] = pProperties;
+
+		NTT_VULKAN_INFO("\tDevice %u: %s", i, pProperties->deviceName);
+	}
+
+	return RESULT_SUCCESS;
+}
+
+static Result destroyPhysicalDevices()
+{
+	s_pPhysicalDeviceProperties.Reset();
+	s_pPhysicalDevices.Reset();
+
+	NTT_VULKAN_INFO("Vulkan physical devices destroyed.");
+
+	return RESULT_SUCCESS;
+}
 
 } // namespace ntt

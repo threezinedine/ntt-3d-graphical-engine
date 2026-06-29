@@ -128,13 +128,13 @@ public:
 
 	T& operator[](u32 index)
 	{
-		NTT_ASSERT_MSG(index < m_Count, "Index out of bounds.");
+		NTT_ASSERT_MSG(index < m_Capacity, "Index out of bounds.");
 		return m_pData.Get()[index];
 	}
 
 	const T& operator[](u32 index) const
 	{
-		NTT_ASSERT_MSG(index < m_Count, "Index out of bounds.");
+		NTT_ASSERT_MSG(index < m_Capacity, "Index out of bounds.");
 		return m_pData.Get()[index];
 	}
 
