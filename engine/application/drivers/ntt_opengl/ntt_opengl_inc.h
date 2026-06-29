@@ -17,8 +17,7 @@
 		GLenum err = glGetError();                                                                                     \
 		if (err != GL_NO_ERROR)                                                                                        \
 		{                                                                                                              \
-			NTT_RENDER_ERROR("OpenGL error: %d", err);                                                                 \
+			NTT_OPENGL_ERROR("OpenGL error: %d", err);                                                                 \
 			return RESULT_OPENGL_ERROR;                                                                                \
 		}                                                                                                              \
 	} while (0)
-

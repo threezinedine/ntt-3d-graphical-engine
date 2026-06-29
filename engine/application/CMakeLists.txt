@@ -45,6 +45,7 @@ ntt_set_source_group("src/drivers/ntt-opengl"
 
 ntt_set_source_group("src/drivers/ntt-vulkan"
     NTT_APPLICATION_SOURCES
+    "drivers/ntt_vulkan/ntt_vulkan_inc.h"
     "drivers/ntt_vulkan/ntt_vulkan.h"
     "drivers/ntt_vulkan/ntt_vulkan.cpp"
     "drivers/ntt_vulkan/ntt_vulkan_mesh_storage.h"
