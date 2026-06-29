@@ -389,7 +389,7 @@ static Result destroyPhysicalDevices()
 	s_pPhysicalDeviceProperties.Reset();
 	s_pPhysicalDevices.Reset();
 
-	NTT_VULKAN_INFO("Vulkan physical devices destroyed.");
+	NTT_VULKAN_DEBUG("Vulkan physical devices destroyed.");
 
 	return RESULT_SUCCESS;
 }
