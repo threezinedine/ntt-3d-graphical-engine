@@ -1,6 +1,11 @@
 #include "shader_storage.h"
 
+extern unsigned char mesh_vs_data[];
+extern unsigned char mesh_fs_data[];
+
 namespace ntt {
+
+ShaderID g_DefaultMeshShaderID = INVALID_SHADER_ID;
 
 ShaderStorage::ShaderStorage(IAllocator* pAllocator)
 	: m_pAllocator(pAllocator)
@@ -14,6 +19,10 @@ ShaderStorage::~ShaderStorage()
 Result ShaderStorage::Initialize()
 {
 	m_pStorage = MakeScope<Storage<ShaderNode>>(m_pAllocator);
+
+	g_DefaultMeshShaderID =
+		AddShader(reinterpret_cast<const char*>(mesh_vs_data), reinterpret_cast<const char*>(mesh_fs_data));
+
 	return InitializeImpl();
 }
 

@@ -7,7 +7,6 @@ namespace ntt {
 
 static WindowID		   g_WindowID		 = INVALID_WINDOW_ID;
 static MeshID		   g_MeshID			 = INVALID_MESH_ID;
-static ShaderID		   g_ShaderID		 = INVALID_SHADER_ID;
 static RenderContextID g_RenderContextID = INVALID_RENDER_CONTEXT_ID;
 
 Application::Application()
@@ -94,39 +93,7 @@ Result Application::Initialize(i32 argc, char** argv)
 			FragColor = VertexColor; 
 		}
 	)";
-#else
-	const char* vertexShaderSource = R"(
-		#version 330 core
-		layout(location = 0) in vec3 aPos;
-		layout(location = 1) in vec2 aTexCoord;
-		layout(location = 2) in vec4 aColor;
-
-		out vec2 TexCoord;
-		out vec4 VertexColor;
-
-		void main()
-		{
-			gl_Position = vec4(aPos, 1.0);
-			TexCoord = aTexCoord;
-			VertexColor = aColor;
-		}
-	)";
-
-	const char* fragmentShaderSource = R"(
-		#version 330 core
-		out vec4 FragColor;
-
-		in vec2 TexCoord;
-		in vec4 VertexColor;
-
-		void main()
-		{
-			FragColor = VertexColor; // Use the vertex color for the fragment color
-		}
-	)";
 #endif // NTT_PLATFORM_WEB
-
-	g_ShaderID = g_RenderGlobals.pShaderStorage->AddShader(vertexShaderSource, fragmentShaderSource);
 
 	return InitializeImpl();
 }
@@ -137,7 +104,7 @@ Result Application::Update()
 
 	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pRenderSystem->BeginRender(g_RenderContextID));
 
-	NTT_ASSERT_RESULT_SUCCESS(g_RenderGlobals.pShaderStorage->UseShader(g_ShaderID));
+	NTT_ASSERT_RESULT_SUCCESS(g_RenderGlobals.pShaderStorage->UseShader(g_DefaultMeshShaderID));
 	NTT_ASSERT_RESULT_SUCCESS(g_RenderGlobals.pMeshStorage->DrawMesh(g_MeshID));
 
 	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pRenderSystem->EndRender(g_RenderContextID));

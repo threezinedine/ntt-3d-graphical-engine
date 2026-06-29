@@ -58,6 +58,13 @@ ntt_set_source_group("src/systems/render"
     "systems/render/shader_storage.cpp"
 )
 
+ntt_embed_asset(
+    "src/systems/render/shaders"
+    NTT_APPLICATION_SOURCES
+    "systems/render/shaders/opengl/mesh.vs::mesh_vs_data"
+    "systems/render/shaders/opengl/mesh.fs::mesh_fs_data"
+)
+
 ntt_set_source_group("src/systems/render/components"
     NTT_APPLICATION_SOURCES
     "systems/render/components/components.h"

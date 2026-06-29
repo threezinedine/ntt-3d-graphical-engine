@@ -7,6 +7,8 @@ namespace ntt {
 typedef u32		   ShaderID;
 constexpr ShaderID INVALID_SHADER_ID = static_cast<u32>(-1);
 
+extern ShaderID g_DefaultMeshShaderID;
+
 class ShaderStorage
 {
 public:

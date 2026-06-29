@@ -65,6 +65,14 @@ endmacro()
 
 macro(ntt_platform_detect)
     if (NOT NTT_PLATFORM_DETECTED)
+        if (UNIX)
+            set(NTT_PYTHON_EXECUTABLE "${CMAKE_SOURCE_DIR}/.venv/bin/python3")
+        elseif (WIN32)
+            set(NTT_PYTHON_EXECUTABLE "${CMAKE_SOURCE_DIR}/.venv/Scripts/python.exe")
+        else()
+            message(FATAL_ERROR "Unsupported platform")
+        endif()
+
         if (EMSCRIPTEN)
             set(NTT_PLATFORM_WEB ON)
             list(APPEND NTT_OPTIONS NTT_PLATFORM_WEB)
@@ -189,5 +197,36 @@ macro(ntt_find_package package_name folder)
     find_package(${package_name} REQUIRED)
     if (NOT ${package_name}_FOUND)
         message(FATAL_ERROR "Package ${package_name} not found")
+    endif()
+endmacro()
+
+macro(ntt_embed_asset asset_folder added_variables)
+    set(OUTPUT_FILES)
+
+    foreach (asset_file IN ITEMS ${ARGN})
+        string(REGEX MATCH "^[^:]+" ASSET_PATH "${asset_file}")
+        string(REGEX MATCH "[^:]+$" ASSET_VAR_NAME "${asset_file}") 
+
+        get_filename_component(ASSET_NAME ${ASSET_PATH} NAME_WE)
+        get_filename_component(ASSET_EX ${ASSET_PATH} EXT)
+        string(REPLACE "." "" ASSET_EX ${ASSET_EX})
+        set(OUTPUT_FILE "${CMAKE_CURRENT_BINARY_DIR}/${ASSET_NAME}_${ASSET_EX}_embedded.cpp")
+
+        add_custom_command(
+            OUTPUT ${OUTPUT_FILE}
+            COMMAND ${NTT_PYTHON_EXECUTABLE} "${CMAKE_SOURCE_DIR}/scripts/embedded.py" 
+                    "${CMAKE_CURRENT_SOURCE_DIR}/${ASSET_PATH}::${ASSET_VAR_NAME}"
+                    "${OUTPUT_FILE}"
+            DEPENDS ${ASSET_PATH}
+            COMMENT "Embedding asset ${ASSET_PATH} to ${OUTPUT_FILE}"
+            VERBATIM
+        )
+
+        list(APPEND ${added_variables} ${OUTPUT_FILE})
+        list(APPEND OUTPUT_FILES ${OUTPUT_FILE})
+    endforeach()
+
+    if (MSVC)
+        source_group(${asset_folder} FILES ${OUTPUT_FILES})
     endif()
 endmacro()
