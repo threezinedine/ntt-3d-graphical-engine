@@ -202,6 +202,7 @@ endmacro()
 
 macro(ntt_embed_asset asset_folder added_variables)
     set(OUTPUT_FILES)
+    set(INPUT_FILES)
 
     foreach (asset_file IN ITEMS ${ARGN})
         string(REGEX MATCH "^[^:]+" ASSET_PATH "${asset_file}")
@@ -210,7 +211,7 @@ macro(ntt_embed_asset asset_folder added_variables)
         get_filename_component(ASSET_NAME ${ASSET_PATH} NAME_WE)
         get_filename_component(ASSET_EX ${ASSET_PATH} EXT)
         string(REPLACE "." "" ASSET_EX ${ASSET_EX})
-        set(OUTPUT_FILE "${CMAKE_CURRENT_BINARY_DIR}/${ASSET_NAME}_${ASSET_EX}_embedded.cpp")
+        set(OUTPUT_FILE "${CMAKE_CURRENT_BINARY_DIR}/generated_${ASSET_NAME}_${ASSET_EX}_embedded.cpp")
 
         add_custom_command(
             OUTPUT ${OUTPUT_FILE}
@@ -222,11 +223,13 @@ macro(ntt_embed_asset asset_folder added_variables)
             VERBATIM
         )
 
-        list(APPEND ${added_variables} ${OUTPUT_FILE})
+        list(APPEND ${added_variables} ${OUTPUT_FILE} ${ASSET_PATH})
+        list(APPEND INPUT_FILES "${ASSET_PATH}")
         list(APPEND OUTPUT_FILES ${OUTPUT_FILE})
     endforeach()
 
     if (MSVC)
-        source_group(${asset_folder} FILES ${OUTPUT_FILES})
+        source_group(${asset_folder} FILES ${INPUT_FILES})
+        source_group("generated_${asset_folder}" FILES ${OUTPUT_FILES})
     endif()
 endmacro()
