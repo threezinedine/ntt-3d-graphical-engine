@@ -4,8 +4,10 @@
 
 #include "vulkan/vulkan.h"
 
+#if NTT_GLFW
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+#endif // NTT_GLFW
 
 #define _VK_ASSERT(exp, ret)                                                                                           \
 	do                                                                                                                 \

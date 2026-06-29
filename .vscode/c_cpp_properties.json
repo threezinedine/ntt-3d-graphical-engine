@@ -9,7 +9,9 @@
 				"NTT_LOG_MEMORY=1",
 				"NTT_UNITTEST=1",
 				"NTT_DEBUG=1",
-				"NTT_VULKAN=1"
+				"NTT_VULKAN=1",
+				"NTT_GLFW=1",
+				"NTT_OPENGL=1"
 			],
 			"compilerPath": "/usr/bin/clang",
 			"cStandard": "c17",

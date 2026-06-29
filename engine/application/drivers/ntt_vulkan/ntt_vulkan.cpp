@@ -3,6 +3,7 @@
 #include "ntt_vulkan.h"
 #include "ntt_vulkan_mesh_storage.h"
 #include "ntt_vulkan_shader_storage.h"
+#include "systems/display/display_driver.h"
 #include "systems/render/render_globals.h"
 
 #include "ntt_vulkan_inc.h"
@@ -11,8 +12,19 @@ namespace ntt {
 
 struct VulkanContextHandle
 {
-	GLFWwindow* pWindow;
+	GLFWwindow*	 pWindow;
+	VkSurfaceKHR surface;
 };
+
+#define CAST(handle)                                                                                                   \
+	reinterpret_cast<VulkanContextHandle*>(handle.Get());                                                              \
+	do                                                                                                                 \
+	{                                                                                                                  \
+		if (handle == nullptr)                                                                                         \
+		{                                                                                                              \
+			return RESULT_NULL_POINTER;                                                                                \
+		}                                                                                                              \
+	} while (0)
 
 static Result VulkanDriver_Initialize();
 static Result VulkanDriver_Shutdown();
@@ -139,14 +151,27 @@ static Result VulkanDriver_Shutdown()
 
 static Result VulkanDriver_CreateRenderContext(Pointer<void> pWindowHandle, Pointer<void>& pRenderContextHandle)
 {
+#if NTT_GLFW
+	GLFWwindow*			 pWindow		= (GLFWwindow*)g_DisplayDriver.GetWindowHandle(pWindowHandle);
+	VulkanContextHandle* pContextHandle = CAST(pRenderContextHandle);
+
+	pContextHandle->pWindow = pWindow;
+
+	VK_ASSERT(glfwCreateWindowSurface(g_Instance, pWindow, nullptr, &pContextHandle->surface));
+#else  // NTT_GLFW
 	NTT_UNUSED(pWindowHandle);
 	NTT_UNUSED(pRenderContextHandle);
+#endif // NTT_GLFW
+
 	return RESULT_SUCCESS;
 }
 
 static Result VulkanDriver_DestroyRenderContext(Pointer<void>& pRenderContextHandle)
 {
-	NTT_UNUSED(pRenderContextHandle);
+	VulkanContextHandle* pContextHandle = CAST(pRenderContextHandle);
+
+	vkDestroySurfaceKHR(g_Instance, pContextHandle->surface, nullptr);
+
 	return RESULT_SUCCESS;
 }
 
@@ -282,9 +307,21 @@ static Result createInstance()
 	createInfo.pNext			= nullptr;
 	createInfo.pApplicationInfo = &appInfo;
 
-	u32 extensionCount				   = sizeof(s_InstanceExtensions) / sizeof(s_InstanceExtensions[0]);
+	u32 extensionCount = sizeof(s_InstanceExtensions) / sizeof(s_InstanceExtensions[0]);
+
+#if NTT_GLFW
+	u32				   glfwExtensionCount = 0;
+	const char**	   glfwExtensions	  = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+	Array<const char*> requiredExtensions(glfwExtensionCount + extensionCount, g_GlobalAllocators.pStack);
+	MemCopy(&requiredExtensions[0], glfwExtensions, glfwExtensionCount * sizeof(const char*));
+	MemCopy(&requiredExtensions[glfwExtensionCount], s_InstanceExtensions, extensionCount * sizeof(const char*));
+	createInfo.enabledExtensionCount   = glfwExtensionCount + extensionCount;
+	createInfo.ppEnabledExtensionNames = &requiredExtensions[0];
+
+#else  // NTT_GLFW
 	createInfo.enabledExtensionCount   = extensionCount;
 	createInfo.ppEnabledExtensionNames = s_InstanceExtensions;
+#endif // NTT_GLFW
 
 	u32 layerCount				   = sizeof(s_InstanceLayers) / sizeof(s_InstanceLayers[0]);
 	createInfo.enabledLayerCount   = layerCount;
