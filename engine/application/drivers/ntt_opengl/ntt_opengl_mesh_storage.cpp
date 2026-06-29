@@ -28,13 +28,13 @@ Result OpenGLMeshStorage::ShutdownImpl()
 	return RESULT_SUCCESS;
 }
 
-Result OpenGLMeshStorage::AddMeshImpl(Mesh& mesh, void** pMeshHandle)
+Result OpenGLMeshStorage::AddMeshImpl(Mesh& mesh, Pointer<void>& pMeshHandle)
 {
 	u32 verticesCount = mesh.vertices.GetCount();
 	u32 sizeInBytes	  = verticesCount * sizeof(Vertex);
 	u8* pVertexData	  = reinterpret_cast<u8*>(&mesh.vertices[0]);
 
-	MeshHandle* pHandle = reinterpret_cast<MeshHandle*>(pMeshHandle);
+	MeshHandle* pHandle = reinterpret_cast<MeshHandle*>(pMeshHandle.Get());
 
 	if (pHandle == nullptr)
 	{
@@ -59,9 +59,9 @@ Result OpenGLMeshStorage::AddMeshImpl(Mesh& mesh, void** pMeshHandle)
 	return RESULT_SUCCESS;
 }
 
-Result OpenGLMeshStorage::DrawMeshImpl(void* pMeshHandle)
+Result OpenGLMeshStorage::DrawMeshImpl(const Pointer<void>& pMeshHandle)
 {
-	MeshHandle* pHandle = reinterpret_cast<MeshHandle*>(pMeshHandle);
+	MeshHandle* pHandle = reinterpret_cast<MeshHandle*>(pMeshHandle.Get());
 
 	if (pHandle == nullptr)
 	{
@@ -75,9 +75,9 @@ Result OpenGLMeshStorage::DrawMeshImpl(void* pMeshHandle)
 	return RESULT_SUCCESS;
 }
 
-Result OpenGLMeshStorage::RemoveMeshImpl(void* pMeshHandle)
+Result OpenGLMeshStorage::RemoveMeshImpl(const Pointer<void>& pMeshHandle)
 {
-	MeshHandle* pHandle = reinterpret_cast<MeshHandle*>(pMeshHandle);
+	MeshHandle* pHandle = reinterpret_cast<MeshHandle*>(pMeshHandle.Get());
 
 	if (pHandle == nullptr)
 	{
@@ -88,6 +88,11 @@ Result OpenGLMeshStorage::RemoveMeshImpl(void* pMeshHandle)
 	GL_ASSERT(glDeleteVertexArrays(1, &pHandle->vao));
 
 	return RESULT_SUCCESS;
+}
+
+u32 OpenGLMeshStorage::GetMeshHandleSize() const
+{
+	return (u32)sizeof(MeshHandle);
 }
 
 } // namespace ntt

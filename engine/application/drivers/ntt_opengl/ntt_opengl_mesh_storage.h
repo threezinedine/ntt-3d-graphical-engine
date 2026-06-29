@@ -14,9 +14,12 @@ protected:
 	virtual Result InitializeImpl() override;
 	virtual Result ShutdownImpl() override;
 
-	virtual Result AddMeshImpl(Mesh& mesh, void** pMeshHandle) override;
-	virtual Result DrawMeshImpl(void* pMeshHandle) override;
-	virtual Result RemoveMeshImpl(void* pMeshHandle) override;
+	virtual Result AddMeshImpl(Mesh& mesh, Pointer<void>& pMeshHandle) override;
+	virtual Result DrawMeshImpl(const Pointer<void>& pMeshHandle) override;
+	virtual Result RemoveMeshImpl(const Pointer<void>& pMeshHandle) override;
+
+protected:
+	virtual u32 GetMeshHandleSize() const;
 };
 
 } // namespace ntt

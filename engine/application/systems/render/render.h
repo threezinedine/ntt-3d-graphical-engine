@@ -4,3 +4,4 @@
 #include "render_driver.h"
 #include "render_globals.h"
 #include "render_system.h"
+#include "shader_storage.h"

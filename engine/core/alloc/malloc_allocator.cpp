@@ -98,6 +98,10 @@ Result MallocAllocator::Free(void* ptr, u32 size)
 	{
 		prev->next = next;
 	}
+	else
+	{
+		g_HeadMemoryBlock = next;
+	}
 #endif // NTT_LOG_MEMORY
 
 	m_AllocatedMemorySize -= pHeader->size;

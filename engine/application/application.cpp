@@ -7,6 +7,7 @@ namespace ntt {
 
 static WindowID g_WindowID = INVALID_WINDOW_ID;
 static MeshID	g_MeshID   = INVALID_MESH_ID;
+static ShaderID g_ShaderID = INVALID_SHADER_ID;
 
 Application::Application()
 	: Object()
@@ -54,8 +55,39 @@ Result Application::Initialize(i32 argc, char** argv)
 	mesh.vertices.Emplace(Vec3f{0.0f, 0.5f, 0.0f}, Vec2f{0.5f, 1.0f}, Color{1.0f, 0.0f, 0.0f, 1.0f});
 	mesh.vertices.Emplace(Vec3f{0.5f, -0.5f, 0.0f}, Vec2f{1.0f, 0.0f}, Color{0.0f, 1.0f, 0.0f, 1.0f});
 	mesh.vertices.Emplace(Vec3f{-0.5f, -0.5f, 0.0f}, Vec2f{0.0f, 0.0f}, Color{0.0f, 0.0f, 1.0f, 1.0f});
-
 	g_MeshID = g_RenderGlobals.pMeshStorage->AddMesh(static_cast<Mesh&&>(mesh));
+
+	const char* vertexShaderSource = R"(
+		#version 330 core
+		layout(location = 0) in vec3 aPos;
+		layout(location = 1) in vec2 aTexCoord;
+		layout(location = 2) in vec4 aColor;
+
+		out vec2 TexCoord;
+		out vec4 VertexColor;
+
+		void main()
+		{
+			gl_Position = vec4(aPos, 1.0);
+			TexCoord = aTexCoord;
+			VertexColor = aColor;
+		}
+	)";
+
+	const char* fragmentShaderSource = R"(
+		#version 330 core
+		out vec4 FragColor;
+
+		in vec2 TexCoord;
+		in vec4 VertexColor;
+
+		void main()
+		{
+			FragColor = VertexColor; // Use the vertex color for the fragment color
+		}
+	)";
+
+	g_ShaderID = g_RenderGlobals.pShaderStorage->AddShader(vertexShaderSource, fragmentShaderSource);
 
 	return InitializeImpl();
 }
@@ -64,7 +96,8 @@ Result Application::Update()
 {
 	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pDisplaySystem->OnBeginFrame(g_WindowID));
 
-	// Application logic goes here
+	// NTT_ASSERT_RESULT_SUCCESS(g_RenderGlobals.pShaderStorage->UseShader(g_ShaderID));
+	// NTT_ASSERT_RESULT_SUCCESS(g_RenderGlobals.pMeshStorage->DrawMesh(g_MeshID));
 
 	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pDisplaySystem->OnEndFrame(g_WindowID));
 

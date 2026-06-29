@@ -41,9 +41,9 @@ MeshID MeshStorage::AddMesh(Mesh&& mesh) noexcept
 {
 	MeshNode node;
 	node.mesh		 = static_cast<Mesh&&>(mesh);
-	node.pMeshHandle = nullptr;
+	node.pMeshHandle = ALLOCATOR_SAFE(m_pAllocator)->Allocate(GetMeshHandleSize());
 
-	NTT_ASSERT(AddMeshImpl(node.mesh, &node.pMeshHandle) == RESULT_SUCCESS);
+	NTT_ASSERT(AddMeshImpl(node.mesh, node.pMeshHandle) == RESULT_SUCCESS);
 
 	return m_pMeshStorage->Add(static_cast<MeshNode&&>(node));
 }
@@ -67,7 +67,8 @@ Result MeshStorage::RemoveMesh(MeshID meshID)
 		return RESULT_INDEX_OUT_OF_BOUNDS;
 	}
 
-	NTT_ASSERT(RemoveMeshImpl(pNode->pMeshHandle) == RESULT_SUCCESS);
+	NTT_ASSERT_RESULT_SUCCESS(RemoveMeshImpl(pNode->pMeshHandle));
+	NTT_ASSERT_RESULT_SUCCESS(pNode->pMeshHandle.Free());
 
 	return m_pMeshStorage->Remove(meshID);
 }

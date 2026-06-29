@@ -39,6 +39,8 @@ ntt_set_source_group("src/drivers/ntt-opengl"
     "drivers/ntt_opengl/ntt_opengl.cpp"
     "drivers/ntt_opengl/ntt_opengl_mesh_storage.h"
     "drivers/ntt_opengl/ntt_opengl_mesh_storage.cpp"
+    "drivers/ntt_opengl/ntt_opengl_shader_storage.h"
+    "drivers/ntt_opengl/ntt_opengl_shader_storage.cpp"
 )
 
 ntt_set_source_group("src/systems/render"
@@ -52,6 +54,8 @@ ntt_set_source_group("src/systems/render"
     "systems/render/mesh_storage.cpp"
     "systems/render/render_globals.h"
     "systems/render/render_globals.cpp"
+    "systems/render/shader_storage.h"
+    "systems/render/shader_storage.cpp"
 )
 
 ntt_set_source_group("src/systems/render/components"

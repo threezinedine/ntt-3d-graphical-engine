@@ -25,15 +25,18 @@ protected:
 	virtual Result InitializeImpl() = 0;
 	virtual Result ShutdownImpl()	= 0;
 
-	virtual Result AddMeshImpl(Mesh& mesh, void** pMeshHandle) = 0;
-	virtual Result DrawMeshImpl(void* pMeshHandle)			   = 0;
-	virtual Result RemoveMeshImpl(void* pMeshHandle)		   = 0;
+	virtual Result AddMeshImpl(Mesh& mesh, Pointer<void>& pMeshHandle) = 0;
+	virtual Result DrawMeshImpl(const Pointer<void>& pMeshHandle)	   = 0;
+	virtual Result RemoveMeshImpl(const Pointer<void>& pMeshHandle)	   = 0;
+
+protected:
+	virtual u32 GetMeshHandleSize() const = 0;
 
 private:
 	struct MeshNode
 	{
-		Mesh  mesh;
-		void* pMeshHandle;
+		Mesh		  mesh;
+		Pointer<void> pMeshHandle;
 	};
 
 	IAllocator*				 m_pAllocator;

@@ -3,6 +3,7 @@
 #include "ntt_opengl_inc.h"
 
 #include "ntt_opengl_mesh_storage.h"
+#include "ntt_opengl_shader_storage.h"
 #include "systems/render/render_globals.h"
 
 namespace ntt {
@@ -41,7 +42,8 @@ static Result OpenGLDriver_Shutdown()
 
 Result RegisterOpenGLRenderer()
 {
-	g_RenderGlobals.pMeshStorage = MakeScope<OpenGLMeshStorage>(g_GlobalAllocators.pMalloc);
+	g_RenderGlobals.pMeshStorage   = MakeScope<OpenGLMeshStorage>(g_GlobalAllocators.pMalloc);
+	g_RenderGlobals.pShaderStorage = MakeScope<OpenGLShaderStorage>(g_GlobalAllocators.pMalloc);
 
 	return RESULT_SUCCESS;
 }
