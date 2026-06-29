@@ -5,9 +5,10 @@
 #endif // NTT_PLATFORM_WEB
 namespace ntt {
 
-static WindowID g_WindowID = INVALID_WINDOW_ID;
-static MeshID	g_MeshID   = INVALID_MESH_ID;
-static ShaderID g_ShaderID = INVALID_SHADER_ID;
+static WindowID		   g_WindowID		 = INVALID_WINDOW_ID;
+static MeshID		   g_MeshID			 = INVALID_MESH_ID;
+static ShaderID		   g_ShaderID		 = INVALID_SHADER_ID;
+static RenderContextID g_RenderContextID = INVALID_RENDER_CONTEXT_ID;
 
 Application::Application()
 	: Object()
@@ -47,6 +48,8 @@ Result Application::Initialize(i32 argc, char** argv)
 		NTT_APPLICATION_ERROR("Failed to create window. Invalid window ID.");
 		return RESULT_UNKNOWN;
 	}
+
+	g_RenderContextID = SystemGlobals::pRenderSystem->CreateRenderContext(g_WindowID);
 
 	m_pEcs = MakeScope<ECS>(g_GlobalAllocators.pMalloc);
 	NTT_ASSERT_RESULT_SUCCESS(m_pEcs->Initialize());
@@ -96,13 +99,13 @@ Result Application::Update()
 {
 	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pDisplaySystem->OnBeginFrame(g_WindowID));
 
-	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pRenderSystem->BeginRender());
+	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pRenderSystem->BeginRender(g_RenderContextID));
 
 	NTT_ASSERT_RESULT_SUCCESS(g_RenderGlobals.pShaderStorage->UseShader(g_ShaderID));
 	NTT_ASSERT_RESULT_SUCCESS(g_RenderGlobals.pMeshStorage->DrawMesh(g_MeshID));
 
-	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pRenderSystem->EndRender());
-	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pRenderSystem->Present());
+	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pRenderSystem->EndRender(g_RenderContextID));
+	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pRenderSystem->Present(g_RenderContextID));
 
 	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pDisplaySystem->OnEndFrame(g_WindowID));
 
@@ -140,6 +143,7 @@ Result Application::Shutdown()
 	NTT_ASSERT_RESULT_SUCCESS(m_pEcs->Shutdown());
 	m_pEcs.Reset();
 
+	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pRenderSystem->DestroyRenderContext(g_RenderContextID));
 	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pDisplaySystem->DestroyWindow(g_WindowID));
 
 	NTT_APPLICATION_INFO("Application shut down successfully.", 3);

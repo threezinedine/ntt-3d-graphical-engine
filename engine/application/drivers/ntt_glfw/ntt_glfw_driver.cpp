@@ -1,12 +1,6 @@
 #include "ntt_glfw_driver.h"
 #include "core.h"
 
-#if NTT_PLATFORM_WEB
-#include <GLES3/gl3.h>
-#else // NTT_PLATFORM_WEB
-#include "glad/glad.h"
-#endif // NTT_PLATFORM_WEB
-
 #include <GLFW/glfw3.h>
 
 namespace ntt {
@@ -140,26 +134,12 @@ static Result GLFWDisplayDriver_OnBeginFrame(Pointer<void> pDriverHandle)
 {
 	NTT_UNUSED(pDriverHandle);
 	glfwPollEvents();
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	return RESULT_SUCCESS;
 }
 
 static Result GLFWDisplayDriver_OnEndFrame(Pointer<void> pDriverHandle)
 {
-#if 0
 	NTT_UNUSED(pDriverHandle);
-#else
-	Pointer<GLFWDriverHandle> pHandle = pDriverHandle.Cast<GLFWDriverHandle>();
-
-	if (pHandle == nullptr)
-	{
-		return RESULT_NULL_POINTER;
-	}
-
-	GLFWwindow* pWindow = static_cast<GLFWwindow*>(pHandle->pWindow);
-	glfwSwapBuffers(pWindow);
-#endif
 	return RESULT_SUCCESS;
 }
 

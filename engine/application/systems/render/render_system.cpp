@@ -2,6 +2,8 @@
 #include "drivers/ntt_opengl/ntt_opengl.h"
 #include "render_driver.h"
 #include "render_globals.h"
+#include "systems/display/display_driver.h"
+#include "systems/system_globals.h"
 
 namespace ntt {
 
@@ -17,6 +19,8 @@ RenderSystem::~RenderSystem()
 
 Result RenderSystem::InitializeImpl()
 {
+	m_pRenderContextStorage = MakeScope<Storage<RenderContext>>(g_GlobalAllocators.pMalloc);
+
 	NTT_ASSERT_RESULT_SUCCESS(RegisterOpenGLDriver());
 
 	NTT_ASSERT_RESULT_SUCCESS(g_RenderDriver.Initialize());
@@ -43,22 +47,99 @@ Result RenderSystem::ShutdownImpl()
 	NTT_ASSERT_RESULT_SUCCESS(g_RenderGlobals.Shutdown());
 	NTT_ASSERT_RESULT_SUCCESS(g_RenderDriver.Shutdown());
 
+	m_pRenderContextStorage.Reset();
+
 	return RESULT_SUCCESS;
 }
 
-Result RenderSystem::BeginRender()
+RenderContextID RenderSystem::CreateRenderContext(WindowID windowID)
 {
-	return g_RenderDriver.StartRender(nullptr);
+	if (windowID == INVALID_WINDOW_ID)
+	{
+		NTT_RENDER_ERROR("Invalid window ID. Cannot create render context.");
+		return INVALID_RENDER_CONTEXT_ID;
+	}
+
+	if (SystemGlobals::pDisplaySystem == nullptr)
+	{
+		NTT_RENDER_ERROR("Display system is not initialized. Cannot create render context.");
+		return INVALID_RENDER_CONTEXT_ID;
+	}
+
+	DisplaySystem::WindowInfo* pWindowInfo = SystemGlobals::pDisplaySystem->m_pWindowIDStorage->Get(windowID);
+
+	RenderContextID id			   = m_pRenderContextStorage->Add(RenderContext{});
+	RenderContext*	pRenderContext = m_pRenderContextStorage->Get(id);
+	pRenderContext->pRenderContextHandle =
+		ALLOCATOR_SAFE(g_GlobalAllocators.pMalloc)->Allocate(g_RenderDriver.GetRenderContextHandleSize());
+
+	if (pRenderContext == nullptr)
+	{
+		NTT_RENDER_ERROR("Failed to create render context. Invalid render context handle.");
+		return INVALID_RENDER_CONTEXT_ID;
+	}
+
+	NTT_ASSERT_RESULT_SUCCESS(
+		g_RenderDriver.CreateRenderContext(pWindowInfo->pWindowHandle.Get(), pRenderContext->pRenderContextHandle));
+
+	return id;
 }
 
-Result RenderSystem::EndRender()
+Result RenderSystem::DestroyRenderContext(RenderContextID renderContextID)
 {
-	return g_RenderDriver.EndRender(nullptr);
+	if (!m_pRenderContextStorage->IsActive(renderContextID))
+	{
+		return RESULT_INACTIVE_STORAGE_INDEX;
+	}
+
+	RenderContext* pRenderContext = m_pRenderContextStorage->Get(renderContextID);
+
+	if (pRenderContext == nullptr || pRenderContext->pRenderContextHandle == nullptr)
+	{
+		return RESULT_NULL_POINTER;
+	}
+
+	NTT_ASSERT_RESULT_SUCCESS(g_RenderDriver.DestroyRenderContext(pRenderContext->pRenderContextHandle));
+	NTT_ASSERT_RESULT_SUCCESS(pRenderContext->pRenderContextHandle.Free());
+	NTT_ASSERT_RESULT_SUCCESS(m_pRenderContextStorage->Remove(renderContextID));
+
+	return RESULT_SUCCESS;
 }
 
-Result RenderSystem::Present()
+Result RenderSystem::BeginRender(RenderContextID renderContextID)
 {
-	return g_RenderDriver.Present(nullptr);
+	RenderContext* pRenderContext = m_pRenderContextStorage->Get(renderContextID);
+
+	if (pRenderContext == nullptr || pRenderContext->pRenderContextHandle == nullptr)
+	{
+		return RESULT_NULL_POINTER;
+	}
+
+	return g_RenderDriver.StartRender(pRenderContext->pRenderContextHandle);
+}
+
+Result RenderSystem::EndRender(RenderContextID renderContextID)
+{
+	RenderContext* pRenderContext = m_pRenderContextStorage->Get(renderContextID);
+
+	if (pRenderContext == nullptr || pRenderContext->pRenderContextHandle == nullptr)
+	{
+		return RESULT_NULL_POINTER;
+	}
+
+	return g_RenderDriver.EndRender(pRenderContext->pRenderContextHandle);
+}
+
+Result RenderSystem::Present(RenderContextID renderContextID)
+{
+	RenderContext* pRenderContext = m_pRenderContextStorage->Get(renderContextID);
+
+	if (pRenderContext == nullptr || pRenderContext->pRenderContextHandle == nullptr)
+	{
+		return RESULT_NULL_POINTER;
+	}
+
+	return g_RenderDriver.Present(pRenderContext->pRenderContextHandle);
 }
 
 } // namespace ntt

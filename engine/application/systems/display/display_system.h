@@ -4,6 +4,8 @@
 
 namespace ntt {
 
+class RenderSystem;
+
 typedef u32		   WindowID;
 constexpr WindowID INVALID_WINDOW_ID = static_cast<u32>(-1);
 
@@ -33,6 +35,8 @@ public:
 	{
 		Pointer<void> pWindowHandle;
 	};
+
+	friend class RenderSystem;
 
 private:
 	Scope<Storage<WindowInfo>> m_pWindowIDStorage;

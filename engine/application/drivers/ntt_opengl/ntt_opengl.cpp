@@ -8,26 +8,30 @@
 
 namespace ntt {
 
-struct OpenGLDriverHandle
+struct OpenGLContextHandle
 {
 	GLFWwindow* pWindow;
 };
 
 static Result OpenGLDriver_Initialize();
 static Result OpenGLDriver_Shutdown();
+static Result OpenGLDriver_CreateRenderContext(Pointer<void> pWindowHandle, Pointer<void>& pRenderContextHandle);
+static Result OpenGLDriver_DestroyRenderContext(Pointer<void>& pRenderContextHandle);
 static Result OpenGLDriver_StartRender(Pointer<void> pDriverHandle);
 static Result OpenGLDriver_EndRender(Pointer<void> pDriverHandle);
 static Result OpenGLDriver_Present(Pointer<void> pDriverHandle);
-static u32	  OpenGLDriver_GetRenderDriverHandleSize();
+static u32	  OpenGLDriver_GetRenderContextSize();
 
 Result RegisterOpenGLDriver()
 {
-	g_RenderDriver.Initialize				 = OpenGLDriver_Initialize;
-	g_RenderDriver.Shutdown					 = OpenGLDriver_Shutdown;
-	g_RenderDriver.StartRender				 = OpenGLDriver_StartRender;
-	g_RenderDriver.EndRender				 = OpenGLDriver_EndRender;
-	g_RenderDriver.Present					 = OpenGLDriver_Present;
-	g_RenderDriver.GetRenderDriverHandleSize = OpenGLDriver_GetRenderDriverHandleSize;
+	g_RenderDriver.Initialize				  = OpenGLDriver_Initialize;
+	g_RenderDriver.Shutdown					  = OpenGLDriver_Shutdown;
+	g_RenderDriver.CreateRenderContext		  = OpenGLDriver_CreateRenderContext;
+	g_RenderDriver.DestroyRenderContext		  = OpenGLDriver_DestroyRenderContext;
+	g_RenderDriver.StartRender				  = OpenGLDriver_StartRender;
+	g_RenderDriver.EndRender				  = OpenGLDriver_EndRender;
+	g_RenderDriver.Present					  = OpenGLDriver_Present;
+	g_RenderDriver.GetRenderContextHandleSize = OpenGLDriver_GetRenderContextSize;
 
 	return RESULT_SUCCESS;
 }
@@ -64,6 +68,8 @@ Result RegisterOpenGLRenderer()
 static Result OpenGLDriver_StartRender(Pointer<void> pDriverHandle)
 {
 	NTT_UNUSED(pDriverHandle);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	return RESULT_SUCCESS;
 }
 
@@ -75,23 +81,39 @@ static Result OpenGLDriver_EndRender(Pointer<void> pDriverHandle)
 
 static Result OpenGLDriver_Present(Pointer<void> pDriverHandle)
 {
-#if 0
-	Pointer<OpenGLDriverHandle> pHandle = pDriverHandle.Cast<OpenGLDriverHandle>();
+	Pointer<OpenGLContextHandle> pHandle = pDriverHandle.Cast<OpenGLContextHandle>();
 	if (pHandle == nullptr || pHandle.Get() == nullptr)
 	{
 		return RESULT_NULL_POINTER;
 	}
 
 	glfwSwapBuffers(pHandle->pWindow);
-#else
-	NTT_UNUSED(pDriverHandle);
-#endif
 	return RESULT_SUCCESS;
 }
 
-static u32 OpenGLDriver_GetRenderDriverHandleSize()
+static u32 OpenGLDriver_GetRenderContextSize()
 {
-	return (u32)sizeof(OpenGLDriverHandle);
+	return (u32)sizeof(OpenGLContextHandle);
+}
+
+static Result OpenGLDriver_CreateRenderContext(Pointer<void> pWindowHandle, Pointer<void>& pRenderContextHandle)
+{
+	Pointer<OpenGLContextHandle> pHandle = pRenderContextHandle.Cast<OpenGLContextHandle>();
+
+	if (pHandle == nullptr)
+	{
+		return RESULT_NULL_POINTER;
+	}
+
+	pHandle->pWindow = pWindowHandle.Cast<GLFWwindow>().Get();
+
+	return RESULT_SUCCESS;
+}
+
+static Result OpenGLDriver_DestroyRenderContext(Pointer<void>& pRenderContextHandle)
+{
+	NTT_UNUSED(pRenderContextHandle);
+	return RESULT_SUCCESS;
 }
 
 } // namespace ntt
