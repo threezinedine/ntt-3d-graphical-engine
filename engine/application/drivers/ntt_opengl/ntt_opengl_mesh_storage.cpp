@@ -50,8 +50,11 @@ Result OpenGLMeshStorage::AddMeshImpl(Mesh& mesh, Pointer<void>& pMeshHandle)
 	GL_ASSERT(glBufferData(GL_ARRAY_BUFFER, sizeInBytes, pVertexData, GL_STATIC_DRAW));
 
 	GL_ASSERT(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position)));
+	GL_ASSERT(glEnableVertexAttribArray(0));
 	GL_ASSERT(glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texCoord)));
-	GL_ASSERT(glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(Vertex), (void*)offsetof(Vertex, color)));
+	GL_ASSERT(glEnableVertexAttribArray(1));
+	GL_ASSERT(glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, color)));
+	GL_ASSERT(glEnableVertexAttribArray(2));
 
 	GL_ASSERT(glBindBuffer(GL_ARRAY_BUFFER, 0));
 	GL_ASSERT(glBindVertexArray(0));
