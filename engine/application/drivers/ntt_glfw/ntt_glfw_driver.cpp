@@ -21,6 +21,7 @@ static Result GLFWDisplayDriver_DestroyWindow(Pointer<void> pWindowHandle);
 static Result GLFWDisplayDriver_OnBeginFrame(Pointer<void> pDriverHandle);
 static Result GLFWDisplayDriver_OnEndFrame(Pointer<void> pDriverHandle);
 static u32	  GLFWDisplayDriver_GetWindowHandleSize();
+static void*  GLFWDisplayDriver_GetWindowHandle(Pointer<void> pWindowHandle);
 
 Result RegisterGLFWDisplayDriver()
 {
@@ -32,6 +33,7 @@ Result RegisterGLFWDisplayDriver()
 	g_DisplayDriver.OnBeginFrame		= GLFWDisplayDriver_OnBeginFrame;
 	g_DisplayDriver.OnEndFrame			= GLFWDisplayDriver_OnEndFrame;
 	g_DisplayDriver.GetWindowHandleSize = GLFWDisplayDriver_GetWindowHandleSize;
+	g_DisplayDriver.GetWindowHandle		= GLFWDisplayDriver_GetWindowHandle;
 	return RESULT_SUCCESS;
 }
 
@@ -146,6 +148,17 @@ static Result GLFWDisplayDriver_OnEndFrame(Pointer<void> pDriverHandle)
 static u32 GLFWDisplayDriver_GetWindowHandleSize()
 {
 	return (u32)sizeof(GLFWDriverHandle);
+}
+
+static void* GLFWDisplayDriver_GetWindowHandle(Pointer<void> pWindowHandle)
+{
+	Pointer<GLFWDriverHandle> pHandle = pWindowHandle.Cast<GLFWDriverHandle>();
+	if (pHandle == nullptr || pHandle.Get() == nullptr)
+	{
+		return nullptr;
+	}
+
+	return pHandle->pWindow;
 }
 
 } // namespace ntt

@@ -80,7 +80,7 @@ RenderContextID RenderSystem::CreateRenderContext(WindowID windowID)
 	}
 
 	NTT_ASSERT_RESULT_SUCCESS(
-		g_RenderDriver.CreateRenderContext(pWindowInfo->pWindowHandle.Get(), pRenderContext->pRenderContextHandle));
+		g_RenderDriver.CreateRenderContext(pWindowInfo->pWindowHandle, pRenderContext->pRenderContextHandle));
 
 	return id;
 }

@@ -5,6 +5,7 @@
 #include "ntt_opengl_mesh_storage.h"
 #include "ntt_opengl_shader_storage.h"
 #include "systems/render/render_globals.h"
+#include "systems/display/display_driver.h"
 
 namespace ntt {
 
@@ -105,7 +106,7 @@ static Result OpenGLDriver_CreateRenderContext(Pointer<void> pWindowHandle, Poin
 		return RESULT_NULL_POINTER;
 	}
 
-	pHandle->pWindow = pWindowHandle.Cast<GLFWwindow>().Get();
+	pHandle->pWindow = reinterpret_cast<GLFWwindow*>(g_DisplayDriver.GetWindowHandle(pWindowHandle));
 
 	return RESULT_SUCCESS;
 }

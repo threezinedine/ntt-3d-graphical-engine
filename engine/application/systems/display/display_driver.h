@@ -14,6 +14,7 @@ struct DisplayDriver
 	Result (*OnBeginFrame)(Pointer<void> pDriverHandle);
 	Result (*OnEndFrame)(Pointer<void> pDriverHandle);
 	u32 (*GetWindowHandleSize)();
+	void* (*GetWindowHandle)(Pointer<void> pWindowHandle);
 };
 
 extern DisplayDriver g_DisplayDriver;
