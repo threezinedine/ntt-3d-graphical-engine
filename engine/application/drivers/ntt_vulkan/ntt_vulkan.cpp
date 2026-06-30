@@ -14,15 +14,22 @@ static constexpr u32 INVALID_QUEUE_FAMILY_INDEX = UINT32_MAX;
 
 struct VulkanContextHandle
 {
-	GLFWwindow*	   pWindow;
-	VkSurfaceKHR   surface;
-	u32			   graphicsQueueFamilyIndex;
-	u32			   presentQueueFamilyIndex;
-	u32			   transferQueueFamilyIndex;
-	u32			   computeQueueFamilyIndex;
-	VkDevice	   logicalDevice;
-	VkSwapchainKHR swapchain;
+	GLFWwindow*				  pWindow;
+	VkSurfaceKHR			  surface;
+	u32						  graphicsQueueFamilyIndex;
+	u32						  presentQueueFamilyIndex;
+	u32						  transferQueueFamilyIndex;
+	u32						  computeQueueFamilyIndex;
+	VkDevice				  logicalDevice;
+	VkSwapchainKHR			  swapchain;
+	Scope<Array<VkImage>>	  pSwapchainImages;
+	u32						  swapchainImageCount;
+	Scope<Array<VkImageView>> pSwapchainImageViews;
+	VkFormat				  swapchainImageFormat;
+	VkExtent2D				  swapchainExtent;
 };
+
+#define GET_SCOPE_ARRAY_INDEX(array, index) ((*(array.Get()))[index])
 
 #define CAST(handle)                                                                                                   \
 	reinterpret_cast<VulkanContextHandle*>(handle.Get());                                                              \
@@ -184,6 +191,9 @@ static Result VulkanDriver_CreateRenderContext(Pointer<void> pWindowHandle, Poin
 	pContextHandle->computeQueueFamilyIndex	 = INVALID_QUEUE_FAMILY_INDEX;
 	pContextHandle->logicalDevice			 = VK_NULL_HANDLE;
 	pContextHandle->swapchain				 = VK_NULL_HANDLE;
+	pContextHandle->pSwapchainImages		 = MakeScope<Array<VkImage>>(g_GlobalAllocators.pMalloc, 1);
+	pContextHandle->swapchainImageCount		 = 0;
+	pContextHandle->pSwapchainImageViews	 = MakeScope<Array<VkImageView>>(g_GlobalAllocators.pMalloc, 1);
 
 	VK_ASSERT(glfwCreateWindowSurface(g_Instance, pWindow, nullptr, &pContextHandle->surface));
 	NTT_ASSERT_RESULT_SUCCESS(chooseQueueFamilies(pContextHandle, pContextHandle->surface));
@@ -729,6 +739,7 @@ static VkSurfaceFormatKHR chooseSwapSurfaceFormat(const Array<VkSurfaceFormatKHR
 static VkPresentModeKHR	  chooseSwapPresentMode(const Array<VkPresentModeKHR>& availablePresentModes);
 static VkExtent2D		  chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, u32 width, u32 height);
 static u32				  getSwapchainImageCount(const VkSurfaceCapabilitiesKHR& capabilities);
+static Result			  createSwapchainImageViews(VulkanContextHandle* pContextHandle);
 
 static Result createSwapchain(VulkanContextHandle* pContextHandle)
 {
@@ -770,6 +781,19 @@ static Result createSwapchain(VulkanContextHandle* pContextHandle)
 	}
 
 	VK_ASSERT(vkCreateSwapchainKHR(pContextHandle->logicalDevice, &createInfo, nullptr, &pContextHandle->swapchain));
+
+	vkGetSwapchainImagesKHR(
+		pContextHandle->logicalDevice, pContextHandle->swapchain, &pContextHandle->swapchainImageCount, nullptr);
+	pContextHandle->pSwapchainImages->Resize(pContextHandle->swapchainImageCount);
+	vkGetSwapchainImagesKHR(pContextHandle->logicalDevice,
+							pContextHandle->swapchain,
+							&pContextHandle->swapchainImageCount,
+							&GET_SCOPE_ARRAY_INDEX(pContextHandle->pSwapchainImages, 0));
+	pContextHandle->pSwapchainImageViews->Resize(pContextHandle->swapchainImageCount);
+
+	pContextHandle->swapchainImageFormat = surfaceFormat.format;
+	pContextHandle->swapchainExtent		 = extent;
+	NTT_ASSERT_RESULT_SUCCESS(createSwapchainImageViews(pContextHandle));
 
 	NTT_VULKAN_DEBUG("Created swapchain.");
 	return RESULT_SUCCESS;
@@ -856,9 +880,46 @@ static u32 getSwapchainImageCount(const VkSurfaceCapabilitiesKHR& capabilities)
 	return imageCount;
 }
 
+static Result createSwapchainImageViews(VulkanContextHandle* pContextHandle)
+{
+	for (u32 i = 0; i < pContextHandle->swapchainImageCount; ++i)
+	{
+		VkImageViewCreateInfo createInfo{};
+		createInfo.sType						   = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		createInfo.image						   = (*(pContextHandle->pSwapchainImages.Get()))[i];
+		createInfo.viewType						   = VK_IMAGE_VIEW_TYPE_2D;
+		createInfo.format						   = pContextHandle->swapchainImageFormat;
+		createInfo.components.r					   = VK_COMPONENT_SWIZZLE_IDENTITY;
+		createInfo.components.g					   = VK_COMPONENT_SWIZZLE_IDENTITY;
+		createInfo.components.b					   = VK_COMPONENT_SWIZZLE_IDENTITY;
+		createInfo.components.a					   = VK_COMPONENT_SWIZZLE_IDENTITY;
+		createInfo.subresourceRange.aspectMask	   = VK_IMAGE_ASPECT_COLOR_BIT;
+		createInfo.subresourceRange.baseMipLevel   = 0;
+		createInfo.subresourceRange.levelCount	   = 1;
+		createInfo.subresourceRange.baseArrayLayer = 0;
+		createInfo.subresourceRange.layerCount	   = 1;
+
+		VK_ASSERT(vkCreateImageView(pContextHandle->logicalDevice,
+									&createInfo,
+									nullptr,
+									&GET_SCOPE_ARRAY_INDEX(pContextHandle->pSwapchainImageViews, i)));
+	}
+
+	return RESULT_SUCCESS;
+}
+
 static Result destroySwapchain(VulkanContextHandle* pContextHandle)
 {
+	for (u32 i = 0; i < pContextHandle->swapchainImageCount; ++i)
+	{
+		vkDestroyImageView(
+			pContextHandle->logicalDevice, GET_SCOPE_ARRAY_INDEX(pContextHandle->pSwapchainImageViews, i), nullptr);
+	}
+
 	vkDestroySwapchainKHR(pContextHandle->logicalDevice, pContextHandle->swapchain, nullptr);
+
+	pContextHandle->pSwapchainImages.Reset();
+	pContextHandle->pSwapchainImageViews.Reset();
 	NTT_VULKAN_DEBUG("Swapchain is destroyed.");
 	return RESULT_SUCCESS;
 }
