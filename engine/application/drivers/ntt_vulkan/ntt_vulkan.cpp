@@ -14,12 +14,14 @@ static constexpr u32 INVALID_QUEUE_FAMILY_INDEX = UINT32_MAX;
 
 struct VulkanContextHandle
 {
-	GLFWwindow*	 pWindow;
-	VkSurfaceKHR surface;
-	u32			 graphicsQueueFamilyIndex;
-	u32			 presentQueueFamilyIndex;
-	u32			 transferQueueFamilyIndex;
-	u32			 computeQueueFamilyIndex;
+	GLFWwindow*	   pWindow;
+	VkSurfaceKHR   surface;
+	u32			   graphicsQueueFamilyIndex;
+	u32			   presentQueueFamilyIndex;
+	u32			   transferQueueFamilyIndex;
+	u32			   computeQueueFamilyIndex;
+	VkDevice	   logicalDevice;
+	VkSwapchainKHR swapchain;
 };
 
 #define CAST(handle)                                                                                                   \
@@ -163,6 +165,10 @@ static Result VulkanDriver_Shutdown()
 }
 
 static Result chooseQueueFamilies(VulkanContextHandle* pContextHandle, VkSurfaceKHR surface);
+static Result createLogicalDevice(VulkanContextHandle* pContextHandle);
+static Result destroyLogicalDevice(VulkanContextHandle* pContextHandle);
+static Result createSwapchain(VulkanContextHandle* pContextHandle);
+static Result destroySwapchain(VulkanContextHandle* pContextHandle);
 
 static Result VulkanDriver_CreateRenderContext(Pointer<void> pWindowHandle, Pointer<void>& pRenderContextHandle)
 {
@@ -176,9 +182,13 @@ static Result VulkanDriver_CreateRenderContext(Pointer<void> pWindowHandle, Poin
 	pContextHandle->presentQueueFamilyIndex	 = INVALID_QUEUE_FAMILY_INDEX;
 	pContextHandle->transferQueueFamilyIndex = INVALID_QUEUE_FAMILY_INDEX;
 	pContextHandle->computeQueueFamilyIndex	 = INVALID_QUEUE_FAMILY_INDEX;
+	pContextHandle->logicalDevice			 = VK_NULL_HANDLE;
+	pContextHandle->swapchain				 = VK_NULL_HANDLE;
 
 	VK_ASSERT(glfwCreateWindowSurface(g_Instance, pWindow, nullptr, &pContextHandle->surface));
 	NTT_ASSERT_RESULT_SUCCESS(chooseQueueFamilies(pContextHandle, pContextHandle->surface));
+	NTT_ASSERT_RESULT_SUCCESS(createLogicalDevice(pContextHandle));
+	NTT_ASSERT_RESULT_SUCCESS(createSwapchain(pContextHandle));
 #else  // NTT_GLFW
 	NTT_UNUSED(pWindowHandle);
 	NTT_UNUSED(pRenderContextHandle);
@@ -191,6 +201,8 @@ static Result VulkanDriver_DestroyRenderContext(Pointer<void>& pRenderContextHan
 {
 	VulkanContextHandle* pContextHandle = CAST(pRenderContextHandle);
 
+	NTT_ASSERT_RESULT_SUCCESS(destroySwapchain(pContextHandle));
+	NTT_ASSERT_RESULT_SUCCESS(destroyLogicalDevice(pContextHandle));
 	vkDestroySurfaceKHR(g_Instance, pContextHandle->surface, nullptr);
 
 	return RESULT_SUCCESS;
@@ -617,6 +629,237 @@ static Result chooseQueueFamilies(VulkanContextHandle* pContextHandle, VkSurface
 		NTT_VULKAN_DEBUG("Compute queue family index: %u", pContextHandle->computeQueueFamilyIndex);
 	}
 
+	return RESULT_SUCCESS;
+}
+
+static Result createLogicalDevice(VulkanContextHandle* pContextHandle)
+{
+	NTT_VULKAN_DEBUG("Creating logical device for the chosen physical device.");
+	NTT_UNUSED(pContextHandle);
+	float queuePriority = 1.0f;
+
+	Array<VkDeviceQueueCreateInfo> queueCreateInfos(4, g_GlobalAllocators.pStack);
+	u32							   queueCreateInfoCount = 0;
+
+	VkDeviceQueueCreateInfo& currentInfo = queueCreateInfos[queueCreateInfoCount++];
+	currentInfo.sType					 = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+	currentInfo.queueFamilyIndex		 = pContextHandle->graphicsQueueFamilyIndex;
+	currentInfo.queueCount				 = 1;
+	currentInfo.pQueuePriorities		 = &queuePriority;
+
+	if (pContextHandle->presentQueueFamilyIndex != pContextHandle->graphicsQueueFamilyIndex)
+	{
+		VkDeviceQueueCreateInfo& presentInfo = queueCreateInfos[queueCreateInfoCount++];
+		presentInfo.sType					 = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		presentInfo.queueFamilyIndex		 = pContextHandle->presentQueueFamilyIndex;
+		presentInfo.queueCount				 = 1;
+		presentInfo.pQueuePriorities		 = &queuePriority;
+	}
+
+	if (pContextHandle->transferQueueFamilyIndex != INVALID_QUEUE_FAMILY_INDEX &&
+		pContextHandle->transferQueueFamilyIndex != pContextHandle->graphicsQueueFamilyIndex &&
+		pContextHandle->transferQueueFamilyIndex != pContextHandle->presentQueueFamilyIndex)
+	{
+		VkDeviceQueueCreateInfo& transferInfo = queueCreateInfos[queueCreateInfoCount++];
+		transferInfo.sType					  = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		transferInfo.queueFamilyIndex		  = pContextHandle->transferQueueFamilyIndex;
+		transferInfo.queueCount				  = 1;
+		transferInfo.pQueuePriorities		  = &queuePriority;
+	}
+
+	if (pContextHandle->computeQueueFamilyIndex != INVALID_QUEUE_FAMILY_INDEX &&
+		pContextHandle->computeQueueFamilyIndex != pContextHandle->graphicsQueueFamilyIndex &&
+		pContextHandle->computeQueueFamilyIndex != pContextHandle->presentQueueFamilyIndex &&
+		pContextHandle->computeQueueFamilyIndex != pContextHandle->transferQueueFamilyIndex)
+	{
+		VkDeviceQueueCreateInfo& computeInfo = queueCreateInfos[queueCreateInfoCount++];
+		computeInfo.sType					 = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		computeInfo.queueFamilyIndex		 = pContextHandle->computeQueueFamilyIndex;
+		computeInfo.queueCount				 = 1;
+		computeInfo.pQueuePriorities		 = &queuePriority;
+	}
+
+	VkDeviceCreateInfo deviceCreateInfo{};
+	deviceCreateInfo.sType				  = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+	deviceCreateInfo.queueCreateInfoCount = queueCreateInfoCount;
+	deviceCreateInfo.pQueueCreateInfos	  = &queueCreateInfos[0];
+
+	VkPhysicalDeviceFeatures enabledFeatures{};
+	enabledFeatures.shaderClipDistance = VK_TRUE;
+	enabledFeatures.shaderCullDistance = VK_TRUE;
+
+	u32 deviceExtensionCount				 = sizeof(s_DeviceExtensions) / sizeof(s_DeviceExtensions[0]);
+	deviceCreateInfo.enabledExtensionCount	 = deviceExtensionCount;
+	deviceCreateInfo.ppEnabledExtensionNames = s_DeviceExtensions;
+	deviceCreateInfo.pEnabledFeatures		 = &enabledFeatures;
+
+	VK_ASSERT(vkCreateDevice(g_PhysicalDevice, &deviceCreateInfo, nullptr, &pContextHandle->logicalDevice));
+
+	return RESULT_SUCCESS;
+}
+
+static Result destroyLogicalDevice(VulkanContextHandle* pContextHandle)
+{
+	vkDestroyDevice(pContextHandle->logicalDevice, nullptr);
+
+	NTT_VULKAN_DEBUG("Logical device is destroyed.");
+	return RESULT_SUCCESS;
+}
+
+struct SwapchainSupportDetails
+{
+	VkSurfaceCapabilitiesKHR  capabilities;
+	Array<VkSurfaceFormatKHR> formats;
+	u32						  formatCount;
+	Array<VkPresentModeKHR>	  presentModes;
+	u32						  presentModeCount;
+
+	SwapchainSupportDetails()
+		: capabilities{}
+		, formats(1, g_GlobalAllocators.pStack)
+		, formatCount(0)
+		, presentModes(1, g_GlobalAllocators.pStack)
+		, presentModeCount(0)
+	{
+	}
+};
+
+static void				  querySwapchainSupport(VulkanContextHandle* pContextHandle, SwapchainSupportDetails& out);
+static VkSurfaceFormatKHR chooseSwapSurfaceFormat(const Array<VkSurfaceFormatKHR>& availableFormats);
+static VkPresentModeKHR	  chooseSwapPresentMode(const Array<VkPresentModeKHR>& availablePresentModes);
+static VkExtent2D		  chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, u32 width, u32 height);
+static u32				  getSwapchainImageCount(const VkSurfaceCapabilitiesKHR& capabilities);
+
+static Result createSwapchain(VulkanContextHandle* pContextHandle)
+{
+	SwapchainSupportDetails swapchainSupport;
+	querySwapchainSupport(pContextHandle, swapchainSupport);
+
+	VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapchainSupport.formats);
+	VkPresentModeKHR   presentMode	 = chooseSwapPresentMode(swapchainSupport.presentModes);
+	VkExtent2D		   extent		 = chooseSwapExtent(swapchainSupport.capabilities, 800, 600);
+	u32				   imageCount	 = getSwapchainImageCount(swapchainSupport.capabilities);
+
+	VkSwapchainCreateInfoKHR createInfo{};
+	createInfo.sType			= VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+	createInfo.surface			= pContextHandle->surface;
+	createInfo.minImageCount	= imageCount;
+	createInfo.imageFormat		= surfaceFormat.format;
+	createInfo.imageColorSpace	= surfaceFormat.colorSpace;
+	createInfo.imageExtent		= extent;
+	createInfo.imageArrayLayers = 1;
+	createInfo.imageUsage		= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	createInfo.preTransform		= swapchainSupport.capabilities.currentTransform;
+	createInfo.compositeAlpha	= VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+	createInfo.presentMode		= presentMode;
+	createInfo.clipped			= VK_TRUE;
+	createInfo.oldSwapchain		= VK_NULL_HANDLE;
+
+	u32 queueFamilyIndices[] = {pContextHandle->graphicsQueueFamilyIndex, pContextHandle->presentQueueFamilyIndex};
+	if (pContextHandle->graphicsQueueFamilyIndex != pContextHandle->presentQueueFamilyIndex)
+	{
+		createInfo.imageSharingMode		 = VK_SHARING_MODE_CONCURRENT;
+		createInfo.queueFamilyIndexCount = 2;
+		createInfo.pQueueFamilyIndices	 = queueFamilyIndices;
+	}
+	else
+	{
+		createInfo.imageSharingMode		 = VK_SHARING_MODE_EXCLUSIVE;
+		createInfo.queueFamilyIndexCount = 0;
+		createInfo.pQueueFamilyIndices	 = nullptr;
+	}
+
+	VK_ASSERT(vkCreateSwapchainKHR(pContextHandle->logicalDevice, &createInfo, nullptr, &pContextHandle->swapchain));
+
+	NTT_VULKAN_DEBUG("Created swapchain.");
+	return RESULT_SUCCESS;
+}
+
+static void querySwapchainSupport(VulkanContextHandle* pContextHandle, SwapchainSupportDetails& out)
+{
+	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(g_PhysicalDevice, pContextHandle->surface, &out.capabilities);
+
+	vkGetPhysicalDeviceSurfaceFormatsKHR(g_PhysicalDevice, pContextHandle->surface, &out.formatCount, nullptr);
+	out.formats.Resize(out.formatCount);
+	vkGetPhysicalDeviceSurfaceFormatsKHR(g_PhysicalDevice, pContextHandle->surface, &out.formatCount, &out.formats[0]);
+
+	vkGetPhysicalDeviceSurfacePresentModesKHR(
+		g_PhysicalDevice, pContextHandle->surface, &out.presentModeCount, nullptr);
+	out.presentModes.Resize(out.presentModeCount);
+	vkGetPhysicalDeviceSurfacePresentModesKHR(
+		g_PhysicalDevice, pContextHandle->surface, &out.presentModeCount, &out.presentModes[0]);
+}
+
+static VkSurfaceFormatKHR chooseSwapSurfaceFormat(const Array<VkSurfaceFormatKHR>& availableFormats)
+{
+	for (const auto& availableFormat : availableFormats)
+	{
+		if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB &&
+			availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+		{
+			return availableFormat;
+		}
+	}
+
+	return availableFormats[0];
+}
+
+static VkPresentModeKHR chooseSwapPresentMode(const Array<VkPresentModeKHR>& availablePresentModes)
+{
+	for (const auto& availablePresentMode : availablePresentModes)
+	{
+		if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
+		{
+			return availablePresentMode;
+		}
+	}
+
+	return VK_PRESENT_MODE_FIFO_KHR;
+}
+
+static VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, u32 width, u32 height)
+{
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+
+	for (u32 i = 0; i < capabilities.currentExtent.width; ++i)
+	{
+		if (capabilities.currentExtent.width == UINT32_MAX)
+		{
+			VkExtent2D actualExtent = {width, height};
+
+			actualExtent.width =
+				MAX(capabilities.minImageExtent.width, MIN(capabilities.maxImageExtent.width, actualExtent.width));
+			actualExtent.height =
+				MAX(capabilities.minImageExtent.height, MIN(capabilities.maxImageExtent.height, actualExtent.height));
+
+			return actualExtent;
+		}
+		else
+		{
+			return capabilities.currentExtent;
+		}
+	}
+
+	return capabilities.currentExtent;
+}
+
+static u32 getSwapchainImageCount(const VkSurfaceCapabilitiesKHR& capabilities)
+{
+	u32 imageCount = capabilities.minImageCount + 1;
+
+	if (capabilities.maxImageCount > 0 && imageCount > capabilities.maxImageCount)
+	{
+		imageCount = capabilities.maxImageCount;
+	}
+
+	return imageCount;
+}
+
+static Result destroySwapchain(VulkanContextHandle* pContextHandle)
+{
+	vkDestroySwapchainKHR(pContextHandle->logicalDevice, pContextHandle->swapchain, nullptr);
+	NTT_VULKAN_DEBUG("Swapchain is destroyed.");
 	return RESULT_SUCCESS;
 }
 
