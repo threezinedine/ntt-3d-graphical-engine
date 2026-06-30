@@ -37,8 +37,11 @@ struct MeshHandle
 
 struct ShaderHandle
 {
-	VkShaderModule vertexModule;
-	VkShaderModule fragmentModule;
+	VkShaderModule	 vertexModule;
+	VkShaderModule	 fragmentModule;
+	VkPipelineLayout pipelineLayout;
+	VkPipeline		 pipeline;
+	VkRenderPass	 renderPass;
 };
 
 #define VK_SHADER_CAST(handle)                                                                                         \

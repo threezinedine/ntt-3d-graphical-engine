@@ -60,6 +60,172 @@ Result VulkanShaderStorage::AddShaderImpl(const Pointer<void>& pRenderContext,
 
 	NTT_ASSERT_RESULT_SUCCESS(fragmentShaderSPIRV.Free());
 
+	VkPipelineShaderStageCreateInfo vertexShaderStageInfo{};
+	vertexShaderStageInfo.sType	 = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	vertexShaderStageInfo.stage	 = VK_SHADER_STAGE_VERTEX_BIT;
+	vertexShaderStageInfo.module = pHandle->vertexModule;
+	vertexShaderStageInfo.pName	 = "main";
+
+	VkPipelineShaderStageCreateInfo fragmentShaderStageInfo{};
+	fragmentShaderStageInfo.sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	fragmentShaderStageInfo.stage  = VK_SHADER_STAGE_FRAGMENT_BIT;
+	fragmentShaderStageInfo.module = pHandle->fragmentModule;
+	fragmentShaderStageInfo.pName  = "main";
+
+	VkDynamicState dynamicStates[]	 = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+	u32			   dynamicStateCount = sizeof(dynamicStates) / sizeof(dynamicStates[0]);
+
+	VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo{};
+	dynamicStateCreateInfo.sType			 = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+	dynamicStateCreateInfo.dynamicStateCount = dynamicStateCount;
+	dynamicStateCreateInfo.pDynamicStates	 = dynamicStates;
+
+#if 0
+	VkVertexInputAttributeDescription positionAttribute{};
+	positionAttribute.location = 0;
+	positionAttribute.binding  = 0;
+	positionAttribute.format   = VK_FORMAT_R32G32B32_SFLOAT;
+	positionAttribute.offset   = 0;
+
+	VkVertexInputAttributeDescription textureCoordAttribute{};
+	textureCoordAttribute.location = 1;
+	textureCoordAttribute.binding  = 1;
+	textureCoordAttribute.format   = VK_FORMAT_R32G32_SFLOAT;
+	textureCoordAttribute.offset   = sizeof(float) * 3; // Assuming position is 3 floats
+
+	VkVertexInputAttributeDescription colorAttribute{};
+	colorAttribute.location = 2;
+	colorAttribute.binding	= 2;
+	colorAttribute.format	= VK_FORMAT_R32G32B32A32_SFLOAT;
+	colorAttribute.offset	= sizeof(float) * 5; // Assuming position is 3 floats and texture coord is 2 floats
+
+	VkVertexInputAttributeDescription vertexAttributes[]   = {positionAttribute, textureCoordAttribute, colorAttribute};
+	u32								  vertexAttributeCount = sizeof(vertexAttributes) / sizeof(vertexAttributes[0]);
+#endif
+
+	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
+	vertexInputInfo.sType						  = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+	vertexInputInfo.vertexBindingDescriptionCount = 0;
+	vertexInputInfo.pVertexBindingDescriptions	  = nullptr;
+
+#if 0
+	vertexInputInfo.vertexAttributeDescriptionCount = vertexAttributeCount;
+	vertexInputInfo.pVertexAttributeDescriptions	= vertexAttributes;
+#else
+	vertexInputInfo.vertexAttributeDescriptionCount = 0;
+	vertexInputInfo.pVertexAttributeDescriptions	= nullptr;
+#endif
+
+	VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
+	inputAssembly.sType					 = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+	inputAssembly.topology				 = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	inputAssembly.primitiveRestartEnable = VK_FALSE;
+
+	VkViewport viewport{};
+	viewport.x		  = 0.0f;
+	viewport.y		  = 0.0f;
+	viewport.width	  = static_cast<float>(pVulkanContext->swapchainExtent.width);
+	viewport.height	  = static_cast<float>(pVulkanContext->swapchainExtent.height);
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+
+	VkRect2D scissor{};
+	scissor.offset = {0, 0};
+	scissor.extent = pVulkanContext->swapchainExtent;
+
+	VkPipelineViewportStateCreateInfo viewportState{};
+	viewportState.sType			= VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+	viewportState.viewportCount = 1;
+	viewportState.pViewports	= &viewport;
+	viewportState.scissorCount	= 1;
+	viewportState.pScissors		= &scissor;
+
+	VkPipelineRasterizationStateCreateInfo rasterizer{};
+	rasterizer.sType				   = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+	rasterizer.depthClampEnable		   = VK_FALSE;
+	rasterizer.rasterizerDiscardEnable = VK_FALSE;
+	rasterizer.polygonMode			   = VK_POLYGON_MODE_FILL;
+	rasterizer.lineWidth			   = 1.0f;
+	rasterizer.cullMode				   = VK_CULL_MODE_BACK_BIT;
+	rasterizer.frontFace			   = VK_FRONT_FACE_CLOCKWISE;
+	rasterizer.depthBiasEnable		   = VK_FALSE;
+
+	VkPipelineMultisampleStateCreateInfo multisampling{};
+	multisampling.sType				   = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+	multisampling.sampleShadingEnable  = VK_FALSE;
+	multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+
+	VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+	colorBlendAttachment.colorWriteMask =
+		VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+	colorBlendAttachment.blendEnable = VK_FALSE;
+
+	VkPipelineColorBlendStateCreateInfo colorBlending{};
+	colorBlending.sType			  = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+	colorBlending.logicOpEnable	  = VK_FALSE;
+	colorBlending.logicOp		  = VK_LOGIC_OP_COPY;
+	colorBlending.attachmentCount = 1;
+	colorBlending.pAttachments	  = &colorBlendAttachment;
+
+	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+	pipelineLayoutInfo.sType				  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	pipelineLayoutInfo.setLayoutCount		  = 0;
+	pipelineLayoutInfo.pSetLayouts			  = nullptr;
+	pipelineLayoutInfo.pushConstantRangeCount = 0;
+	pipelineLayoutInfo.pPushConstantRanges	  = nullptr;
+
+	VK_ASSERT(
+		vkCreatePipelineLayout(pVulkanContext->logicalDevice, &pipelineLayoutInfo, nullptr, &pHandle->pipelineLayout));
+
+	// create render pass
+	VkAttachmentDescription colorAttachment{};
+	colorAttachment.format		   = pVulkanContext->swapchainImageFormat;
+	colorAttachment.samples		   = VK_SAMPLE_COUNT_1_BIT;
+	colorAttachment.loadOp		   = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	colorAttachment.storeOp		   = VK_ATTACHMENT_STORE_OP_STORE;
+	colorAttachment.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	colorAttachment.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
+	colorAttachment.finalLayout	   = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+	VkAttachmentReference colorAttachmentRef{};
+	colorAttachmentRef.attachment = 0;
+	colorAttachmentRef.layout	  = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+	VkSubpassDescription subpass{};
+	subpass.pipelineBindPoint	 = VK_PIPELINE_BIND_POINT_GRAPHICS;
+	subpass.colorAttachmentCount = 1;
+	subpass.pColorAttachments	 = &colorAttachmentRef;
+
+	VkRenderPassCreateInfo renderPassInfo{};
+	renderPassInfo.sType		   = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+	renderPassInfo.attachmentCount = 1;
+	renderPassInfo.pAttachments	   = &colorAttachment;
+	renderPassInfo.subpassCount	   = 1;
+	renderPassInfo.pSubpasses	   = &subpass;
+
+	VK_ASSERT(vkCreateRenderPass(pVulkanContext->logicalDevice, &renderPassInfo, nullptr, &pHandle->renderPass));
+
+	VkGraphicsPipelineCreateInfo pipelineInfo{};
+	pipelineInfo.sType							   = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	pipelineInfo.stageCount						   = 2;
+	VkPipelineShaderStageCreateInfo shaderStages[] = {vertexShaderStageInfo, fragmentShaderStageInfo};
+	pipelineInfo.pStages						   = shaderStages;
+	pipelineInfo.pVertexInputState				   = &vertexInputInfo;
+	pipelineInfo.pInputAssemblyState			   = &inputAssembly;
+	pipelineInfo.pViewportState					   = &viewportState;
+	pipelineInfo.pRasterizationState			   = &rasterizer;
+	pipelineInfo.pMultisampleState				   = &multisampling;
+	pipelineInfo.pDepthStencilState				   = nullptr;
+	pipelineInfo.pColorBlendState				   = &colorBlending;
+	pipelineInfo.pDynamicState					   = &dynamicStateCreateInfo;
+	pipelineInfo.layout							   = pHandle->pipelineLayout;
+	pipelineInfo.renderPass						   = pHandle->renderPass;
+	pipelineInfo.subpass						   = 0;
+
+	VK_ASSERT(vkCreateGraphicsPipelines(
+		pVulkanContext->logicalDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pHandle->pipeline));
+
 	return RESULT_SUCCESS;
 }
 
@@ -147,6 +313,9 @@ Result VulkanShaderStorage::RemoveShaderImpl(const Pointer<void>& pRenderContext
 	ShaderHandle*		 pHandle		= VK_SHADER_CAST(pShaderHandle);
 	VulkanContextHandle* pVulkanContext = VK_CONTEXT_CAST(pRenderContext);
 
+	vkDestroyPipeline(pVulkanContext->logicalDevice, pHandle->pipeline, nullptr);
+	vkDestroyRenderPass(pVulkanContext->logicalDevice, pHandle->renderPass, nullptr);
+	vkDestroyPipelineLayout(pVulkanContext->logicalDevice, pHandle->pipelineLayout, nullptr);
 	vkDestroyShaderModule(pVulkanContext->logicalDevice, pHandle->vertexModule, nullptr);
 	vkDestroyShaderModule(pVulkanContext->logicalDevice, pHandle->fragmentModule, nullptr);
 
