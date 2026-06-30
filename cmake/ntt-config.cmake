@@ -211,26 +211,26 @@ macro(ntt_embed_asset asset_folder added_variables)
     set(INPUT_FILES)
 
     foreach (asset_file IN ITEMS ${ARGN})
-        string(REGEX MATCH "^[^:]+" ASSET_PATH "${asset_file}")
-        string(REGEX MATCH "[^:]+$" ASSET_VAR_NAME "${asset_file}") 
+        # separate input::output::data -> INPUT_PATH, OUTPUT_PATH, DATA_NAME
+        string(REPLACE "::" ";" asset_parts ${asset_file})
+        list(GET asset_parts 0 INPUT_PATH)
+        list(GET asset_parts 1 OUTPUT_PATH)
+        list(GET asset_parts 2 DATA_NAME)
 
-        get_filename_component(ASSET_NAME ${ASSET_PATH} NAME_WE)
-        get_filename_component(ASSET_EX ${ASSET_PATH} EXT)
-        string(REPLACE "." "" ASSET_EX ${ASSET_EX})
-        set(OUTPUT_FILE "${CMAKE_CURRENT_BINARY_DIR}/generated_${ASSET_NAME}_${ASSET_EX}_embedded.cpp")
+        set(OUTPUT_FILE "${CMAKE_CURRENT_BINARY_DIR}/${OUTPUT_PATH}")
 
         add_custom_command(
-            OUTPUT ${OUTPUT_FILE}
+            OUTPUT ${OUTPUT_PATH}
             COMMAND ${NTT_PYTHON_EXECUTABLE} "${CMAKE_SOURCE_DIR}/scripts/embedded.py" 
-                    "${CMAKE_CURRENT_SOURCE_DIR}/${ASSET_PATH}::${ASSET_VAR_NAME}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/${INPUT_PATH}::${DATA_NAME}"
                     "${OUTPUT_FILE}"
-            DEPENDS ${ASSET_PATH}
-            COMMENT "Embedding asset ${ASSET_PATH} to ${OUTPUT_FILE}"
+            DEPENDS ${INPUT_PATH}
+            COMMENT "Embedding asset ${INPUT_PATH} to ${OUTPUT_PATH}"
             VERBATIM
         )
 
-        list(APPEND ${added_variables} ${OUTPUT_FILE} ${ASSET_PATH})
-        list(APPEND INPUT_FILES "${ASSET_PATH}")
+        list(APPEND ${added_variables} ${OUTPUT_FILE} ${INPUT_PATH})
+        list(APPEND INPUT_FILES "${INPUT_PATH}")
         list(APPEND OUTPUT_FILES ${OUTPUT_FILE})
     endforeach()
 

@@ -3,6 +3,9 @@
 extern unsigned char mesh_vs_data[];
 extern unsigned char mesh_fs_data[];
 
+extern unsigned char vulkan_mesh_vs_data[];
+extern unsigned char vulkan_mesh_fs_data[];
+
 namespace ntt {
 
 ShaderID g_DefaultMeshShaderID = INVALID_SHADER_ID;
@@ -20,8 +23,18 @@ Result ShaderStorage::Initialize()
 {
 	m_pStorage = MakeScope<Storage<ShaderNode>>(m_pAllocator);
 
-	g_DefaultMeshShaderID =
-		AddShader(reinterpret_cast<const char*>(mesh_vs_data), reinterpret_cast<const char*>(mesh_fs_data));
+#if NTT_VULKAN
+	if (NTT_ARG_BOOL(USE_VULKAN))
+	{
+		g_DefaultMeshShaderID = AddShader(reinterpret_cast<const char*>(vulkan_mesh_vs_data),
+										  reinterpret_cast<const char*>(vulkan_mesh_fs_data));
+	}
+	else
+#endif // NTT_VULKAN
+	{
+		g_DefaultMeshShaderID =
+			AddShader(reinterpret_cast<const char*>(mesh_vs_data), reinterpret_cast<const char*>(mesh_fs_data));
+	}
 
 	return InitializeImpl();
 }

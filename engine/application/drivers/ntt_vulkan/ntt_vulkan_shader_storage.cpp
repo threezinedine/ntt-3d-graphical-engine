@@ -20,13 +20,13 @@ VulkanShaderStorage::~VulkanShaderStorage()
 
 Result VulkanShaderStorage::InitializeImpl()
 {
-	// Implementation for Vulkan-specific initialization
 	return RESULT_SUCCESS;
 }
 
 Result VulkanShaderStorage::ShutdownImpl()
 {
 	// Implementation for Vulkan-specific shutdown
+
 	return RESULT_SUCCESS;
 }
 

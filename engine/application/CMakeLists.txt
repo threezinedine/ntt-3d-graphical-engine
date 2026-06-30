@@ -73,16 +73,25 @@ if (NTT_PLATFORM_WEB)
     ntt_embed_asset(
         "src/systems/render/shaders"
         NTT_APPLICATION_SOURCES
-        "systems/render/shaders/gles/mesh.vs::mesh_vs_data"
-        "systems/render/shaders/gles/mesh.fs::mesh_fs_data"
+        "systems/render/shaders/gles/mesh.vs::generated_gles_mesh_vs.cpp::mesh_vs_data"
+        "systems/render/shaders/gles/mesh.fs::generated_gles_mesh_fs.cpp::mesh_fs_data"
     )
 else()
     ntt_embed_asset(
         "src/systems/render/shaders"
         NTT_APPLICATION_SOURCES
-        "systems/render/shaders/opengl/mesh.vs::mesh_vs_data"
-        "systems/render/shaders/opengl/mesh.fs::mesh_fs_data"
+        "systems/render/shaders/opengl/mesh.vs::generated_opengl_mesh_vs.cpp::mesh_vs_data"
+        "systems/render/shaders/opengl/mesh.fs::generated_opengl_mesh_fs.cpp::mesh_fs_data"
     )
+
+    if (NTT_VULKAN)
+        ntt_embed_asset(
+            "src/systems/render/shaders"
+            NTT_APPLICATION_SOURCES
+            "systems/render/shaders/vulkan/mesh.vs::generated_vulkan_mesh_vs.cpp::vulkan_mesh_vs_data"
+            "systems/render/shaders/vulkan/mesh.fs::generated_vulkan_mesh_fs.cpp::vulkan_mesh_fs_data"
+        )
+    endif()
 endif()
 
 ntt_set_source_group("src/systems/render/components"
