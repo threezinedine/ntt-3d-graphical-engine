@@ -70,6 +70,10 @@ static const char* s_InstanceLayers[] = {
 	"VK_LAYER_KHRONOS_validation",
 #endif // NTT_DEBUG
 };
+
+static const char* s_DeviceExtensions[] = {
+	VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+};
 // clang-format on
 
 #if NTT_DEBUG
@@ -103,6 +107,7 @@ static VkPhysicalDevice							 g_PhysicalDevice = VK_NULL_HANDLE;
 static Result									 enumeratePhysicalDevices();
 static Result									 destroyPhysicalDevices();
 static Result									 choosePhysicalDevice();
+static Result									 verifyDeviceExtensionsSupport();
 
 static Result VulkanDriver_Initialize()
 {
@@ -128,6 +133,7 @@ static Result VulkanDriver_Initialize()
 
 	NTT_ASSERT_RESULT_SUCCESS(enumeratePhysicalDevices());
 	NTT_ASSERT_RESULT_SUCCESS(choosePhysicalDevice());
+	NTT_ASSERT_RESULT_SUCCESS(verifyDeviceExtensionsSupport());
 
 	NTT_VULKAN_INFO("Vulkan driver initialized.");
 
@@ -462,6 +468,37 @@ static Result choosePhysicalDevice()
 	g_PhysicalDevice = (*s_pPhysicalDevices.Get())[bestIndex];
 
 	NTT_VULKAN_INFO("Chosen Vulkan physical device: %s", (*s_pPhysicalDeviceProperties.Get())[bestIndex]->deviceName);
+
+	return RESULT_SUCCESS;
+}
+
+static Result verifyDeviceExtensionsSupport()
+{
+	u32 extensionCount = 0;
+	VK_ASSERT(vkEnumerateDeviceExtensionProperties(g_PhysicalDevice, nullptr, &extensionCount, nullptr));
+
+	Array<VkExtensionProperties> availableExtensions(extensionCount, g_GlobalAllocators.pStack);
+	VK_ASSERT(
+		vkEnumerateDeviceExtensionProperties(g_PhysicalDevice, nullptr, &extensionCount, &availableExtensions[0]));
+
+	for (const char* requiredExtension : s_DeviceExtensions)
+	{
+		bool found = false;
+		for (u32 i = 0; i < extensionCount; ++i)
+		{
+			if (StringView(availableExtensions[i].extensionName) == StringView(requiredExtension))
+			{
+				found = true;
+				break;
+			}
+		}
+
+		if (!found)
+		{
+			NTT_VULKAN_ERROR("Missing required Vulkan device extension: %s", requiredExtension);
+			return RESULT_MISSING_VULKAN_EXTENSION;
+		}
+	}
 
 	return RESULT_SUCCESS;
 }
