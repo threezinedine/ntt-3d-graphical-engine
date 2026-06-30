@@ -16,8 +16,8 @@ protected:
 								 const char*		  pVertexShaderSource,
 								 const char*		  pFragmentShaderSource,
 								 Pointer<void>&		  pShaderHandle) override;
-	virtual Result UseShaderImpl(const Pointer<void>& pShaderHandle) override;
-	virtual Result RemoveShaderImpl(const Pointer<void>& pShaderHandle) override;
+	virtual Result UseShaderImpl(const Pointer<void>& pRenderContext, const Pointer<void>& pShaderHandle) override;
+	virtual Result RemoveShaderImpl(const Pointer<void>& pRenderContext, const Pointer<void>& pShaderHandle) override;
 
 protected:
 	virtual u32 GetShaderHandleSize() const;

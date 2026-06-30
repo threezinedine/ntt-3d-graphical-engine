@@ -37,7 +37,8 @@ struct MeshHandle
 
 struct ShaderHandle
 {
-	VkShaderModule module;
+	VkShaderModule vertexModule;
+	VkShaderModule fragmentModule;
 };
 
 #define VK_SHADER_CAST(handle)                                                                                         \

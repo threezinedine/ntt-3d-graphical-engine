@@ -20,6 +20,7 @@ public:
 	Result Shutdown();
 
 	Result SetupDefaultShaders(RenderContextID renderContextID);
+	Result RemoveDefaultShaders();
 
 	ShaderID AddShader(RenderContextID renderContextID,
 					   const char*	   pVertexShaderSource,
@@ -34,9 +35,9 @@ protected:
 	virtual Result AddShaderImpl(const Pointer<void>& pRenderContext,
 								 const char*		  pVertexShaderSource,
 								 const char*		  pFragmentShaderSource,
-								 Pointer<void>&		  pShaderHandle)			= 0;
-	virtual Result UseShaderImpl(const Pointer<void>& pShaderHandle)	= 0;
-	virtual Result RemoveShaderImpl(const Pointer<void>& pShaderHandle) = 0;
+								 Pointer<void>&		  pShaderHandle)												 = 0;
+	virtual Result UseShaderImpl(const Pointer<void>& pRenderContext, const Pointer<void>& pShaderHandle)	 = 0;
+	virtual Result RemoveShaderImpl(const Pointer<void>& pRenderContext, const Pointer<void>& pShaderHandle) = 0;
 
 protected:
 	virtual u32 GetShaderHandleSize() const = 0;
@@ -44,7 +45,8 @@ protected:
 private:
 	struct ShaderNode
 	{
-		Pointer<void> pShaderHandle;
+		Pointer<void>	pShaderHandle;
+		RenderContextID renderContextID;
 	};
 
 private:

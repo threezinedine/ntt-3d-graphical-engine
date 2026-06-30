@@ -97,8 +97,9 @@ Result OpenGLShaderStorage::AddShaderImpl(const Pointer<void>& pRenderContext,
 	return RESULT_SUCCESS;
 }
 
-Result OpenGLShaderStorage::UseShaderImpl(const Pointer<void>& pShaderHandle)
+Result OpenGLShaderStorage::UseShaderImpl(const Pointer<void>& pRenderContext, const Pointer<void>& pShaderHandle)
 {
+	NTT_UNUSED(pRenderContext);
 	ShaderHandle* pHandle = reinterpret_cast<ShaderHandle*>(pShaderHandle.Get());
 
 	GL_ASSERT(glUseProgram(pHandle->program));
@@ -106,8 +107,9 @@ Result OpenGLShaderStorage::UseShaderImpl(const Pointer<void>& pShaderHandle)
 	return RESULT_SUCCESS;
 }
 
-Result OpenGLShaderStorage::RemoveShaderImpl(const Pointer<void>& pShaderHandle)
+Result OpenGLShaderStorage::RemoveShaderImpl(const Pointer<void>& pRenderContext, const Pointer<void>& pShaderHandle)
 {
+	NTT_UNUSED(pRenderContext);
 	ShaderHandle* pHandle = reinterpret_cast<ShaderHandle*>(pShaderHandle.Get());
 
 	GL_ASSERT(glDeleteProgram(pHandle->program));

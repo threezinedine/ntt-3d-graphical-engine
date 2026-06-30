@@ -29,51 +29,49 @@ Result VulkanShaderStorage::ShutdownImpl()
 	return RESULT_SUCCESS;
 }
 
-struct SpirvBinary
-{
-	Pointer<u32> words;
-	i32			 size;
-};
-
-static SpirvBinary compileShaderToSPIRV_Vulkan(glslang_stage_t stage, const char* shaderSource);
+static Pointer<u32> compileShaderToSPIRV_Vulkan(glslang_stage_t stage, const char* shaderSource);
 
 Result VulkanShaderStorage::AddShaderImpl(const Pointer<void>& pRenderContext,
 										  const char*		   pVertexShaderSource,
 										  const char*		   pFragmentShaderSource,
 										  Pointer<void>&	   pShaderHandle)
 {
-	SpirvBinary vertexShaderSPIRV	= compileShaderToSPIRV_Vulkan(GLSLANG_STAGE_VERTEX, pVertexShaderSource);
-	SpirvBinary fragmentShaderSPIRV = compileShaderToSPIRV_Vulkan(GLSLANG_STAGE_FRAGMENT, pFragmentShaderSource);
+	Pointer<u32> vertexShaderSPIRV	 = compileShaderToSPIRV_Vulkan(GLSLANG_STAGE_VERTEX, pVertexShaderSource);
+	Pointer<u32> fragmentShaderSPIRV = compileShaderToSPIRV_Vulkan(GLSLANG_STAGE_FRAGMENT, pFragmentShaderSource);
 
-#if 0
 	ShaderHandle*		 pHandle		= VK_SHADER_CAST(pShaderHandle);
 	VulkanContextHandle* pVulkanContext = VK_CONTEXT_CAST(pRenderContext);
 
-	VkShaderModule			 vertexModule;
 	VkShaderModuleCreateInfo vertexModuleCreateInfo{};
 	vertexModuleCreateInfo.sType	= VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-	vertexModuleCreateInfo.codeSize = vertexShaderSPIRV.size * sizeof(u32);
-	vertexModuleCreateInfo.pCode	= vertexShaderSPIRV.words.Get();
-	VK_ASSERT(vkCreateShaderModule(pVulkanContext->logicalDevice, &vertexModuleCreateInfo, nullptr, &vertexModule));
-#else
-	NTT_UNUSED(pRenderContext);
-	NTT_UNUSED(vertexShaderSPIRV);
-	NTT_UNUSED(fragmentShaderSPIRV);
-	NTT_UNUSED(pShaderHandle);
-#endif
+	vertexModuleCreateInfo.codeSize = vertexShaderSPIRV.size;
+	vertexModuleCreateInfo.pCode	= vertexShaderSPIRV.Get();
+	VK_ASSERT(
+		vkCreateShaderModule(pVulkanContext->logicalDevice, &vertexModuleCreateInfo, nullptr, &pHandle->vertexModule));
+
+	NTT_ASSERT_RESULT_SUCCESS(vertexShaderSPIRV.Free());
+
+	VkShaderModuleCreateInfo fragmentModuleCreateInfo{};
+	fragmentModuleCreateInfo.sType	  = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+	fragmentModuleCreateInfo.codeSize = fragmentShaderSPIRV.size;
+	fragmentModuleCreateInfo.pCode	  = fragmentShaderSPIRV.Get();
+	VK_ASSERT(vkCreateShaderModule(
+		pVulkanContext->logicalDevice, &fragmentModuleCreateInfo, nullptr, &pHandle->fragmentModule));
+
+	NTT_ASSERT_RESULT_SUCCESS(fragmentShaderSPIRV.Free());
 
 	return RESULT_SUCCESS;
 }
 
-static SpirvBinary compileShaderToSPIRV_Vulkan(glslang_stage_t stage, const char* shaderSource)
+static Pointer<u32> compileShaderToSPIRV_Vulkan(glslang_stage_t stage, const char* shaderSource)
 {
 	glslang_input_t input					= {};
 	input.language							= GLSLANG_SOURCE_GLSL;
 	input.stage								= stage;
 	input.client							= GLSLANG_CLIENT_VULKAN;
-	input.client_version					= GLSLANG_TARGET_VULKAN_1_2;
+	input.client_version					= GLSLANG_TARGET_VULKAN_1_0;
 	input.target_language					= GLSLANG_TARGET_SPV;
-	input.target_language_version			= GLSLANG_TARGET_SPV_1_5;
+	input.target_language_version			= GLSLANG_TARGET_SPV_1_0;
 	input.code								= shaderSource;
 	input.default_version					= 100;
 	input.default_profile					= GLSLANG_NO_PROFILE;
@@ -84,9 +82,7 @@ static SpirvBinary compileShaderToSPIRV_Vulkan(glslang_stage_t stage, const char
 
 	glslang_shader_t* shader = glslang_shader_create(&input);
 
-	SpirvBinary bin = {};
-	bin.words		= nullptr;
-	bin.size		= 0;
+	Pointer<u32> bin = g_GlobalAllocators.pStack->Allocate(0).Cast<u32>();
 
 	if (!glslang_shader_preprocess(shader, &input))
 	{
@@ -123,9 +119,9 @@ static SpirvBinary compileShaderToSPIRV_Vulkan(glslang_stage_t stage, const char
 
 	glslang_program_SPIRV_generate(program, stage);
 
-	bin.size  = glslang_program_SPIRV_get_size(program);
-	bin.words = g_GlobalAllocators.pStack->Allocate(bin.size * sizeof(u32)).Cast<u32>();
-	glslang_program_SPIRV_get(program, bin.words.Get());
+	u32 size = glslang_program_SPIRV_get_size(program);
+	bin		 = g_GlobalAllocators.pMalloc->Allocate(size * sizeof(u32)).Cast<u32>();
+	glslang_program_SPIRV_get(program, bin.Get());
 
 	const char* spirv_messages = glslang_program_SPIRV_get_messages(program);
 	if (spirv_messages)
@@ -137,17 +133,22 @@ static SpirvBinary compileShaderToSPIRV_Vulkan(glslang_stage_t stage, const char
 	glslang_shader_delete(shader);
 
 	return bin;
-} // namespace ntt
+}
 
-Result VulkanShaderStorage::UseShaderImpl(const Pointer<void>& pShaderHandle)
+Result VulkanShaderStorage::UseShaderImpl(const Pointer<void>& pRenderContext, const Pointer<void>& pShaderHandle)
 {
+	NTT_UNUSED(pRenderContext);
 	NTT_UNUSED(pShaderHandle);
 	return RESULT_SUCCESS;
 }
 
-Result VulkanShaderStorage::RemoveShaderImpl(const Pointer<void>& pShaderHandle)
+Result VulkanShaderStorage::RemoveShaderImpl(const Pointer<void>& pRenderContext, const Pointer<void>& pShaderHandle)
 {
-	NTT_UNUSED(pShaderHandle);
+	ShaderHandle*		 pHandle		= VK_SHADER_CAST(pShaderHandle);
+	VulkanContextHandle* pVulkanContext = VK_CONTEXT_CAST(pRenderContext);
+
+	vkDestroyShaderModule(pVulkanContext->logicalDevice, pHandle->vertexModule, nullptr);
+	vkDestroyShaderModule(pVulkanContext->logicalDevice, pHandle->fragmentModule, nullptr);
 
 	return RESULT_SUCCESS;
 }

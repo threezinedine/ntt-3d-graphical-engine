@@ -60,11 +60,21 @@ Result ShaderStorage::SetupDefaultShaders(RenderContextID renderContextID)
 	return RESULT_SUCCESS;
 }
 
+Result ShaderStorage::RemoveDefaultShaders()
+{
+	if (g_DefaultMeshShaderID == INVALID_SHADER_ID)
+	{
+		return RESULT_UNKNOWN;
+	}
+
+	return RemoveShader(g_DefaultMeshShaderID);
+}
+
 ShaderID ShaderStorage::AddShader(RenderContextID renderContextID,
 								  const char*	  pVertexShaderSource,
 								  const char*	  pFragmentShaderSource) noexcept
 {
-	ShaderID shaderID = m_pStorage->Add((ShaderNode&&)ShaderNode{nullptr});
+	ShaderID shaderID = m_pStorage->Add((ShaderNode&&)ShaderNode{nullptr, INVALID_RENDER_CONTEXT_ID});
 
 	if (shaderID == INVALID_SHADER_ID)
 	{
@@ -78,7 +88,8 @@ ShaderID ShaderStorage::AddShader(RenderContextID renderContextID,
 		return RESULT_INACTIVE_STORAGE_INDEX; // Return RESULT_INACTIVE_STORAGE_INDEX if the shader node is not found
 	}
 
-	pShaderNode->pShaderHandle = ALLOCATOR_SAFE(m_pAllocator)->Allocate(GetShaderHandleSize());
+	pShaderNode->pShaderHandle	 = ALLOCATOR_SAFE(m_pAllocator)->Allocate(GetShaderHandleSize());
+	pShaderNode->renderContextID = renderContextID;
 
 	RenderSystem::RenderContext* pRenderContext =
 		SystemGlobals::pRenderSystem->m_pRenderContextStorage->Get(renderContextID);
@@ -105,7 +116,10 @@ Result ShaderStorage::RemoveShader(ShaderID shaderID)
 		return RESULT_INACTIVE_STORAGE_INDEX; // Return RESULT_INACTIVE_STORAGE_INDEX if the shader node is not found
 	}
 
-	NTT_ASSERT_RESULT_SUCCESS(RemoveShaderImpl(pShaderNode->pShaderHandle));
+	RenderSystem::RenderContext* pRenderContext =
+		SystemGlobals::pRenderSystem->m_pRenderContextStorage->Get(pShaderNode->renderContextID);
+
+	NTT_ASSERT_RESULT_SUCCESS(RemoveShaderImpl(pRenderContext->pRenderContextHandle, pShaderNode->pShaderHandle));
 	NTT_ASSERT_RESULT_SUCCESS(pShaderNode->pShaderHandle.Free()); // Free the allocated shader handle
 	return m_pStorage->Remove(shaderID);
 }
@@ -119,7 +133,10 @@ Result ShaderStorage::UseShader(ShaderID shaderID)
 		return RESULT_INACTIVE_STORAGE_INDEX; // Return RESULT_INACTIVE_STORAGE_INDEX if the shader node is not found
 	}
 
-	return UseShaderImpl(pShaderNode->pShaderHandle);
+	RenderSystem::RenderContext* pRenderContext =
+		SystemGlobals::pRenderSystem->m_pRenderContextStorage->Get(pShaderNode->renderContextID);
+
+	return UseShaderImpl(pRenderContext->pRenderContextHandle, pShaderNode->pShaderHandle);
 }
 
 } // namespace ntt

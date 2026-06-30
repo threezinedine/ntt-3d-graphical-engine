@@ -112,6 +112,8 @@ Result Application::Shutdown()
 	NTT_ASSERT_RESULT_SUCCESS(m_pEcs->Shutdown());
 	m_pEcs.Reset();
 
+	NTT_ASSERT_RESULT_SUCCESS(g_RenderGlobals.pShaderStorage->RemoveDefaultShaders());
+
 	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pRenderSystem->DestroyRenderContext(g_RenderContextID));
 	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pDisplaySystem->DestroyWindow(g_WindowID));
 
