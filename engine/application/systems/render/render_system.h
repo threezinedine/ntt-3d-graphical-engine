@@ -36,6 +36,8 @@ public:
 		Pointer<void> pRenderContextHandle;
 	};
 
+	friend class ShaderStorage;
+
 private:
 	Scope<Storage<RenderContext>> m_pRenderContextStorage;
 };

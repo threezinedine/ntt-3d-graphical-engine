@@ -14,9 +14,10 @@ protected:
 	virtual Result InitializeImpl() override;
 	virtual Result ShutdownImpl() override;
 
-	virtual Result AddShaderImpl(const char*	pVertexShaderSource,
-								 const char*	pFragmentShaderSource,
-								 Pointer<void>& pShaderHandle) override;
+	virtual Result AddShaderImpl(const Pointer<void>& pRenderContext,
+								 const char*		  pVertexShaderSource,
+								 const char*		  pFragmentShaderSource,
+								 Pointer<void>&		  pShaderHandle) override;
 	virtual Result UseShaderImpl(const Pointer<void>& pShaderHandle) override;
 	virtual Result RemoveShaderImpl(const Pointer<void>& pShaderHandle) override;
 

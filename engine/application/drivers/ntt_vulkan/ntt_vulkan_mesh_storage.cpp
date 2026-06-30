@@ -1,16 +1,9 @@
 #if NTT_VULKAN
 
 #include "ntt_vulkan_mesh_storage.h"
+#include "ntt_vulkan_inc.h"
 
 namespace ntt {
-
-struct MeshHandle
-{
-	u32 vertexBuffer;
-	u32 indexBuffer;
-	u32 vertexCount;
-	u32 indexCount;
-};
 
 VulkanMeshStorage::VulkanMeshStorage(IAllocator* pAllocator)
 	: MeshStorage(pAllocator)

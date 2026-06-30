@@ -29,10 +29,13 @@ Result OpenGLShaderStorage::ShutdownImpl()
 	return RESULT_SUCCESS;
 }
 
-Result OpenGLShaderStorage::AddShaderImpl(const char*	 pVertexShaderSource,
-										  const char*	 pFragmentShaderSource,
-										  Pointer<void>& pShaderHandle)
+Result OpenGLShaderStorage::AddShaderImpl(const Pointer<void>& pRenderContext,
+										  const char*		   pVertexShaderSource,
+										  const char*		   pFragmentShaderSource,
+										  Pointer<void>&	   pShaderHandle)
 {
+	NTT_UNUSED(pRenderContext);
+
 	if (pShaderHandle == nullptr)
 	{
 		return RESULT_NULL_POINTER;

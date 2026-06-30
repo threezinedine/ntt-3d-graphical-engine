@@ -50,6 +50,8 @@ Result Application::Initialize(i32 argc, char** argv)
 
 	g_RenderContextID = SystemGlobals::pRenderSystem->CreateRenderContext(g_WindowID);
 
+	g_RenderGlobals.pShaderStorage->SetupDefaultShaders(g_RenderContextID);
+
 	m_pEcs = MakeScope<ECS>(g_GlobalAllocators.pMalloc);
 	NTT_ASSERT_RESULT_SUCCESS(m_pEcs->Initialize());
 

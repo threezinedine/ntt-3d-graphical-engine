@@ -1,5 +1,6 @@
 #pragma once
 
+#include "render_system.h"
 #include "services.h"
 
 namespace ntt {
@@ -18,7 +19,11 @@ public:
 	Result Initialize();
 	Result Shutdown();
 
-	ShaderID AddShader(const char* pVertexShaderSource, const char* pFragmentShaderSource) noexcept;
+	Result SetupDefaultShaders(RenderContextID renderContextID);
+
+	ShaderID AddShader(RenderContextID renderContextID,
+					   const char*	   pVertexShaderSource,
+					   const char*	   pFragmentShaderSource) noexcept;
 	Result	 UseShader(ShaderID shaderID);
 	Result	 RemoveShader(ShaderID shaderID);
 
@@ -26,10 +31,12 @@ protected:
 	virtual Result InitializeImpl() = 0;
 	virtual Result ShutdownImpl()	= 0;
 
-	virtual Result
-	AddShaderImpl(const char* pVertexShaderSource, const char* pFragmentShaderSource, Pointer<void>& pShaderHandle) = 0;
-	virtual Result UseShaderImpl(const Pointer<void>& pShaderHandle)												= 0;
-	virtual Result RemoveShaderImpl(const Pointer<void>& pShaderHandle)												= 0;
+	virtual Result AddShaderImpl(const Pointer<void>& pRenderContext,
+								 const char*		  pVertexShaderSource,
+								 const char*		  pFragmentShaderSource,
+								 Pointer<void>&		  pShaderHandle)			= 0;
+	virtual Result UseShaderImpl(const Pointer<void>& pShaderHandle)	= 0;
+	virtual Result RemoveShaderImpl(const Pointer<void>& pShaderHandle) = 0;
 
 protected:
 	virtual u32 GetShaderHandleSize() const = 0;

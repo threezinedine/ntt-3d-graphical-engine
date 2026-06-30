@@ -27,4 +27,5 @@ target_link_libraries(
     INTERFACE 
     Vulkan::Vulkan
     glslang::glslang
+    glslang::glslang-default-resource-limits
 )

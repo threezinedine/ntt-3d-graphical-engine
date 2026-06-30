@@ -1,4 +1,5 @@
 #include "shader_storage.h"
+#include "systems/system_globals.h"
 
 extern unsigned char mesh_vs_data[];
 extern unsigned char mesh_fs_data[];
@@ -23,19 +24,6 @@ Result ShaderStorage::Initialize()
 {
 	m_pStorage = MakeScope<Storage<ShaderNode>>(m_pAllocator);
 
-#if NTT_VULKAN
-	if (NTT_ARG_BOOL(USE_VULKAN))
-	{
-		g_DefaultMeshShaderID = AddShader(reinterpret_cast<const char*>(vulkan_mesh_vs_data),
-										  reinterpret_cast<const char*>(vulkan_mesh_fs_data));
-	}
-	else
-#endif // NTT_VULKAN
-	{
-		g_DefaultMeshShaderID =
-			AddShader(reinterpret_cast<const char*>(mesh_vs_data), reinterpret_cast<const char*>(mesh_fs_data));
-	}
-
 	return InitializeImpl();
 }
 
@@ -53,7 +41,28 @@ Result ShaderStorage::Shutdown()
 	return ShutdownImpl();
 }
 
-ShaderID ShaderStorage::AddShader(const char* pVertexShaderSource, const char* pFragmentShaderSource) noexcept
+Result ShaderStorage::SetupDefaultShaders(RenderContextID renderContextID)
+{
+#if NTT_VULKAN
+	if (NTT_ARG_BOOL(USE_VULKAN))
+	{
+		g_DefaultMeshShaderID = AddShader(renderContextID,
+										  reinterpret_cast<const char*>(vulkan_mesh_vs_data),
+										  reinterpret_cast<const char*>(vulkan_mesh_fs_data));
+	}
+	else
+#endif // NTT_VULKAN
+	{
+		g_DefaultMeshShaderID = AddShader(
+			renderContextID, reinterpret_cast<const char*>(mesh_vs_data), reinterpret_cast<const char*>(mesh_fs_data));
+	}
+
+	return RESULT_SUCCESS;
+}
+
+ShaderID ShaderStorage::AddShader(RenderContextID renderContextID,
+								  const char*	  pVertexShaderSource,
+								  const char*	  pFragmentShaderSource) noexcept
 {
 	ShaderID shaderID = m_pStorage->Add((ShaderNode&&)ShaderNode{nullptr});
 
@@ -71,7 +80,11 @@ ShaderID ShaderStorage::AddShader(const char* pVertexShaderSource, const char* p
 
 	pShaderNode->pShaderHandle = ALLOCATOR_SAFE(m_pAllocator)->Allocate(GetShaderHandleSize());
 
-	Result result = AddShaderImpl(pVertexShaderSource, pFragmentShaderSource, pShaderNode->pShaderHandle);
+	RenderSystem::RenderContext* pRenderContext =
+		SystemGlobals::pRenderSystem->m_pRenderContextStorage->Get(renderContextID);
+
+	Result result = AddShaderImpl(
+		pRenderContext->pRenderContextHandle, pVertexShaderSource, pFragmentShaderSource, pShaderNode->pShaderHandle);
 
 	if (result != RESULT_SUCCESS)
 	{

@@ -12,34 +12,7 @@ namespace ntt {
 
 static constexpr u32 INVALID_QUEUE_FAMILY_INDEX = UINT32_MAX;
 
-struct VulkanContextHandle
-{
-	GLFWwindow*				  pWindow;
-	VkSurfaceKHR			  surface;
-	u32						  graphicsQueueFamilyIndex;
-	u32						  presentQueueFamilyIndex;
-	u32						  transferQueueFamilyIndex;
-	u32						  computeQueueFamilyIndex;
-	VkDevice				  logicalDevice;
-	VkSwapchainKHR			  swapchain;
-	Scope<Array<VkImage>>	  pSwapchainImages;
-	u32						  swapchainImageCount;
-	Scope<Array<VkImageView>> pSwapchainImageViews;
-	VkFormat				  swapchainImageFormat;
-	VkExtent2D				  swapchainExtent;
-};
-
 #define GET_SCOPE_ARRAY_INDEX(array, index) ((*(array.Get()))[index])
-
-#define CAST(handle)                                                                                                   \
-	reinterpret_cast<VulkanContextHandle*>(handle.Get());                                                              \
-	do                                                                                                                 \
-	{                                                                                                                  \
-		if (handle == nullptr)                                                                                         \
-		{                                                                                                              \
-			return RESULT_NULL_POINTER;                                                                                \
-		}                                                                                                              \
-	} while (0)
 
 static Result VulkanDriver_Initialize();
 static Result VulkanDriver_Shutdown();
@@ -181,7 +154,7 @@ static Result VulkanDriver_CreateRenderContext(Pointer<void> pWindowHandle, Poin
 {
 #if NTT_GLFW
 	GLFWwindow*			 pWindow		= (GLFWwindow*)g_DisplayDriver.GetWindowHandle(pWindowHandle);
-	VulkanContextHandle* pContextHandle = CAST(pRenderContextHandle);
+	VulkanContextHandle* pContextHandle = VK_CONTEXT_CAST(pRenderContextHandle);
 
 	pContextHandle->pWindow					 = pWindow;
 	pContextHandle->surface					 = VK_NULL_HANDLE;
@@ -209,7 +182,7 @@ static Result VulkanDriver_CreateRenderContext(Pointer<void> pWindowHandle, Poin
 
 static Result VulkanDriver_DestroyRenderContext(Pointer<void>& pRenderContextHandle)
 {
-	VulkanContextHandle* pContextHandle = CAST(pRenderContextHandle);
+	VulkanContextHandle* pContextHandle = VK_CONTEXT_CAST(pRenderContextHandle);
 
 	NTT_ASSERT_RESULT_SUCCESS(destroySwapchain(pContextHandle));
 	NTT_ASSERT_RESULT_SUCCESS(destroyLogicalDevice(pContextHandle));
