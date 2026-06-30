@@ -10,10 +10,16 @@
 
 namespace ntt {
 
+static constexpr u32 INVALID_QUEUE_FAMILY_INDEX = UINT32_MAX;
+
 struct VulkanContextHandle
 {
 	GLFWwindow*	 pWindow;
 	VkSurfaceKHR surface;
+	u32			 graphicsQueueFamilyIndex;
+	u32			 presentQueueFamilyIndex;
+	u32			 transferQueueFamilyIndex;
+	u32			 computeQueueFamilyIndex;
 };
 
 #define CAST(handle)                                                                                                   \
@@ -104,10 +110,11 @@ static u32										 s_PhysicalDeviceCount = 0;
 static Scope<Array<VkPhysicalDevice>>			 s_pPhysicalDevices;
 static Scope<Array<VkPhysicalDeviceProperties*>> s_pPhysicalDeviceProperties;
 static VkPhysicalDevice							 g_PhysicalDevice = VK_NULL_HANDLE;
-static Result									 enumeratePhysicalDevices();
-static Result									 destroyPhysicalDevices();
-static Result									 choosePhysicalDevice();
-static Result									 verifyDeviceExtensionsSupport();
+
+static Result enumeratePhysicalDevices();
+static Result destroyPhysicalDevices();
+static Result choosePhysicalDevice();
+static Result verifyDeviceExtensionsSupport(VkPhysicalDevice physicalDevice);
 
 static Result VulkanDriver_Initialize()
 {
@@ -133,7 +140,7 @@ static Result VulkanDriver_Initialize()
 
 	NTT_ASSERT_RESULT_SUCCESS(enumeratePhysicalDevices());
 	NTT_ASSERT_RESULT_SUCCESS(choosePhysicalDevice());
-	NTT_ASSERT_RESULT_SUCCESS(verifyDeviceExtensionsSupport());
+	NTT_ASSERT_RESULT_SUCCESS(verifyDeviceExtensionsSupport(g_PhysicalDevice));
 
 	NTT_VULKAN_INFO("Vulkan driver initialized.");
 
@@ -155,15 +162,23 @@ static Result VulkanDriver_Shutdown()
 	return RESULT_SUCCESS;
 }
 
+static Result chooseQueueFamilies(VulkanContextHandle* pContextHandle, VkSurfaceKHR surface);
+
 static Result VulkanDriver_CreateRenderContext(Pointer<void> pWindowHandle, Pointer<void>& pRenderContextHandle)
 {
 #if NTT_GLFW
 	GLFWwindow*			 pWindow		= (GLFWwindow*)g_DisplayDriver.GetWindowHandle(pWindowHandle);
 	VulkanContextHandle* pContextHandle = CAST(pRenderContextHandle);
 
-	pContextHandle->pWindow = pWindow;
+	pContextHandle->pWindow					 = pWindow;
+	pContextHandle->surface					 = VK_NULL_HANDLE;
+	pContextHandle->graphicsQueueFamilyIndex = INVALID_QUEUE_FAMILY_INDEX;
+	pContextHandle->presentQueueFamilyIndex	 = INVALID_QUEUE_FAMILY_INDEX;
+	pContextHandle->transferQueueFamilyIndex = INVALID_QUEUE_FAMILY_INDEX;
+	pContextHandle->computeQueueFamilyIndex	 = INVALID_QUEUE_FAMILY_INDEX;
 
 	VK_ASSERT(glfwCreateWindowSurface(g_Instance, pWindow, nullptr, &pContextHandle->surface));
+	NTT_ASSERT_RESULT_SUCCESS(chooseQueueFamilies(pContextHandle, pContextHandle->surface));
 #else  // NTT_GLFW
 	NTT_UNUSED(pWindowHandle);
 	NTT_UNUSED(pRenderContextHandle);
@@ -472,14 +487,13 @@ static Result choosePhysicalDevice()
 	return RESULT_SUCCESS;
 }
 
-static Result verifyDeviceExtensionsSupport()
+static Result verifyDeviceExtensionsSupport(VkPhysicalDevice physicalDevice)
 {
 	u32 extensionCount = 0;
-	VK_ASSERT(vkEnumerateDeviceExtensionProperties(g_PhysicalDevice, nullptr, &extensionCount, nullptr));
+	VK_ASSERT(vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, nullptr));
 
 	Array<VkExtensionProperties> availableExtensions(extensionCount, g_GlobalAllocators.pStack);
-	VK_ASSERT(
-		vkEnumerateDeviceExtensionProperties(g_PhysicalDevice, nullptr, &extensionCount, &availableExtensions[0]));
+	VK_ASSERT(vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, &availableExtensions[0]));
 
 	for (const char* requiredExtension : s_DeviceExtensions)
 	{
@@ -519,6 +533,91 @@ static u32 ratePhysicalDeviceScore(u32 index)
 	{
 		return 0;
 	}
+}
+
+static Result chooseQueueFamilies(VulkanContextHandle* pContextHandle, VkSurfaceKHR surface)
+{
+	u32 queueFamilyCount = 0;
+	vkGetPhysicalDeviceQueueFamilyProperties(g_PhysicalDevice, &queueFamilyCount, nullptr);
+
+	if (queueFamilyCount == 0)
+	{
+		NTT_VULKAN_ERROR("No queue families found for the chosen physical device.");
+		return RESULT_VULKAN_ERROR;
+	}
+
+	Array<VkQueueFamilyProperties> queueFamilies(queueFamilyCount, g_GlobalAllocators.pStack);
+	vkGetPhysicalDeviceQueueFamilyProperties(g_PhysicalDevice, &queueFamilyCount, &queueFamilies[0]);
+
+	bool graphicsQueueFound = false;
+	bool presentQueueFound	= false;
+
+	for (u32 i = 0; i < queueFamilyCount; ++i)
+	{
+		if (queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT && !graphicsQueueFound)
+		{
+			pContextHandle->graphicsQueueFamilyIndex = i;
+			graphicsQueueFound						 = true;
+		}
+
+		VkBool32 presentSupport = VK_FALSE;
+		vkGetPhysicalDeviceSurfaceSupportKHR(g_PhysicalDevice, i, surface, &presentSupport);
+		if (presentSupport && !presentQueueFound)
+		{
+			pContextHandle->presentQueueFamilyIndex = i;
+			presentQueueFound						= true;
+		}
+
+		if (queueFamilies[i].queueFlags & VK_QUEUE_TRANSFER_BIT)
+		{
+			pContextHandle->transferQueueFamilyIndex = i;
+		}
+
+		if (queueFamilies[i].queueFlags & VK_QUEUE_COMPUTE_BIT)
+		{
+			pContextHandle->computeQueueFamilyIndex = i;
+		}
+	}
+
+	if (pContextHandle->graphicsQueueFamilyIndex == INVALID_QUEUE_FAMILY_INDEX)
+	{
+		NTT_VULKAN_ERROR("No graphics queue family found for the chosen physical device.");
+		return RESULT_VULKAN_ERROR;
+	}
+	else
+	{
+		NTT_VULKAN_DEBUG("Graphics queue family index: %u", pContextHandle->graphicsQueueFamilyIndex);
+	}
+
+	if (pContextHandle->presentQueueFamilyIndex == INVALID_QUEUE_FAMILY_INDEX)
+	{
+		NTT_VULKAN_ERROR("No present queue family found for the chosen physical device.");
+		return RESULT_VULKAN_ERROR;
+	}
+	else
+	{
+		NTT_VULKAN_DEBUG("Present queue family index: %u", pContextHandle->presentQueueFamilyIndex);
+	}
+
+	if (pContextHandle->transferQueueFamilyIndex == INVALID_QUEUE_FAMILY_INDEX)
+	{
+		NTT_VULKAN_WARN("No transfer queue family found for the chosen physical device.");
+	}
+	else
+	{
+		NTT_VULKAN_DEBUG("Transfer queue family index: %u", pContextHandle->transferQueueFamilyIndex);
+	}
+
+	if (pContextHandle->computeQueueFamilyIndex == INVALID_QUEUE_FAMILY_INDEX)
+	{
+		NTT_VULKAN_WARN("No compute queue family found for the chosen physical device.");
+	}
+	else
+	{
+		NTT_VULKAN_DEBUG("Compute queue family index: %u", pContextHandle->computeQueueFamilyIndex);
+	}
+
+	return RESULT_SUCCESS;
 }
 
 } // namespace ntt
