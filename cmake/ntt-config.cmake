@@ -99,11 +99,14 @@ macro(ntt_platform_detect)
             list(APPEND NTT_OPTIONS NTT_PLATFORM_WINDOWS)
 
             if (MSVC)
+                set(JOB)
+
                 list(APPEND NTT_COMPILE_OPTIONS
                     "/W4"
                     "/WX"
                     "/wd6387"
                     "/wd28251"
+                    "/MP"
                     "/permissive-")
             endif()
             

@@ -5,7 +5,7 @@
 			"label": "Build Engine (linux-debug)",
 			"command": "cmake",
 			"type": "shell",
-			"args": ["--build", "${workspaceRoot}/build/debug"],
+			"args": ["--build", "${workspaceRoot}/build/debug", "-j12"],
 			"problemMatcher": ["$tsc"],
 			"presentation": {
 				"reveal": "always"
@@ -16,7 +16,7 @@
 			"label": "Build Unittest (linux)",
 			"command": "cmake",
 			"type": "shell",
-			"args": ["--build", "${workspaceRoot}/build/unittest"],
+			"args": ["--build", "${workspaceRoot}/build/unittest", "-j12"],
 			"problemMatcher": ["$tsc"],
 			"presentation": {
 				"reveal": "always"
