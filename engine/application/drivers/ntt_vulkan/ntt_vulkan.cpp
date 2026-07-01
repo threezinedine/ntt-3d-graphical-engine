@@ -10,6 +10,9 @@
 
 namespace ntt {
 
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+
 static constexpr u32 INVALID_QUEUE_FAMILY_INDEX = UINT32_MAX;
 
 static Result VulkanDriver_Initialize();
@@ -919,26 +922,16 @@ static VkPresentModeKHR chooseSwapPresentMode(const Array<VkPresentModeKHR>& ava
 
 static VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, u32 width, u32 height)
 {
-#define MAX(a, b) ((a) > (b) ? (a) : (b))
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
-
-	for (u32 i = 0; i < capabilities.currentExtent.width; ++i)
+	if (capabilities.currentExtent.width == UINT32_MAX)
 	{
-		if (capabilities.currentExtent.width == UINT32_MAX)
-		{
-			VkExtent2D actualExtent = {width, height};
+		VkExtent2D actualExtent = {width, height};
 
-			actualExtent.width =
-				MAX(capabilities.minImageExtent.width, MIN(capabilities.maxImageExtent.width, actualExtent.width));
-			actualExtent.height =
-				MAX(capabilities.minImageExtent.height, MIN(capabilities.maxImageExtent.height, actualExtent.height));
+		actualExtent.width =
+			MAX(capabilities.minImageExtent.width, MIN(capabilities.maxImageExtent.width, actualExtent.width));
+		actualExtent.height =
+			MAX(capabilities.minImageExtent.height, MIN(capabilities.maxImageExtent.height, actualExtent.height));
 
-			return actualExtent;
-		}
-		else
-		{
-			return capabilities.currentExtent;
-		}
+		return actualExtent;
 	}
 
 	return capabilities.currentExtent;

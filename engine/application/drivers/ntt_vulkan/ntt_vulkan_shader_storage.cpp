@@ -256,7 +256,7 @@ static Pointer<u32> compileShaderToSPIRV_Vulkan(glslang_stage_t stage, const cha
 
 	glslang_program_SPIRV_generate(program, stage);
 
-	u32 size = glslang_program_SPIRV_get_size(program);
+	u32 size = (u32)glslang_program_SPIRV_get_size(program);
 	bin		 = g_GlobalAllocators.pMalloc->Allocate(size * sizeof(u32)).Cast<u32>();
 	glslang_program_SPIRV_get(program, bin.Get());
 
