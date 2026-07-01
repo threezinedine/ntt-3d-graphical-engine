@@ -155,6 +155,8 @@ static Result createSwapchainFramebuffers(VulkanContextHandle* pContextHandle);
 static Result destroySwapchainFramebuffers(VulkanContextHandle* pContextHandle);
 static Result createCommandPools(VulkanContextHandle* pContextHandle);
 static Result destroyCommandPools(VulkanContextHandle* pContextHandle);
+static Result createCommandBuffers(VulkanContextHandle* pContextHandle);
+static Result destroyCommandBuffers(VulkanContextHandle* pContextHandle);
 
 static Result VulkanDriver_CreateRenderContext(Pointer<void> pWindowHandle, Pointer<void>& pRenderContextHandle)
 {
@@ -182,6 +184,7 @@ static Result VulkanDriver_CreateRenderContext(Pointer<void> pWindowHandle, Poin
 	NTT_ASSERT_RESULT_SUCCESS(createRenderPass(pContextHandle));
 	NTT_ASSERT_RESULT_SUCCESS(createSwapchainFramebuffers(pContextHandle));
 	NTT_ASSERT_RESULT_SUCCESS(createCommandPools(pContextHandle));
+	NTT_ASSERT_RESULT_SUCCESS(createCommandBuffers(pContextHandle));
 #else  // NTT_GLFW
 	NTT_UNUSED(pWindowHandle);
 	NTT_UNUSED(pRenderContextHandle);
@@ -194,6 +197,7 @@ static Result VulkanDriver_DestroyRenderContext(Pointer<void>& pRenderContextHan
 {
 	VulkanContextHandle* pContextHandle = VK_CONTEXT_CAST(pRenderContextHandle);
 
+	NTT_ASSERT_RESULT_SUCCESS(destroyCommandBuffers(pContextHandle));
 	NTT_ASSERT_RESULT_SUCCESS(destroyCommandPools(pContextHandle));
 	NTT_ASSERT_RESULT_SUCCESS(destroySwapchainFramebuffers(pContextHandle));
 	NTT_ASSERT_RESULT_SUCCESS(destroyRenderPass(pContextHandle));
@@ -204,15 +208,24 @@ static Result VulkanDriver_DestroyRenderContext(Pointer<void>& pRenderContextHan
 	return RESULT_SUCCESS;
 }
 
+static Result recordCommandBuffer(VulkanContextHandle* pContextHandle, u32 imageIndex);
+static Result endRecordCommandBuffer(VulkanContextHandle* pContextHandle);
+
 static Result VulkanDriver_StartRender(Pointer<void> pDriverHandle)
 {
-	NTT_UNUSED(pDriverHandle);
+	VulkanContextHandle* pContextHandle = VK_CONTEXT_CAST(pDriverHandle);
+
+	NTT_ASSERT_RESULT_SUCCESS(recordCommandBuffer(pContextHandle, 0));
+
 	return RESULT_SUCCESS;
 }
 
 static Result VulkanDriver_EndRender(Pointer<void> pDriverHandle)
 {
-	NTT_UNUSED(pDriverHandle);
+	VulkanContextHandle* pContextHandle = VK_CONTEXT_CAST(pDriverHandle);
+
+	NTT_ASSERT_RESULT_SUCCESS(endRecordCommandBuffer(pContextHandle));
+
 	return RESULT_SUCCESS;
 }
 
@@ -1030,6 +1043,77 @@ static Result destroyCommandPools(VulkanContextHandle* pContextHandle)
 	}
 
 	NTT_VULKAN_DEBUG("Destroyed command pools.");
+	return RESULT_SUCCESS;
+}
+
+static Result createCommandBuffers(VulkanContextHandle* pContextHandle)
+{
+	VkCommandBufferAllocateInfo allocInfo{};
+	allocInfo.sType				 = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	allocInfo.commandPool		 = pContextHandle->graphicsCommandPool;
+	allocInfo.level				 = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	allocInfo.commandBufferCount = 1;
+	VK_ASSERT(vkAllocateCommandBuffers(pContextHandle->logicalDevice, &allocInfo, &pContextHandle->commandBuffer));
+
+	NTT_VULKAN_DEBUG("Creating command buffers.");
+	return RESULT_SUCCESS;
+}
+
+static Result destroyCommandBuffers(VulkanContextHandle* pContextHandle)
+{
+	vkFreeCommandBuffers(
+		pContextHandle->logicalDevice, pContextHandle->graphicsCommandPool, 1, &pContextHandle->commandBuffer);
+	NTT_VULKAN_DEBUG("Destroyed command buffers.");
+	return RESULT_SUCCESS;
+}
+
+static Result recordCommandBuffer(VulkanContextHandle* pContextHandle, u32 imageIndex)
+{
+	VkCommandBufferBeginInfo beginInfo{};
+	beginInfo.sType			   = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	beginInfo.flags			   = 0;
+	beginInfo.pInheritanceInfo = nullptr;
+
+	VK_ASSERT(vkBeginCommandBuffer(pContextHandle->commandBuffer, &beginInfo));
+
+	VkRenderPassBeginInfo renderPassInfo{};
+	renderPassInfo.sType			 = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+	renderPassInfo.renderPass		 = pContextHandle->renderPass;
+	renderPassInfo.framebuffer		 = (*pContextHandle->pSwapchainFramebuffers.Get())[imageIndex];
+	renderPassInfo.renderArea.offset = {0, 0};
+	renderPassInfo.renderArea.extent = pContextHandle->swapchainExtent;
+
+	VkClearValue clearColor{};
+	clearColor.color = {
+		{0.1f, 0.1f, 0.1f, 1.0f}
+	};
+	renderPassInfo.clearValueCount = 1;
+	renderPassInfo.pClearValues	   = &clearColor;
+
+	vkCmdBeginRenderPass(pContextHandle->commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+	return RESULT_SUCCESS;
+}
+
+static Result endRecordCommandBuffer(VulkanContextHandle* pContextHandle)
+{
+	VkViewport viewport{};
+	viewport.x		  = 0.0f;
+	viewport.y		  = 0.0f;
+	viewport.width	  = static_cast<float>(pContextHandle->swapchainExtent.width);
+	viewport.height	  = static_cast<float>(pContextHandle->swapchainExtent.height);
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+	vkCmdSetViewport(pContextHandle->commandBuffer, 0, 1, &viewport);
+
+	VkRect2D scissor{};
+	scissor.offset = {0, 0};
+	scissor.extent = pContextHandle->swapchainExtent;
+	vkCmdSetScissor(pContextHandle->commandBuffer, 0, 1, &scissor);
+
+	vkCmdEndRenderPass(pContextHandle->commandBuffer);
+
+	VK_ASSERT(vkEndCommandBuffer(pContextHandle->commandBuffer));
 	return RESULT_SUCCESS;
 }
 

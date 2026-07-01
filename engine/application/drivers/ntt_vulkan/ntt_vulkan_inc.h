@@ -72,6 +72,7 @@ struct VulkanContextHandle
 	Scope<Array<VkFramebuffer>> pSwapchainFramebuffers;
 	VkCommandPool				graphicsCommandPool;
 	VkCommandPool				presentCommandPool;
+	VkCommandBuffer				commandBuffer;
 };
 
 #define VK_CONTEXT_CAST(handle)                                                                                        \

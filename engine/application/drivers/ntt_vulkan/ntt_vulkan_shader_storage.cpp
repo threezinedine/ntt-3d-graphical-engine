@@ -274,8 +274,11 @@ static Pointer<u32> compileShaderToSPIRV_Vulkan(glslang_stage_t stage, const cha
 
 Result VulkanShaderStorage::UseShaderImpl(const Pointer<void>& pRenderContext, const Pointer<void>& pShaderHandle)
 {
-	NTT_UNUSED(pRenderContext);
-	NTT_UNUSED(pShaderHandle);
+	VulkanContextHandle* pVulkanContext = VK_CONTEXT_CAST(pRenderContext);
+	ShaderHandle*		 pHandle		= VK_SHADER_CAST(pShaderHandle);
+
+	vkCmdBindPipeline(pVulkanContext->commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pHandle->pipeline);
+
 	return RESULT_SUCCESS;
 }
 
