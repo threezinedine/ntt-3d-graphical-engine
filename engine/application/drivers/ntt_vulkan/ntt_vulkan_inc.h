@@ -41,7 +41,6 @@ struct ShaderHandle
 	VkShaderModule	 fragmentModule;
 	VkPipelineLayout pipelineLayout;
 	VkPipeline		 pipeline;
-	VkRenderPass	 renderPass;
 };
 
 #define VK_SHADER_CAST(handle)                                                                                         \
@@ -56,19 +55,23 @@ struct ShaderHandle
 
 struct VulkanContextHandle
 {
-	GLFWwindow*				  pWindow;
-	VkSurfaceKHR			  surface;
-	u32						  graphicsQueueFamilyIndex;
-	u32						  presentQueueFamilyIndex;
-	u32						  transferQueueFamilyIndex;
-	u32						  computeQueueFamilyIndex;
-	VkDevice				  logicalDevice;
-	VkSwapchainKHR			  swapchain;
-	Scope<Array<VkImage>>	  pSwapchainImages;
-	u32						  swapchainImageCount;
-	Scope<Array<VkImageView>> pSwapchainImageViews;
-	VkFormat				  swapchainImageFormat;
-	VkExtent2D				  swapchainExtent;
+	GLFWwindow*					pWindow;
+	VkSurfaceKHR				surface;
+	u32							graphicsQueueFamilyIndex;
+	u32							presentQueueFamilyIndex;
+	u32							transferQueueFamilyIndex;
+	u32							computeQueueFamilyIndex;
+	VkDevice					logicalDevice;
+	VkSwapchainKHR				swapchain;
+	Scope<Array<VkImage>>		pSwapchainImages;
+	u32							swapchainImageCount;
+	Scope<Array<VkImageView>>	pSwapchainImageViews;
+	VkFormat					swapchainImageFormat;
+	VkExtent2D					swapchainExtent;
+	VkRenderPass				renderPass;
+	Scope<Array<VkFramebuffer>> pSwapchainFramebuffers;
+	VkCommandPool				graphicsCommandPool;
+	VkCommandPool				presentCommandPool;
 };
 
 #define VK_CONTEXT_CAST(handle)                                                                                        \

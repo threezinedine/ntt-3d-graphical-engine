@@ -149,6 +149,12 @@ static Result createLogicalDevice(VulkanContextHandle* pContextHandle);
 static Result destroyLogicalDevice(VulkanContextHandle* pContextHandle);
 static Result createSwapchain(VulkanContextHandle* pContextHandle);
 static Result destroySwapchain(VulkanContextHandle* pContextHandle);
+static Result createRenderPass(VulkanContextHandle* pContextHandle);
+static Result destroyRenderPass(VulkanContextHandle* pContextHandle);
+static Result createSwapchainFramebuffers(VulkanContextHandle* pContextHandle);
+static Result destroySwapchainFramebuffers(VulkanContextHandle* pContextHandle);
+static Result createCommandPools(VulkanContextHandle* pContextHandle);
+static Result destroyCommandPools(VulkanContextHandle* pContextHandle);
 
 static Result VulkanDriver_CreateRenderContext(Pointer<void> pWindowHandle, Pointer<void>& pRenderContextHandle)
 {
@@ -167,11 +173,15 @@ static Result VulkanDriver_CreateRenderContext(Pointer<void> pWindowHandle, Poin
 	pContextHandle->pSwapchainImages		 = MakeScope<Array<VkImage>>(g_GlobalAllocators.pMalloc, 1);
 	pContextHandle->swapchainImageCount		 = 0;
 	pContextHandle->pSwapchainImageViews	 = MakeScope<Array<VkImageView>>(g_GlobalAllocators.pMalloc, 1);
+	pContextHandle->pSwapchainFramebuffers	 = MakeScope<Array<VkFramebuffer>>(g_GlobalAllocators.pMalloc, 1);
 
 	VK_ASSERT(glfwCreateWindowSurface(g_Instance, pWindow, nullptr, &pContextHandle->surface));
 	NTT_ASSERT_RESULT_SUCCESS(chooseQueueFamilies(pContextHandle, pContextHandle->surface));
 	NTT_ASSERT_RESULT_SUCCESS(createLogicalDevice(pContextHandle));
 	NTT_ASSERT_RESULT_SUCCESS(createSwapchain(pContextHandle));
+	NTT_ASSERT_RESULT_SUCCESS(createRenderPass(pContextHandle));
+	NTT_ASSERT_RESULT_SUCCESS(createSwapchainFramebuffers(pContextHandle));
+	NTT_ASSERT_RESULT_SUCCESS(createCommandPools(pContextHandle));
 #else  // NTT_GLFW
 	NTT_UNUSED(pWindowHandle);
 	NTT_UNUSED(pRenderContextHandle);
@@ -184,6 +194,9 @@ static Result VulkanDriver_DestroyRenderContext(Pointer<void>& pRenderContextHan
 {
 	VulkanContextHandle* pContextHandle = VK_CONTEXT_CAST(pRenderContextHandle);
 
+	NTT_ASSERT_RESULT_SUCCESS(destroyCommandPools(pContextHandle));
+	NTT_ASSERT_RESULT_SUCCESS(destroySwapchainFramebuffers(pContextHandle));
+	NTT_ASSERT_RESULT_SUCCESS(destroyRenderPass(pContextHandle));
 	NTT_ASSERT_RESULT_SUCCESS(destroySwapchain(pContextHandle));
 	NTT_ASSERT_RESULT_SUCCESS(destroyLogicalDevice(pContextHandle));
 	vkDestroySurfaceKHR(g_Instance, pContextHandle->surface, nullptr);
@@ -764,6 +777,7 @@ static Result createSwapchain(VulkanContextHandle* pContextHandle)
 							&pContextHandle->swapchainImageCount,
 							&GET_SCOPE_ARRAY_INDEX(pContextHandle->pSwapchainImages, 0));
 	pContextHandle->pSwapchainImageViews->Resize(pContextHandle->swapchainImageCount);
+	pContextHandle->pSwapchainFramebuffers->Resize(pContextHandle->swapchainImageCount);
 
 	pContextHandle->swapchainImageFormat = surfaceFormat.format;
 	pContextHandle->swapchainExtent		 = extent;
@@ -879,6 +893,8 @@ static Result createSwapchainImageViews(VulkanContextHandle* pContextHandle)
 									&GET_SCOPE_ARRAY_INDEX(pContextHandle->pSwapchainImageViews, i)));
 	}
 
+	NTT_VULKAN_DEBUG("Created swapchain image views.");
+
 	return RESULT_SUCCESS;
 }
 
@@ -895,6 +911,125 @@ static Result destroySwapchain(VulkanContextHandle* pContextHandle)
 	pContextHandle->pSwapchainImages.Reset();
 	pContextHandle->pSwapchainImageViews.Reset();
 	NTT_VULKAN_DEBUG("Swapchain is destroyed.");
+	return RESULT_SUCCESS;
+}
+
+static Result createRenderPass(VulkanContextHandle* pContextHandle)
+{
+	VkAttachmentDescription colorAttachment{};
+	colorAttachment.format		   = pContextHandle->swapchainImageFormat;
+	colorAttachment.samples		   = VK_SAMPLE_COUNT_1_BIT;
+	colorAttachment.loadOp		   = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	colorAttachment.storeOp		   = VK_ATTACHMENT_STORE_OP_STORE;
+	colorAttachment.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	colorAttachment.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
+	colorAttachment.finalLayout	   = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+	VkAttachmentReference colorAttachmentRef{};
+	colorAttachmentRef.attachment = 0;
+	colorAttachmentRef.layout	  = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+	VkSubpassDescription subpass{};
+	subpass.pipelineBindPoint	 = VK_PIPELINE_BIND_POINT_GRAPHICS;
+	subpass.colorAttachmentCount = 1;
+	subpass.pColorAttachments	 = &colorAttachmentRef;
+
+	VkRenderPassCreateInfo renderPassInfo{};
+	renderPassInfo.sType		   = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+	renderPassInfo.attachmentCount = 1;
+	renderPassInfo.pAttachments	   = &colorAttachment;
+	renderPassInfo.subpassCount	   = 1;
+	renderPassInfo.pSubpasses	   = &subpass;
+
+	VK_ASSERT(vkCreateRenderPass(pContextHandle->logicalDevice, &renderPassInfo, nullptr, &pContextHandle->renderPass));
+
+	NTT_VULKAN_DEBUG("Created render pass.");
+
+	return RESULT_SUCCESS;
+}
+
+static Result destroyRenderPass(VulkanContextHandle* pContextHandle)
+{
+	vkDestroyRenderPass(pContextHandle->logicalDevice, pContextHandle->renderPass, nullptr);
+	NTT_VULKAN_DEBUG("Render pass is destroyed.");
+	return RESULT_SUCCESS;
+}
+
+static Result createSwapchainFramebuffers(VulkanContextHandle* pContextHandle)
+{
+	for (u32 i = 0; i < pContextHandle->swapchainImageCount; ++i)
+	{
+		VkImageView attachments[] = {GET_SCOPE_ARRAY_INDEX(pContextHandle->pSwapchainImageViews, i)};
+
+		VkFramebufferCreateInfo framebufferInfo{};
+		framebufferInfo.sType			= VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		framebufferInfo.renderPass		= pContextHandle->renderPass;
+		framebufferInfo.attachmentCount = 1;
+		framebufferInfo.pAttachments	= attachments;
+		framebufferInfo.width			= pContextHandle->swapchainExtent.width;
+		framebufferInfo.height			= pContextHandle->swapchainExtent.height;
+		framebufferInfo.layers			= 1;
+
+		VK_ASSERT(vkCreateFramebuffer(pContextHandle->logicalDevice,
+									  &framebufferInfo,
+									  nullptr,
+									  &GET_SCOPE_ARRAY_INDEX(pContextHandle->pSwapchainFramebuffers, i)));
+	}
+
+	NTT_VULKAN_DEBUG("Created swapchain framebuffers.");
+	return RESULT_SUCCESS;
+}
+static Result destroySwapchainFramebuffers(VulkanContextHandle* pContextHandle)
+{
+	for (u32 i = 0; i < pContextHandle->swapchainImageCount; ++i)
+	{
+		vkDestroyFramebuffer(
+			pContextHandle->logicalDevice, GET_SCOPE_ARRAY_INDEX(pContextHandle->pSwapchainFramebuffers, i), nullptr);
+	}
+
+	pContextHandle->pSwapchainFramebuffers.Reset();
+	NTT_VULKAN_DEBUG("Destroyed swapchain framebuffers.");
+	return RESULT_SUCCESS;
+}
+
+static Result createCommandPools(VulkanContextHandle* pContextHandle)
+{
+	VkCommandPoolCreateInfo poolInfo{};
+	poolInfo.sType			  = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+	poolInfo.queueFamilyIndex = pContextHandle->graphicsQueueFamilyIndex;
+	poolInfo.flags			  = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+	VK_ASSERT(
+		vkCreateCommandPool(pContextHandle->logicalDevice, &poolInfo, nullptr, &pContextHandle->graphicsCommandPool));
+
+	if (pContextHandle->presentQueueFamilyIndex != pContextHandle->graphicsQueueFamilyIndex)
+	{
+		VkCommandPoolCreateInfo presentPoolInfo{};
+		presentPoolInfo.sType			 = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+		presentPoolInfo.queueFamilyIndex = pContextHandle->presentQueueFamilyIndex;
+		presentPoolInfo.flags			 = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+		VK_ASSERT(vkCreateCommandPool(
+			pContextHandle->logicalDevice, &presentPoolInfo, nullptr, &pContextHandle->presentCommandPool));
+	}
+	else
+	{
+		pContextHandle->presentCommandPool = pContextHandle->graphicsCommandPool;
+	}
+
+	NTT_VULKAN_DEBUG("Created command pools.");
+
+	return RESULT_SUCCESS;
+}
+
+static Result destroyCommandPools(VulkanContextHandle* pContextHandle)
+{
+	vkDestroyCommandPool(pContextHandle->logicalDevice, pContextHandle->graphicsCommandPool, nullptr);
+	if (pContextHandle->presentCommandPool != pContextHandle->graphicsCommandPool)
+	{
+		vkDestroyCommandPool(pContextHandle->logicalDevice, pContextHandle->presentCommandPool, nullptr);
+	}
+
+	NTT_VULKAN_DEBUG("Destroyed command pools.");
 	return RESULT_SUCCESS;
 }
 
