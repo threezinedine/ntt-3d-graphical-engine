@@ -62,6 +62,8 @@ struct VulkanContextHandle
 	u32							transferQueueFamilyIndex;
 	u32							computeQueueFamilyIndex;
 	VkDevice					logicalDevice;
+	VkQueue						graphicsQueue;
+	VkQueue						presentQueue;
 	VkSwapchainKHR				swapchain;
 	Scope<Array<VkImage>>		pSwapchainImages;
 	u32							swapchainImageCount;
@@ -73,6 +75,12 @@ struct VulkanContextHandle
 	VkCommandPool				graphicsCommandPool;
 	VkCommandPool				presentCommandPool;
 	VkCommandBuffer				commandBuffer;
+	VkSemaphore					imageAvailableSemaphore;
+	VkSemaphore					renderFinishedSemaphore;
+	VkFence						inFlightFence;
+
+	// temp attribute
+	u32 currentImageIndex;
 };
 
 #define VK_CONTEXT_CAST(handle)                                                                                        \

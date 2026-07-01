@@ -157,6 +157,8 @@ static Result createCommandPools(VulkanContextHandle* pContextHandle);
 static Result destroyCommandPools(VulkanContextHandle* pContextHandle);
 static Result createCommandBuffers(VulkanContextHandle* pContextHandle);
 static Result destroyCommandBuffers(VulkanContextHandle* pContextHandle);
+static Result createSyncObjects(VulkanContextHandle* pContextHandle);
+static Result destroySyncObjects(VulkanContextHandle* pContextHandle);
 
 static Result VulkanDriver_CreateRenderContext(Pointer<void> pWindowHandle, Pointer<void>& pRenderContextHandle)
 {
@@ -185,6 +187,7 @@ static Result VulkanDriver_CreateRenderContext(Pointer<void> pWindowHandle, Poin
 	NTT_ASSERT_RESULT_SUCCESS(createSwapchainFramebuffers(pContextHandle));
 	NTT_ASSERT_RESULT_SUCCESS(createCommandPools(pContextHandle));
 	NTT_ASSERT_RESULT_SUCCESS(createCommandBuffers(pContextHandle));
+	NTT_ASSERT_RESULT_SUCCESS(createSyncObjects(pContextHandle));
 #else  // NTT_GLFW
 	NTT_UNUSED(pWindowHandle);
 	NTT_UNUSED(pRenderContextHandle);
@@ -197,6 +200,7 @@ static Result VulkanDriver_DestroyRenderContext(Pointer<void>& pRenderContextHan
 {
 	VulkanContextHandle* pContextHandle = VK_CONTEXT_CAST(pRenderContextHandle);
 
+	NTT_ASSERT_RESULT_SUCCESS(destroySyncObjects(pContextHandle));
 	NTT_ASSERT_RESULT_SUCCESS(destroyCommandBuffers(pContextHandle));
 	NTT_ASSERT_RESULT_SUCCESS(destroyCommandPools(pContextHandle));
 	NTT_ASSERT_RESULT_SUCCESS(destroySwapchainFramebuffers(pContextHandle));
@@ -215,7 +219,21 @@ static Result VulkanDriver_StartRender(Pointer<void> pDriverHandle)
 {
 	VulkanContextHandle* pContextHandle = VK_CONTEXT_CAST(pDriverHandle);
 
-	NTT_ASSERT_RESULT_SUCCESS(recordCommandBuffer(pContextHandle, 0));
+	VK_ASSERT(vkWaitForFences(pContextHandle->logicalDevice, 1, &pContextHandle->inFlightFence, VK_TRUE, UINT64_MAX));
+	VK_ASSERT(vkResetFences(pContextHandle->logicalDevice, 1, &pContextHandle->inFlightFence));
+
+	u32 imageIndex;
+	VK_ASSERT(vkAcquireNextImageKHR(pContextHandle->logicalDevice,
+									pContextHandle->swapchain,
+									UINT64_MAX,
+									pContextHandle->imageAvailableSemaphore,
+									VK_NULL_HANDLE,
+									&imageIndex));
+
+	VK_ASSERT(vkResetCommandBuffer(pContextHandle->commandBuffer, 0));
+	NTT_ASSERT_RESULT_SUCCESS(recordCommandBuffer(pContextHandle, imageIndex));
+
+	pContextHandle->currentImageIndex = imageIndex;
 
 	return RESULT_SUCCESS;
 }
@@ -225,6 +243,34 @@ static Result VulkanDriver_EndRender(Pointer<void> pDriverHandle)
 	VulkanContextHandle* pContextHandle = VK_CONTEXT_CAST(pDriverHandle);
 
 	NTT_ASSERT_RESULT_SUCCESS(endRecordCommandBuffer(pContextHandle));
+
+	VkSubmitInfo submitInfo{};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+	VkSemaphore			 waitSemaphores[] = {pContextHandle->imageAvailableSemaphore};
+	VkPipelineStageFlags waitStages[]	  = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+	submitInfo.waitSemaphoreCount		  = 1;
+	submitInfo.pWaitSemaphores			  = waitSemaphores;
+	submitInfo.pWaitDstStageMask		  = waitStages;
+	submitInfo.commandBufferCount		  = 1;
+	submitInfo.pCommandBuffers			  = &pContextHandle->commandBuffer;
+
+	VkSemaphore signalSemaphores[]	= {pContextHandle->renderFinishedSemaphore};
+	submitInfo.signalSemaphoreCount = 1;
+	submitInfo.pSignalSemaphores	= signalSemaphores;
+
+	VK_ASSERT(vkQueueSubmit(pContextHandle->graphicsQueue, 1, &submitInfo, pContextHandle->inFlightFence));
+
+	VkPresentInfoKHR presentInfo{};
+	presentInfo.sType			   = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+	presentInfo.waitSemaphoreCount = 1;
+	presentInfo.pWaitSemaphores	   = signalSemaphores;
+	VkSwapchainKHR swapchains[]	   = {pContextHandle->swapchain};
+	presentInfo.swapchainCount	   = 1;
+	presentInfo.pSwapchains		   = swapchains;
+	presentInfo.pImageIndices	   = &pContextHandle->currentImageIndex;
+
+	VK_ASSERT(vkQueuePresentKHR(pContextHandle->presentQueue, &presentInfo));
 
 	return RESULT_SUCCESS;
 }
@@ -705,6 +751,11 @@ static Result createLogicalDevice(VulkanContextHandle* pContextHandle)
 
 	VK_ASSERT(vkCreateDevice(g_PhysicalDevice, &deviceCreateInfo, nullptr, &pContextHandle->logicalDevice));
 
+	vkGetDeviceQueue(
+		pContextHandle->logicalDevice, pContextHandle->graphicsQueueFamilyIndex, 0, &pContextHandle->graphicsQueue);
+	vkGetDeviceQueue(
+		pContextHandle->logicalDevice, pContextHandle->presentQueueFamilyIndex, 0, &pContextHandle->presentQueue);
+
 	return RESULT_SUCCESS;
 }
 
@@ -1064,6 +1115,41 @@ static Result destroyCommandBuffers(VulkanContextHandle* pContextHandle)
 	vkFreeCommandBuffers(
 		pContextHandle->logicalDevice, pContextHandle->graphicsCommandPool, 1, &pContextHandle->commandBuffer);
 	NTT_VULKAN_DEBUG("Destroyed command buffers.");
+	return RESULT_SUCCESS;
+}
+
+static Result createSyncObjects(VulkanContextHandle* pContextHandle)
+{
+	VkSemaphoreCreateInfo imageAvailableSemaphoreInfo{};
+	imageAvailableSemaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+	VK_ASSERT(vkCreateSemaphore(pContextHandle->logicalDevice,
+								&imageAvailableSemaphoreInfo,
+								nullptr,
+								&pContextHandle->imageAvailableSemaphore));
+
+	VkSemaphoreCreateInfo renderFinishedSemaphoreInfo{};
+	renderFinishedSemaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+	VK_ASSERT(vkCreateSemaphore(pContextHandle->logicalDevice,
+								&renderFinishedSemaphoreInfo,
+								nullptr,
+								&pContextHandle->renderFinishedSemaphore));
+
+	VkFenceCreateInfo fenceInfo{};
+	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+	VK_ASSERT(vkCreateFence(pContextHandle->logicalDevice, &fenceInfo, nullptr, &pContextHandle->inFlightFence));
+
+	NTT_VULKAN_DEBUG("Created synchronization objects.");
+	return RESULT_SUCCESS;
+}
+
+static Result destroySyncObjects(VulkanContextHandle* pContextHandle)
+{
+	vkDestroyFence(pContextHandle->logicalDevice, pContextHandle->inFlightFence, nullptr);
+	vkDestroySemaphore(pContextHandle->logicalDevice, pContextHandle->imageAvailableSemaphore, nullptr);
+	vkDestroySemaphore(pContextHandle->logicalDevice, pContextHandle->renderFinishedSemaphore, nullptr);
+	NTT_VULKAN_DEBUG("Destroyed synchronization objects.");
+
 	return RESULT_SUCCESS;
 }
 
