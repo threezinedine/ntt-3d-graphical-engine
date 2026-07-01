@@ -277,7 +277,9 @@ Result VulkanShaderStorage::UseShaderImpl(const Pointer<void>& pRenderContext, c
 	VulkanContextHandle* pVulkanContext = VK_CONTEXT_CAST(pRenderContext);
 	ShaderHandle*		 pHandle		= VK_SHADER_CAST(pShaderHandle);
 
-	vkCmdBindPipeline(pVulkanContext->commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pHandle->pipeline);
+	vkCmdBindPipeline(GET_SCOPE_ARRAY_INDEX(pVulkanContext->pCommandBuffers, pVulkanContext->currentFrame),
+					  VK_PIPELINE_BIND_POINT_GRAPHICS,
+					  pHandle->pipeline);
 
 	return RESULT_SUCCESS;
 }

@@ -25,6 +25,8 @@
 
 #define VK_ASSERT(exp) _VK_ASSERT(exp, RESULT_VULKAN_ERROR)
 
+#define MAX_FRAMES_IN_FLIGHT 3
+
 namespace ntt {
 
 struct MeshHandle
@@ -55,32 +57,33 @@ struct ShaderHandle
 
 struct VulkanContextHandle
 {
-	GLFWwindow*					pWindow;
-	VkSurfaceKHR				surface;
-	u32							graphicsQueueFamilyIndex;
-	u32							presentQueueFamilyIndex;
-	u32							transferQueueFamilyIndex;
-	u32							computeQueueFamilyIndex;
-	VkDevice					logicalDevice;
-	VkQueue						graphicsQueue;
-	VkQueue						presentQueue;
-	VkSwapchainKHR				swapchain;
-	Scope<Array<VkImage>>		pSwapchainImages;
-	u32							swapchainImageCount;
-	Scope<Array<VkImageView>>	pSwapchainImageViews;
-	VkFormat					swapchainImageFormat;
-	VkExtent2D					swapchainExtent;
-	VkRenderPass				renderPass;
-	Scope<Array<VkFramebuffer>> pSwapchainFramebuffers;
-	VkCommandPool				graphicsCommandPool;
-	VkCommandPool				presentCommandPool;
-	VkCommandBuffer				commandBuffer;
-	VkSemaphore					imageAvailableSemaphore;
-	VkSemaphore					renderFinishedSemaphore;
-	VkFence						inFlightFence;
+	GLFWwindow*					  pWindow;
+	VkSurfaceKHR				  surface;
+	u32							  graphicsQueueFamilyIndex;
+	u32							  presentQueueFamilyIndex;
+	u32							  transferQueueFamilyIndex;
+	u32							  computeQueueFamilyIndex;
+	VkDevice					  logicalDevice;
+	VkQueue						  graphicsQueue;
+	VkQueue						  presentQueue;
+	VkSwapchainKHR				  swapchain;
+	Scope<Array<VkImage>>		  pSwapchainImages;
+	u32							  swapchainImageCount;
+	Scope<Array<VkImageView>>	  pSwapchainImageViews;
+	VkFormat					  swapchainImageFormat;
+	VkExtent2D					  swapchainExtent;
+	VkRenderPass				  renderPass;
+	Scope<Array<VkFramebuffer>>	  pSwapchainFramebuffers;
+	VkCommandPool				  graphicsCommandPool;
+	VkCommandPool				  presentCommandPool;
+	Scope<Array<VkCommandBuffer>> pCommandBuffers;
+	Scope<Array<VkSemaphore>>	  pImageAvailableSemaphores;
+	Scope<Array<VkSemaphore>>	  pRenderFinishedSemaphores;
+	Scope<Array<VkFence>>		  pInFlightFences;
 
 	// temp attribute
 	u32 currentImageIndex;
+	u32 currentFrame;
 };
 
 #define VK_CONTEXT_CAST(handle)                                                                                        \

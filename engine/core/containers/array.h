@@ -387,4 +387,6 @@ Result Array<T>::Emplace(Args&&... args)
 	return RESULT_SUCCESS;
 }
 
+#define GET_SCOPE_ARRAY_INDEX(array, index) ((*(array.Get()))[index])
+
 } // namespace ntt

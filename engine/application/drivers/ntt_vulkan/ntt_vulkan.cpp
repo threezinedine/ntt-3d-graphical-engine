@@ -12,8 +12,6 @@ namespace ntt {
 
 static constexpr u32 INVALID_QUEUE_FAMILY_INDEX = UINT32_MAX;
 
-#define GET_SCOPE_ARRAY_INDEX(array, index) ((*(array.Get()))[index])
-
 static Result VulkanDriver_Initialize();
 static Result VulkanDriver_Shutdown();
 static Result VulkanDriver_CreateRenderContext(Pointer<void> pWindowHandle, Pointer<void>& pRenderContextHandle);
@@ -178,6 +176,15 @@ static Result VulkanDriver_CreateRenderContext(Pointer<void> pWindowHandle, Poin
 	pContextHandle->swapchainImageCount		 = 0;
 	pContextHandle->pSwapchainImageViews	 = MakeScope<Array<VkImageView>>(g_GlobalAllocators.pMalloc, 1);
 	pContextHandle->pSwapchainFramebuffers	 = MakeScope<Array<VkFramebuffer>>(g_GlobalAllocators.pMalloc, 1);
+	pContextHandle->graphicsCommandPool		 = VK_NULL_HANDLE;
+	pContextHandle->presentCommandPool		 = VK_NULL_HANDLE;
+	pContextHandle->pCommandBuffers =
+		MakeScope<Array<VkCommandBuffer>>(g_GlobalAllocators.pMalloc, MAX_FRAMES_IN_FLIGHT);
+	pContextHandle->pImageAvailableSemaphores =
+		MakeScope<Array<VkSemaphore>>(g_GlobalAllocators.pMalloc, MAX_FRAMES_IN_FLIGHT);
+	pContextHandle->pRenderFinishedSemaphores =
+		MakeScope<Array<VkSemaphore>>(g_GlobalAllocators.pMalloc, MAX_FRAMES_IN_FLIGHT);
+	pContextHandle->pInFlightFences = MakeScope<Array<VkFence>>(g_GlobalAllocators.pMalloc, MAX_FRAMES_IN_FLIGHT);
 
 	VK_ASSERT(glfwCreateWindowSurface(g_Instance, pWindow, nullptr, &pContextHandle->surface));
 	NTT_ASSERT_RESULT_SUCCESS(chooseQueueFamilies(pContextHandle, pContextHandle->surface));
@@ -212,25 +219,33 @@ static Result VulkanDriver_DestroyRenderContext(Pointer<void>& pRenderContextHan
 	return RESULT_SUCCESS;
 }
 
-static Result recordCommandBuffer(VulkanContextHandle* pContextHandle, u32 imageIndex);
+static Result recordCommandBuffer(VulkanContextHandle* pContextHandler, u32 imageIndex);
 static Result endRecordCommandBuffer(VulkanContextHandle* pContextHandle);
 
 static Result VulkanDriver_StartRender(Pointer<void> pDriverHandle)
 {
 	VulkanContextHandle* pContextHandle = VK_CONTEXT_CAST(pDriverHandle);
 
-	VK_ASSERT(vkWaitForFences(pContextHandle->logicalDevice, 1, &pContextHandle->inFlightFence, VK_TRUE, UINT64_MAX));
-	VK_ASSERT(vkResetFences(pContextHandle->logicalDevice, 1, &pContextHandle->inFlightFence));
+	VK_ASSERT(vkWaitForFences(pContextHandle->logicalDevice,
+							  1,
+							  &GET_SCOPE_ARRAY_INDEX(pContextHandle->pInFlightFences, pContextHandle->currentFrame),
+							  VK_TRUE,
+							  UINT64_MAX));
+	VK_ASSERT(vkResetFences(pContextHandle->logicalDevice,
+							1,
+							&GET_SCOPE_ARRAY_INDEX(pContextHandle->pInFlightFences, pContextHandle->currentFrame)));
 
 	u32 imageIndex;
-	VK_ASSERT(vkAcquireNextImageKHR(pContextHandle->logicalDevice,
-									pContextHandle->swapchain,
-									UINT64_MAX,
-									pContextHandle->imageAvailableSemaphore,
-									VK_NULL_HANDLE,
-									&imageIndex));
+	VK_ASSERT(vkAcquireNextImageKHR(
+		pContextHandle->logicalDevice,
+		pContextHandle->swapchain,
+		UINT64_MAX,
+		GET_SCOPE_ARRAY_INDEX(pContextHandle->pImageAvailableSemaphores, pContextHandle->currentFrame),
+		VK_NULL_HANDLE,
+		&imageIndex));
 
-	VK_ASSERT(vkResetCommandBuffer(pContextHandle->commandBuffer, 0));
+	VK_ASSERT(
+		vkResetCommandBuffer(GET_SCOPE_ARRAY_INDEX(pContextHandle->pCommandBuffers, pContextHandle->currentFrame), 0));
 	NTT_ASSERT_RESULT_SUCCESS(recordCommandBuffer(pContextHandle, imageIndex));
 
 	pContextHandle->currentImageIndex = imageIndex;
@@ -247,19 +262,24 @@ static Result VulkanDriver_EndRender(Pointer<void> pDriverHandle)
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-	VkSemaphore			 waitSemaphores[] = {pContextHandle->imageAvailableSemaphore};
-	VkPipelineStageFlags waitStages[]	  = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-	submitInfo.waitSemaphoreCount		  = 1;
-	submitInfo.pWaitSemaphores			  = waitSemaphores;
-	submitInfo.pWaitDstStageMask		  = waitStages;
-	submitInfo.commandBufferCount		  = 1;
-	submitInfo.pCommandBuffers			  = &pContextHandle->commandBuffer;
+	VkSemaphore waitSemaphores[] = {
+		GET_SCOPE_ARRAY_INDEX(pContextHandle->pImageAvailableSemaphores, pContextHandle->currentFrame)};
+	VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+	submitInfo.waitSemaphoreCount	  = 1;
+	submitInfo.pWaitSemaphores		  = waitSemaphores;
+	submitInfo.pWaitDstStageMask	  = waitStages;
+	submitInfo.commandBufferCount	  = 1;
+	submitInfo.pCommandBuffers = &GET_SCOPE_ARRAY_INDEX(pContextHandle->pCommandBuffers, pContextHandle->currentFrame);
 
-	VkSemaphore signalSemaphores[]	= {pContextHandle->renderFinishedSemaphore};
+	VkSemaphore signalSemaphores[] = {
+		GET_SCOPE_ARRAY_INDEX(pContextHandle->pRenderFinishedSemaphores, pContextHandle->currentFrame)};
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores	= signalSemaphores;
 
-	VK_ASSERT(vkQueueSubmit(pContextHandle->graphicsQueue, 1, &submitInfo, pContextHandle->inFlightFence));
+	VK_ASSERT(vkQueueSubmit(pContextHandle->graphicsQueue,
+							1,
+							&submitInfo,
+							GET_SCOPE_ARRAY_INDEX(pContextHandle->pInFlightFences, pContextHandle->currentFrame)));
 
 	VkPresentInfoKHR presentInfo{};
 	presentInfo.sType			   = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -271,6 +291,10 @@ static Result VulkanDriver_EndRender(Pointer<void> pDriverHandle)
 	presentInfo.pImageIndices	   = &pContextHandle->currentImageIndex;
 
 	VK_ASSERT(vkQueuePresentKHR(pContextHandle->presentQueue, &presentInfo));
+
+	pContextHandle->currentFrame = (pContextHandle->currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+
+	vkDeviceWaitIdle(pContextHandle->logicalDevice);
 
 	return RESULT_SUCCESS;
 }
@@ -1103,8 +1127,9 @@ static Result createCommandBuffers(VulkanContextHandle* pContextHandle)
 	allocInfo.sType				 = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	allocInfo.commandPool		 = pContextHandle->graphicsCommandPool;
 	allocInfo.level				 = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandBufferCount = 1;
-	VK_ASSERT(vkAllocateCommandBuffers(pContextHandle->logicalDevice, &allocInfo, &pContextHandle->commandBuffer));
+	allocInfo.commandBufferCount = MAX_FRAMES_IN_FLIGHT;
+	VK_ASSERT(vkAllocateCommandBuffers(
+		pContextHandle->logicalDevice, &allocInfo, &GET_SCOPE_ARRAY_INDEX(pContextHandle->pCommandBuffers, 0)));
 
 	NTT_VULKAN_DEBUG("Creating command buffers.");
 	return RESULT_SUCCESS;
@@ -1112,42 +1137,62 @@ static Result createCommandBuffers(VulkanContextHandle* pContextHandle)
 
 static Result destroyCommandBuffers(VulkanContextHandle* pContextHandle)
 {
-	vkFreeCommandBuffers(
-		pContextHandle->logicalDevice, pContextHandle->graphicsCommandPool, 1, &pContextHandle->commandBuffer);
+	vkFreeCommandBuffers(pContextHandle->logicalDevice,
+						 pContextHandle->graphicsCommandPool,
+						 MAX_FRAMES_IN_FLIGHT,
+						 &GET_SCOPE_ARRAY_INDEX(pContextHandle->pCommandBuffers, 0));
+	pContextHandle->pCommandBuffers.Reset();
 	NTT_VULKAN_DEBUG("Destroyed command buffers.");
 	return RESULT_SUCCESS;
 }
 
 static Result createSyncObjects(VulkanContextHandle* pContextHandle)
 {
-	VkSemaphoreCreateInfo imageAvailableSemaphoreInfo{};
-	imageAvailableSemaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-	VK_ASSERT(vkCreateSemaphore(pContextHandle->logicalDevice,
-								&imageAvailableSemaphoreInfo,
+	for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+	{
+		VkSemaphoreCreateInfo imageAvailableSemaphoreInfo{};
+		imageAvailableSemaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+		VK_ASSERT(vkCreateSemaphore(pContextHandle->logicalDevice,
+									&imageAvailableSemaphoreInfo,
+									nullptr,
+									&GET_SCOPE_ARRAY_INDEX(pContextHandle->pImageAvailableSemaphores, i)));
+
+		VkSemaphoreCreateInfo renderFinishedSemaphoreInfo{};
+		renderFinishedSemaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+		VK_ASSERT(vkCreateSemaphore(pContextHandle->logicalDevice,
+									&renderFinishedSemaphoreInfo,
+									nullptr,
+									&GET_SCOPE_ARRAY_INDEX(pContextHandle->pRenderFinishedSemaphores, i)));
+
+		VkFenceCreateInfo fenceInfo{};
+		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+		VK_ASSERT(vkCreateFence(pContextHandle->logicalDevice,
+								&fenceInfo,
 								nullptr,
-								&pContextHandle->imageAvailableSemaphore));
-
-	VkSemaphoreCreateInfo renderFinishedSemaphoreInfo{};
-	renderFinishedSemaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-	VK_ASSERT(vkCreateSemaphore(pContextHandle->logicalDevice,
-								&renderFinishedSemaphoreInfo,
-								nullptr,
-								&pContextHandle->renderFinishedSemaphore));
-
-	VkFenceCreateInfo fenceInfo{};
-	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-	fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-	VK_ASSERT(vkCreateFence(pContextHandle->logicalDevice, &fenceInfo, nullptr, &pContextHandle->inFlightFence));
-
+								&GET_SCOPE_ARRAY_INDEX(pContextHandle->pInFlightFences, i)));
+	}
 	NTT_VULKAN_DEBUG("Created synchronization objects.");
 	return RESULT_SUCCESS;
 }
 
 static Result destroySyncObjects(VulkanContextHandle* pContextHandle)
 {
-	vkDestroyFence(pContextHandle->logicalDevice, pContextHandle->inFlightFence, nullptr);
-	vkDestroySemaphore(pContextHandle->logicalDevice, pContextHandle->imageAvailableSemaphore, nullptr);
-	vkDestroySemaphore(pContextHandle->logicalDevice, pContextHandle->renderFinishedSemaphore, nullptr);
+	for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+	{
+		vkDestroyFence(
+			pContextHandle->logicalDevice, GET_SCOPE_ARRAY_INDEX(pContextHandle->pInFlightFences, i), nullptr);
+		vkDestroySemaphore(pContextHandle->logicalDevice,
+						   GET_SCOPE_ARRAY_INDEX(pContextHandle->pImageAvailableSemaphores, i),
+						   nullptr);
+		vkDestroySemaphore(pContextHandle->logicalDevice,
+						   GET_SCOPE_ARRAY_INDEX(pContextHandle->pRenderFinishedSemaphores, i),
+						   nullptr);
+	}
+
+	pContextHandle->pInFlightFences.Reset();
+	pContextHandle->pImageAvailableSemaphores.Reset();
+	pContextHandle->pRenderFinishedSemaphores.Reset();
 	NTT_VULKAN_DEBUG("Destroyed synchronization objects.");
 
 	return RESULT_SUCCESS;
@@ -1160,7 +1205,8 @@ static Result recordCommandBuffer(VulkanContextHandle* pContextHandle, u32 image
 	beginInfo.flags			   = 0;
 	beginInfo.pInheritanceInfo = nullptr;
 
-	VK_ASSERT(vkBeginCommandBuffer(pContextHandle->commandBuffer, &beginInfo));
+	VK_ASSERT(vkBeginCommandBuffer(GET_SCOPE_ARRAY_INDEX(pContextHandle->pCommandBuffers, pContextHandle->currentFrame),
+								   &beginInfo));
 
 	VkRenderPassBeginInfo renderPassInfo{};
 	renderPassInfo.sType			 = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -1176,7 +1222,9 @@ static Result recordCommandBuffer(VulkanContextHandle* pContextHandle, u32 image
 	renderPassInfo.clearValueCount = 1;
 	renderPassInfo.pClearValues	   = &clearColor;
 
-	vkCmdBeginRenderPass(pContextHandle->commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+	vkCmdBeginRenderPass(GET_SCOPE_ARRAY_INDEX(pContextHandle->pCommandBuffers, pContextHandle->currentFrame),
+						 &renderPassInfo,
+						 VK_SUBPASS_CONTENTS_INLINE);
 
 	return RESULT_SUCCESS;
 }
@@ -1190,16 +1238,18 @@ static Result endRecordCommandBuffer(VulkanContextHandle* pContextHandle)
 	viewport.height	  = static_cast<float>(pContextHandle->swapchainExtent.height);
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
-	vkCmdSetViewport(pContextHandle->commandBuffer, 0, 1, &viewport);
+	vkCmdSetViewport(
+		GET_SCOPE_ARRAY_INDEX(pContextHandle->pCommandBuffers, pContextHandle->currentFrame), 0, 1, &viewport);
 
 	VkRect2D scissor{};
 	scissor.offset = {0, 0};
 	scissor.extent = pContextHandle->swapchainExtent;
-	vkCmdSetScissor(pContextHandle->commandBuffer, 0, 1, &scissor);
+	vkCmdSetScissor(
+		GET_SCOPE_ARRAY_INDEX(pContextHandle->pCommandBuffers, pContextHandle->currentFrame), 0, 1, &scissor);
 
-	vkCmdEndRenderPass(pContextHandle->commandBuffer);
+	vkCmdEndRenderPass(GET_SCOPE_ARRAY_INDEX(pContextHandle->pCommandBuffers, pContextHandle->currentFrame));
 
-	VK_ASSERT(vkEndCommandBuffer(pContextHandle->commandBuffer));
+	VK_ASSERT(vkEndCommandBuffer(GET_SCOPE_ARRAY_INDEX(pContextHandle->pCommandBuffers, pContextHandle->currentFrame)));
 	return RESULT_SUCCESS;
 }
 
