@@ -11,7 +11,21 @@ static bool s_FirstWindowRequired = false;
 struct GLFWDriverHandle
 {
 	GLFWwindow* pWindow;
+	u32			width;
+	u32			height;
 };
+
+#define _CAST_DRIVER_HANDLE(handle, ret)                                                                               \
+	reinterpret_cast<GLFWDriverHandle*>(handle.Get());                                                                 \
+	do                                                                                                                 \
+	{                                                                                                                  \
+		if (handle == nullptr)                                                                                         \
+		{                                                                                                              \
+			return (ret);                                                                                              \
+		}                                                                                                              \
+	} while (0)
+
+#define CAST_DRIVER_HANDLE(handle) _CAST_DRIVER_HANDLE(handle, RESULT_NULL_POINTER)
 
 static Result GLFWDisplayDriver_Initialize();
 static Result GLFWDisplayDriver_Shutdown();
@@ -22,6 +36,10 @@ static Result GLFWDisplayDriver_OnBeginFrame(Pointer<void> pDriverHandle);
 static Result GLFWDisplayDriver_OnEndFrame(Pointer<void> pDriverHandle);
 static u32	  GLFWDisplayDriver_GetWindowHandleSize();
 static void*  GLFWDisplayDriver_GetWindowHandle(Pointer<void> pWindowHandle);
+static Vec2u  GLFWDisplayDriver_GetWindowSize(Pointer<void> pWindowHandle);
+
+// callback events
+static void GLFWDisplayDriver_OnWindowResize(GLFWwindow* pWindow, i32 width, i32 height);
 
 Result RegisterGLFWDisplayDriver()
 {
@@ -34,6 +52,7 @@ Result RegisterGLFWDisplayDriver()
 	g_DisplayDriver.OnEndFrame			= GLFWDisplayDriver_OnEndFrame;
 	g_DisplayDriver.GetWindowHandleSize = GLFWDisplayDriver_GetWindowHandleSize;
 	g_DisplayDriver.GetWindowHandle		= GLFWDisplayDriver_GetWindowHandle;
+	g_DisplayDriver.GetWindowSize		= GLFWDisplayDriver_GetWindowSize;
 	return RESULT_SUCCESS;
 }
 
@@ -67,7 +86,7 @@ static Result GLFWDisplayDriver_Initialize()
 
 	NTT_DISPLAY_INFO("GLFW loaded with version: %s", glfwGetVersionString());
 
-	GLFWwindow* pWindow = glfwCreateWindow(500, 600, "NTT GLFW Driver", nullptr, nullptr);
+	GLFWwindow* pWindow = glfwCreateWindow(1, 1, "NTT GLFW Driver", nullptr, nullptr);
 	if (pWindow == nullptr)
 	{
 		NTT_DISPLAY_ERROR("Failed to create GLFW window for driver initialization.");
@@ -76,6 +95,7 @@ static Result GLFWDisplayDriver_Initialize()
 	}
 
 	glfwMakeContextCurrent(pWindow);
+	glfwSetWindowSizeCallback(pWindow, GLFWDisplayDriver_OnWindowResize);
 
 	g_pDefaultWindow = pWindow;
 
@@ -90,12 +110,16 @@ static Result GLFWDisplayDriver_Shutdown()
 
 static Result GLFWDisplayDriver_CreateWindow(u32 width, u32 height, const char* title, Pointer<void>& pWindowHandle)
 {
-	Pointer<GLFWDriverHandle> pHandle = pWindowHandle.Cast<GLFWDriverHandle>();
+	GLFWDriverHandle* pHandle = CAST_DRIVER_HANDLE(pWindowHandle);
 
 	if (!s_FirstWindowRequired)
 	{
 		s_FirstWindowRequired = true;
 		pHandle->pWindow	  = g_pDefaultWindow;
+		pHandle->width		  = width;
+		pHandle->height		  = height;
+		glfwSetWindowUserPointer(pHandle->pWindow, pHandle);
+		glfwSetWindowSize(pHandle->pWindow, static_cast<i32>(width), static_cast<i32>(height));
 		return RESULT_SUCCESS;
 	}
 
@@ -112,6 +136,11 @@ static Result GLFWDisplayDriver_CreateWindow(u32 width, u32 height, const char* 
 	}
 
 	pHandle->pWindow = pWindow;
+	pHandle->width	 = width;
+	pHandle->height	 = height;
+
+	glfwSetWindowUserPointer(pWindow, pHandle);
+	glfwSetWindowSizeCallback(pWindow, GLFWDisplayDriver_OnWindowResize);
 
 	glfwMakeContextCurrent(pWindow);
 
@@ -173,6 +202,35 @@ static void* GLFWDisplayDriver_GetWindowHandle(Pointer<void> pWindowHandle)
 	}
 
 	return pHandle->pWindow;
+}
+
+static Vec2u GLFWDisplayDriver_GetWindowSize(Pointer<void> pWindowHandle)
+{
+	Vec2u			  defaultSize{0, 0};
+	GLFWDriverHandle* pHandle = _CAST_DRIVER_HANDLE(pWindowHandle, defaultSize);
+
+	return Vec2u{pHandle->width, pHandle->height};
+}
+
+static void GLFWDisplayDriver_OnWindowResize(GLFWwindow* pWindow, i32 width, i32 height)
+{
+	if (g_DisplayDriver.OnWindowResize)
+	{
+		if (pWindow == nullptr)
+		{
+			NTT_DISPLAY_ERROR("GLFW window pointer is null in resize callback.");
+			return;
+		}
+
+		void* pHandle = (void*)glfwGetWindowUserPointer(pWindow);
+		if (pHandle == nullptr)
+		{
+			NTT_DISPLAY_ERROR("GLFW window user pointer is null in resize callback.");
+			return;
+		}
+
+		g_DisplayDriver.OnWindowResize(Pointer<void>(pHandle), static_cast<u32>(width), static_cast<u32>(height));
+	}
 }
 
 } // namespace ntt

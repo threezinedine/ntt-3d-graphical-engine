@@ -148,7 +148,7 @@ static Result VulkanDriver_Shutdown()
 static Result chooseQueueFamilies(VulkanContextHandle* pContextHandle, VkSurfaceKHR surface);
 static Result createLogicalDevice(VulkanContextHandle* pContextHandle);
 static Result destroyLogicalDevice(VulkanContextHandle* pContextHandle);
-static Result createSwapchain(VulkanContextHandle* pContextHandle);
+static Result createSwapchain(VulkanContextHandle* pContextHandle, Vec2u& pWindowSize);
 static Result destroySwapchain(VulkanContextHandle* pContextHandle);
 static Result createRenderPass(VulkanContextHandle* pContextHandle);
 static Result destroyRenderPass(VulkanContextHandle* pContextHandle);
@@ -166,6 +166,7 @@ static Result VulkanDriver_CreateRenderContext(Pointer<void> pWindowHandle, Poin
 #if NTT_GLFW
 	GLFWwindow*			 pWindow		= (GLFWwindow*)g_DisplayDriver.GetWindowHandle(pWindowHandle);
 	VulkanContextHandle* pContextHandle = VK_CONTEXT_CAST(pRenderContextHandle);
+	Vec2u				 windowSize		= g_DisplayDriver.GetWindowSize(pWindowHandle);
 
 	pContextHandle->pWindow					 = pWindow;
 	pContextHandle->surface					 = VK_NULL_HANDLE;
@@ -192,7 +193,7 @@ static Result VulkanDriver_CreateRenderContext(Pointer<void> pWindowHandle, Poin
 	VK_ASSERT(glfwCreateWindowSurface(g_Instance, pWindow, nullptr, &pContextHandle->surface));
 	NTT_ASSERT_RESULT_SUCCESS(chooseQueueFamilies(pContextHandle, pContextHandle->surface));
 	NTT_ASSERT_RESULT_SUCCESS(createLogicalDevice(pContextHandle));
-	NTT_ASSERT_RESULT_SUCCESS(createSwapchain(pContextHandle));
+	NTT_ASSERT_RESULT_SUCCESS(createSwapchain(pContextHandle, windowSize));
 	NTT_ASSERT_RESULT_SUCCESS(createRenderPass(pContextHandle));
 	NTT_ASSERT_RESULT_SUCCESS(createSwapchainFramebuffers(pContextHandle));
 	NTT_ASSERT_RESULT_SUCCESS(createCommandPools(pContextHandle));
@@ -819,14 +820,14 @@ static VkExtent2D		  chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabiliti
 static u32				  getSwapchainImageCount(const VkSurfaceCapabilitiesKHR& capabilities);
 static Result			  createSwapchainImageViews(VulkanContextHandle* pContextHandle);
 
-static Result createSwapchain(VulkanContextHandle* pContextHandle)
+static Result createSwapchain(VulkanContextHandle* pContextHandle, Vec2u& pWindowSize)
 {
 	SwapchainSupportDetails swapchainSupport;
 	querySwapchainSupport(pContextHandle, swapchainSupport);
 
 	VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapchainSupport.formats);
 	VkPresentModeKHR   presentMode	 = chooseSwapPresentMode(swapchainSupport.presentModes);
-	VkExtent2D		   extent		 = chooseSwapExtent(swapchainSupport.capabilities, 800, 600);
+	VkExtent2D		   extent		 = chooseSwapExtent(swapchainSupport.capabilities, pWindowSize[0], pWindowSize[1]);
 	u32				   imageCount	 = getSwapchainImageCount(swapchainSupport.capabilities);
 
 	VkSwapchainCreateInfoKHR createInfo{};

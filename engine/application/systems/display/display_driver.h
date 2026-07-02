@@ -15,6 +15,10 @@ struct DisplayDriver
 	Result (*OnEndFrame)(Pointer<void> pDriverHandle);
 	u32 (*GetWindowHandleSize)();
 	void* (*GetWindowHandle)(Pointer<void> pWindowHandle);
+	Vec2u (*GetWindowSize)(Pointer<void> pWindowHandle);
+
+	// callback events
+	Result (*OnWindowResize)(Pointer<void> pWindowHandle, u32 width, u32 height);
 };
 
 extern DisplayDriver g_DisplayDriver;

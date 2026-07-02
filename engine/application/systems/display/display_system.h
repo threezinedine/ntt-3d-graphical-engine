@@ -34,6 +34,8 @@ public:
 	struct WindowInfo
 	{
 		Pointer<void> pWindowHandle;
+		u32			  width;
+		u32			  height;
 	};
 
 	friend class RenderSystem;

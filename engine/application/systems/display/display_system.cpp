@@ -61,6 +61,9 @@ WindowID DisplaySystem::CreateWindow(u32 width, u32 height, const char* title)
 		return INVALID_WINDOW_ID;
 	}
 
+	windowInfo.width  = width;
+	windowInfo.height = height;
+
 	return m_pWindowIDStorage->Add(windowInfo);
 }
 

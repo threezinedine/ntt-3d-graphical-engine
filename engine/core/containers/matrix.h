@@ -128,6 +128,10 @@ typedef Matrix<i32, 2, 2> Mat2x2i;
 typedef Matrix<i32, 3, 3> Mat3x3i;
 typedef Matrix<i32, 4, 4> Mat4x4i;
 
+typedef Matrix<u32, 2, 2> Mat2x2u;
+typedef Matrix<u32, 3, 3> Mat3x3u;
+typedef Matrix<u32, 4, 4> Mat4x4u;
+
 typedef Matrix<f32, 2, 2> Mat2x2f;
 typedef Matrix<f32, 3, 3> Mat3x3f;
 typedef Matrix<f32, 4, 4> Mat4x4f;
@@ -135,6 +139,10 @@ typedef Matrix<f32, 4, 4> Mat4x4f;
 typedef Matrix<i32, 2, 1> Vec2i;
 typedef Matrix<i32, 3, 1> Vec3i;
 typedef Matrix<i32, 4, 1> Vec4i;
+
+typedef Matrix<u32, 2, 1> Vec2u;
+typedef Matrix<u32, 3, 1> Vec3u;
+typedef Matrix<u32, 4, 1> Vec4u;
 
 typedef Matrix<f32, 2, 1> Vec2f;
 typedef Matrix<f32, 3, 1> Vec3f;
