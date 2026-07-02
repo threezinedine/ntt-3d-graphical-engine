@@ -27,9 +27,12 @@ Result VulkanMeshStorage::ShutdownImpl()
 static Result createVertexBuffer(VulkanContextHandle* pVulkanContext, MeshHandle* pMeshHandle, Mesh& mesh);
 static Result destroyVertexBuffer(VulkanContextHandle* pVulkanContext, MeshHandle* pMeshHandle);
 
-Result VulkanMeshStorage::AddMeshImpl(Mesh& mesh, Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext)
+Result VulkanMeshStorage::AddMeshImpl(Mesh&				   mesh,
+									  Pointer<void>&	   pMeshHandle,
+									  const Pointer<void>& pRenderContext,
+									  bool				   dynamic)
 {
-	NTT_UNUSED(mesh);
+	NTT_UNUSED(dynamic);
 
 	MeshHandle*			 pHandle		= VK_MESH_CAST(pMeshHandle);
 	VulkanContextHandle* pVulkanContext = VK_CONTEXT_CAST(pRenderContext);

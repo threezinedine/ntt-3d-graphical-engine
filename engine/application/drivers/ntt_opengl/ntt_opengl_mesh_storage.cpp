@@ -22,7 +22,10 @@ Result OpenGLMeshStorage::ShutdownImpl()
 	return RESULT_SUCCESS;
 }
 
-Result OpenGLMeshStorage::AddMeshImpl(Mesh& mesh, Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext)
+Result OpenGLMeshStorage::AddMeshImpl(Mesh&				   mesh,
+									  Pointer<void>&	   pMeshHandle,
+									  const Pointer<void>& pRenderContext,
+									  bool				   dynamic)
 {
 	NTT_UNUSED(pRenderContext);
 
@@ -38,7 +41,7 @@ Result OpenGLMeshStorage::AddMeshImpl(Mesh& mesh, Pointer<void>& pMeshHandle, co
 	GL_ASSERT(glBindVertexArray(pHandle->vao));
 	GL_ASSERT(glBindBuffer(GL_ARRAY_BUFFER, pHandle->vbo));
 
-	GL_ASSERT(glBufferData(GL_ARRAY_BUFFER, sizeInBytes, pVertexData, GL_STATIC_DRAW));
+	GL_ASSERT(glBufferData(GL_ARRAY_BUFFER, sizeInBytes, pVertexData, dynamic ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW));
 
 	GL_ASSERT(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position)));
 	GL_ASSERT(glEnableVertexAttribArray(0));

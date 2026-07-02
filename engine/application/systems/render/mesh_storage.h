@@ -18,7 +18,7 @@ public:
 	Result Initialize();
 	Result Shutdown();
 
-	MeshID AddMesh(Mesh&& mesh, RenderContextID renderContextID) noexcept;
+	MeshID AddMesh(Mesh&& mesh, RenderContextID renderContextID, bool dynamic = false) noexcept;
 	Result DrawMesh(MeshID meshID);
 	Result RemoveMesh(MeshID meshID);
 
@@ -26,9 +26,10 @@ protected:
 	virtual Result InitializeImpl() = 0;
 	virtual Result ShutdownImpl()	= 0;
 
-	virtual Result AddMeshImpl(Mesh& mesh, Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext) = 0;
-	virtual Result DrawMeshImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext)		= 0;
-	virtual Result RemoveMeshImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext)	= 0;
+	virtual Result
+	AddMeshImpl(Mesh& mesh, Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext, bool dynamic) = 0;
+	virtual Result DrawMeshImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext)	   = 0;
+	virtual Result RemoveMeshImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext)   = 0;
 
 protected:
 	virtual u32 GetMeshHandleSize() const = 0;
@@ -37,6 +38,7 @@ private:
 	struct MeshNode
 	{
 		Mesh		  mesh;
+		bool		  dynamic;
 		Pointer<void> pMeshHandle;
 		Pointer<void> pRenderContext;
 	};
