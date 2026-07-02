@@ -1291,11 +1291,9 @@ static Result recreateSwapchain(VulkanContextHandle* pContextHandle)
 
 static Result VulkanDriver_OnWindowResize(u32 width, u32 height, void* pUserData)
 {
-	VulkanContextHandle* pContextHandle = (VulkanContextHandle*)pUserData;
-
-	pContextHandle->swapchainExtent.width  = width;
-	pContextHandle->swapchainExtent.height = height;
-
+	NTT_UNUSED(width);
+	NTT_UNUSED(height);
+	NTT_UNUSED(pUserData);
 	return RESULT_SUCCESS;
 }
 
