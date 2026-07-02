@@ -24,6 +24,9 @@ static Result VulkanDriver_EndRender(Pointer<void> pDriverHandle);
 static Result VulkanDriver_Present(Pointer<void> pDriverHandle);
 static u32	  VulkanDriver_GetRenderContextHandleSize();
 
+static Result recreateSwapchain(VulkanContextHandle* pContextHandle);
+static Result VulkanDriver_OnWindowResize(u32 width, u32 height, void* pUserData);
+
 Result RegisterVulkanDriver()
 {
 	g_RenderDriver.Initialize				  = VulkanDriver_Initialize;
@@ -168,7 +171,7 @@ static Result VulkanDriver_CreateRenderContext(Pointer<void> pWindowHandle, Poin
 	VulkanContextHandle* pContextHandle = VK_CONTEXT_CAST(pRenderContextHandle);
 	Vec2u				 windowSize		= g_DisplayDriver.GetWindowSize(pWindowHandle);
 
-	pContextHandle->pWindow					 = pWindow;
+	pContextHandle->pWindowHandle			 = pWindowHandle;
 	pContextHandle->surface					 = VK_NULL_HANDLE;
 	pContextHandle->graphicsQueueFamilyIndex = INVALID_QUEUE_FAMILY_INDEX;
 	pContextHandle->presentQueueFamilyIndex	 = INVALID_QUEUE_FAMILY_INDEX;
@@ -199,6 +202,8 @@ static Result VulkanDriver_CreateRenderContext(Pointer<void> pWindowHandle, Poin
 	NTT_ASSERT_RESULT_SUCCESS(createCommandPools(pContextHandle));
 	NTT_ASSERT_RESULT_SUCCESS(createCommandBuffers(pContextHandle));
 	NTT_ASSERT_RESULT_SUCCESS(createSyncObjects(pContextHandle));
+
+	g_DisplayDriver.SetOnWindowResizeCallback(pWindowHandle, VulkanDriver_OnWindowResize, pContextHandle);
 #else  // NTT_GLFW
 	NTT_UNUSED(pWindowHandle);
 	NTT_UNUSED(pRenderContextHandle);
@@ -239,14 +244,25 @@ static Result VulkanDriver_StartRender(Pointer<void> pDriverHandle)
 							1,
 							&GET_SCOPE_ARRAY_INDEX(pContextHandle->pInFlightFences, pContextHandle->currentFrame)));
 
-	u32 imageIndex;
-	VK_ASSERT(vkAcquireNextImageKHR(
+	u32		 imageIndex;
+	VkResult result = vkAcquireNextImageKHR(
 		pContextHandle->logicalDevice,
 		pContextHandle->swapchain,
 		UINT64_MAX,
 		GET_SCOPE_ARRAY_INDEX(pContextHandle->pImageAvailableSemaphores, pContextHandle->currentFrame),
 		VK_NULL_HANDLE,
-		&imageIndex));
+		&imageIndex);
+
+	if (result == VK_ERROR_OUT_OF_DATE_KHR)
+	{
+		NTT_ASSERT_RESULT_SUCCESS(recreateSwapchain(pContextHandle));
+		return RESULT_SUCCESS;
+	}
+	else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+	{
+		NTT_VULKAN_ERROR("Failed to acquire swapchain image.");
+		return RESULT_VULKAN_ERROR;
+	}
 
 	VK_ASSERT(
 		vkResetCommandBuffer(GET_SCOPE_ARRAY_INDEX(pContextHandle->pCommandBuffers, pContextHandle->currentFrame), 0));
@@ -294,7 +310,17 @@ static Result VulkanDriver_EndRender(Pointer<void> pDriverHandle)
 	presentInfo.pSwapchains		   = swapchains;
 	presentInfo.pImageIndices	   = &pContextHandle->currentImageIndex;
 
-	VK_ASSERT(vkQueuePresentKHR(pContextHandle->presentQueue, &presentInfo));
+	VkResult result = vkQueuePresentKHR(pContextHandle->presentQueue, &presentInfo);
+
+	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
+	{
+		NTT_ASSERT_RESULT_SUCCESS(recreateSwapchain(pContextHandle));
+	}
+	else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+	{
+		NTT_VULKAN_ERROR("Failed to present swapchain image.");
+		return RESULT_VULKAN_ERROR;
+	}
 
 	pContextHandle->currentFrame = (pContextHandle->currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 
@@ -1244,6 +1270,51 @@ static Result endRecordCommandBuffer(VulkanContextHandle* pContextHandle)
 	vkCmdEndRenderPass(GET_SCOPE_ARRAY_INDEX(pContextHandle->pCommandBuffers, pContextHandle->currentFrame));
 
 	VK_ASSERT(vkEndCommandBuffer(GET_SCOPE_ARRAY_INDEX(pContextHandle->pCommandBuffers, pContextHandle->currentFrame)));
+	return RESULT_SUCCESS;
+}
+
+static Result cleanupSwapchain(VulkanContextHandle* pContextHandle);
+
+static Result recreateSwapchain(VulkanContextHandle* pContextHandle)
+{
+	vkDeviceWaitIdle(pContextHandle->logicalDevice);
+
+	Vec2u newWindowSize = g_DisplayDriver.GetWindowSize(pContextHandle->pWindowHandle);
+
+	NTT_VULKAN_DEBUG("Window resized to %ux%u. Recreating swapchain.", newWindowSize[0], newWindowSize[1]);
+
+	NTT_ASSERT_RESULT_SUCCESS(cleanupSwapchain(pContextHandle));
+	NTT_ASSERT_RESULT_SUCCESS(createSwapchain(pContextHandle, newWindowSize));
+	NTT_ASSERT_RESULT_SUCCESS(createSwapchainFramebuffers(pContextHandle));
+	return RESULT_SUCCESS;
+}
+
+static Result VulkanDriver_OnWindowResize(u32 width, u32 height, void* pUserData)
+{
+	VulkanContextHandle* pContextHandle = (VulkanContextHandle*)pUserData;
+
+	pContextHandle->swapchainExtent.width  = width;
+	pContextHandle->swapchainExtent.height = height;
+
+	return RESULT_SUCCESS;
+}
+
+static Result cleanupSwapchain(VulkanContextHandle* pContextHandle)
+{
+	for (u32 i = 0; i < pContextHandle->swapchainImageCount; ++i)
+	{
+		vkDestroyFramebuffer(
+			pContextHandle->logicalDevice, GET_SCOPE_ARRAY_INDEX(pContextHandle->pSwapchainFramebuffers, i), nullptr);
+	}
+
+	for (u32 i = 0; i < pContextHandle->swapchainImageCount; ++i)
+	{
+		vkDestroyImageView(
+			pContextHandle->logicalDevice, GET_SCOPE_ARRAY_INDEX(pContextHandle->pSwapchainImageViews, i), nullptr);
+	}
+
+	vkDestroySwapchainKHR(pContextHandle->logicalDevice, pContextHandle->swapchain, nullptr);
+
 	return RESULT_SUCCESS;
 }
 

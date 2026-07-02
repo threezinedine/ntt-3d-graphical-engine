@@ -10,6 +10,19 @@
 #include <GLFW/glfw3.h>
 #endif // NTT_GLFW
 
+#if NTT_ENABLE_ASSERTION
+#define _VK_ASSERT(exp, ret)                                                                                           \
+	do                                                                                                                 \
+	{                                                                                                                  \
+		VkResult result = (exp);                                                                                       \
+		if (result != VK_SUCCESS)                                                                                      \
+		{                                                                                                              \
+			NTT_VULKAN_ERROR("Vulkan error: %d", result);                                                              \
+			debug_break();                                                                                             \
+			return ret;                                                                                                \
+		}                                                                                                              \
+	} while (0)
+#else
 #define _VK_ASSERT(exp, ret)                                                                                           \
 	do                                                                                                                 \
 	{                                                                                                                  \
@@ -20,6 +33,7 @@
 			return ret;                                                                                                \
 		}                                                                                                              \
 	} while (0)
+#endif
 
 #define VK_ASSERT_B(exp) _VK_ASSERT(exp, false)
 
@@ -57,7 +71,7 @@ struct ShaderHandle
 
 struct VulkanContextHandle
 {
-	GLFWwindow*					  pWindow;
+	Pointer<void>				  pWindowHandle;
 	VkSurfaceKHR				  surface;
 	u32							  graphicsQueueFamilyIndex;
 	u32							  presentQueueFamilyIndex;
