@@ -5,6 +5,7 @@
 #include "ntt_vulkan_shader_storage.h"
 #include "systems/display/display_driver.h"
 #include "systems/render/render_globals.h"
+#include <cstring>
 
 #include "ntt_vulkan_inc.h"
 
@@ -385,7 +386,7 @@ static bool checkInstanceExtensionSupport(const char* extensionName)
 	bool found = false;
 	for (u32 i = 0; i < extensionCount; ++i)
 	{
-		if (StringView(pExtensions[i].extensionName) == StringView(extensionName))
+		if (strcmp(pExtensions[i].extensionName, extensionName) == 0)
 		{
 			found = true;
 			break;
@@ -423,7 +424,7 @@ static bool checkInstanceLayerSupport(const char* layerName)
 	bool found = false;
 	for (u32 i = 0; i < layerCount; ++i)
 	{
-		if (StringView(pLayers[i].layerName) == StringView(layerName))
+		if (strcmp(pLayers[i].layerName, layerName) == 0)
 		{
 			found = true;
 			break;

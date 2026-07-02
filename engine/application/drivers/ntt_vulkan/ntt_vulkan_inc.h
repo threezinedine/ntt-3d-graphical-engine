@@ -14,10 +14,10 @@
 #define _VK_ASSERT(exp, ret)                                                                                           \
 	do                                                                                                                 \
 	{                                                                                                                  \
-		VkResult result = (exp);                                                                                       \
-		if (result != VK_SUCCESS)                                                                                      \
+		VkResult _result = (exp);                                                                                       \
+		if (_result != VK_SUCCESS)                                                                                      \
 		{                                                                                                              \
-			NTT_VULKAN_ERROR("Vulkan error: %d", result);                                                              \
+			NTT_VULKAN_ERROR("Vulkan error: %d", _result);                                                              \
 			debug_break();                                                                                             \
 			return ret;                                                                                                \
 		}                                                                                                              \
@@ -26,10 +26,10 @@
 #define _VK_ASSERT(exp, ret)                                                                                           \
 	do                                                                                                                 \
 	{                                                                                                                  \
-		VkResult result = (exp);                                                                                       \
-		if (result != VK_SUCCESS)                                                                                      \
+		VkResult _result = (exp);                                                                                       \
+		if (_result != VK_SUCCESS)                                                                                      \
 		{                                                                                                              \
-			NTT_VULKAN_ERROR("Vulkan error: %d", result);                                                              \
+			NTT_VULKAN_ERROR("Vulkan error: %d", _result);                                                              \
 			return ret;                                                                                                \
 		}                                                                                                              \
 	} while (0)

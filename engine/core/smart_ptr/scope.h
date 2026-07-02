@@ -42,7 +42,7 @@ public:
 
 	Scope& operator=(const Scope& other) = delete;
 
-	Scope& operator=(Scope&& other)
+	Scope& operator=(Scope&& other) noexcept
 	{
 		if (this != &other)
 		{
