@@ -22,8 +22,10 @@ Result OpenGLMeshStorage::ShutdownImpl()
 	return RESULT_SUCCESS;
 }
 
-Result OpenGLMeshStorage::AddMeshImpl(Mesh& mesh, Pointer<void>& pMeshHandle)
+Result OpenGLMeshStorage::AddMeshImpl(Mesh& mesh, Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext)
 {
+	NTT_UNUSED(pRenderContext);
+
 	u32 verticesCount = mesh.vertices.GetCount();
 	u32 sizeInBytes	  = verticesCount * sizeof(Vertex);
 	u8* pVertexData	  = reinterpret_cast<u8*>(&mesh.vertices[0]);
@@ -63,8 +65,9 @@ Result OpenGLMeshStorage::DrawMeshImpl(const Pointer<void>& pMeshHandle, const P
 	return RESULT_SUCCESS;
 }
 
-Result OpenGLMeshStorage::RemoveMeshImpl(const Pointer<void>& pMeshHandle)
+Result OpenGLMeshStorage::RemoveMeshImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext)
 {
+	NTT_UNUSED(pRenderContext);
 	MeshHandle* pHandle = CAST_MESH_HANDLE(pMeshHandle);
 
 	GL_ASSERT(glDeleteBuffers(1, &pHandle->vbo));

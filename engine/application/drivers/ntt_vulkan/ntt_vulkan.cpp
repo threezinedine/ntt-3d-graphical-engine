@@ -172,6 +172,7 @@ static Result VulkanDriver_CreateRenderContext(Pointer<void> pWindowHandle, Poin
 	Vec2u				 windowSize		= g_DisplayDriver.GetWindowSize(pWindowHandle);
 
 	pContextHandle->pWindowHandle			 = pWindowHandle;
+	pContextHandle->physicalDevice			 = g_PhysicalDevice;
 	pContextHandle->surface					 = VK_NULL_HANDLE;
 	pContextHandle->graphicsQueueFamilyIndex = INVALID_QUEUE_FAMILY_INDEX;
 	pContextHandle->presentQueueFamilyIndex	 = INVALID_QUEUE_FAMILY_INDEX;

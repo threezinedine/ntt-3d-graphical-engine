@@ -26,9 +26,9 @@ protected:
 	virtual Result InitializeImpl() = 0;
 	virtual Result ShutdownImpl()	= 0;
 
-	virtual Result AddMeshImpl(Mesh& mesh, Pointer<void>& pMeshHandle)								   = 0;
-	virtual Result DrawMeshImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext) = 0;
-	virtual Result RemoveMeshImpl(const Pointer<void>& pMeshHandle)									   = 0;
+	virtual Result AddMeshImpl(Mesh& mesh, Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext) = 0;
+	virtual Result DrawMeshImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext)		= 0;
+	virtual Result RemoveMeshImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext)	= 0;
 
 protected:
 	virtual u32 GetMeshHandleSize() const = 0;

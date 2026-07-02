@@ -31,7 +31,11 @@ Result VulkanShaderStorage::ShutdownImpl()
 }
 
 static Pointer<u32> compileShaderToSPIRV_Vulkan(glslang_stage_t stage, const char* shaderSource);
-static Result reflectShaderInputs(const Pointer<u32>& spirvCode, VkPipelineVertexInputStateCreateInfo& vertexInputInfo);
+static Result		reflectShaderInputs(const Pointer<u32>&				   spirvCode,
+										VkVertexInputBindingDescription*   vertexBindingDescriptions,
+										u32&							   vertexBindingDescriptionCount,
+										VkVertexInputAttributeDescription* vertexAttributeDescriptions,
+										u32&							   vertexAttributeDescriptionCount);
 
 Result VulkanShaderStorage::AddShaderImpl(const Pointer<void>& pRenderContext,
 										  const char*		   pVertexShaderSource,
@@ -78,46 +82,27 @@ Result VulkanShaderStorage::AddShaderImpl(const Pointer<void>& pRenderContext,
 	dynamicStateCreateInfo.dynamicStateCount = dynamicStateCount;
 	dynamicStateCreateInfo.pDynamicStates	 = dynamicStates;
 
-#if 0
-	VkVertexInputAttributeDescription positionAttribute{};
-	positionAttribute.location = 0;
-	positionAttribute.binding  = 0;
-	positionAttribute.format   = VK_FORMAT_R32G32B32_SFLOAT;
-	positionAttribute.offset   = 0;
+	u32								vertexBindingDescriptionCount = 0;
+	VkVertexInputBindingDescription vertexBindingDescriptions[16] = {};
+	MemSet(vertexBindingDescriptions, 0, sizeof(vertexBindingDescriptions));
+	u32								  vertexAttributeDescriptionCount = 0;
+	VkVertexInputAttributeDescription vertexAttributeDescriptions[16] = {};
+	MemSet(vertexAttributeDescriptions, 0, sizeof(vertexAttributeDescriptions));
 
-	VkVertexInputAttributeDescription textureCoordAttribute{};
-	textureCoordAttribute.location = 1;
-	textureCoordAttribute.binding  = 1;
-	textureCoordAttribute.format   = VK_FORMAT_R32G32_SFLOAT;
-	textureCoordAttribute.offset   = sizeof(float) * 3; // Assuming position is 3 floats
-
-	VkVertexInputAttributeDescription colorAttribute{};
-	colorAttribute.location = 2;
-	colorAttribute.binding	= 2;
-	colorAttribute.format	= VK_FORMAT_R32G32B32A32_SFLOAT;
-	colorAttribute.offset	= sizeof(float) * 5; // Assuming position is 3 floats and texture coord is 2 floats
-
-	VkVertexInputAttributeDescription vertexAttributes[]   = {positionAttribute, textureCoordAttribute, colorAttribute};
-	u32								  vertexAttributeCount = sizeof(vertexAttributes) / sizeof(vertexAttributes[0]);
-#endif
-
-	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
-	vertexInputInfo.sType						  = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	vertexInputInfo.vertexBindingDescriptionCount = 0;
-	vertexInputInfo.pVertexBindingDescriptions	  = nullptr;
-
-	NTT_ASSERT_RESULT_SUCCESS(reflectShaderInputs(vertexShaderSPIRV, vertexInputInfo));
-	NTT_ASSERT_RESULT_SUCCESS(reflectShaderInputs(fragmentShaderSPIRV, vertexInputInfo));
+	NTT_ASSERT_RESULT_SUCCESS(reflectShaderInputs(vertexShaderSPIRV,
+												  vertexBindingDescriptions,
+												  vertexBindingDescriptionCount,
+												  vertexAttributeDescriptions,
+												  vertexAttributeDescriptionCount));
 	NTT_ASSERT_RESULT_SUCCESS(vertexShaderSPIRV.Free());
 	NTT_ASSERT_RESULT_SUCCESS(fragmentShaderSPIRV.Free());
 
-#if 0
-	vertexInputInfo.vertexAttributeDescriptionCount = vertexAttributeCount;
-	vertexInputInfo.pVertexAttributeDescriptions	= vertexAttributes;
-#else
-	vertexInputInfo.vertexAttributeDescriptionCount = 0;
-	vertexInputInfo.pVertexAttributeDescriptions	= nullptr;
-#endif
+	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
+	vertexInputInfo.sType							= VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+	vertexInputInfo.vertexBindingDescriptionCount	= vertexBindingDescriptionCount;
+	vertexInputInfo.pVertexBindingDescriptions		= vertexBindingDescriptions;
+	vertexInputInfo.vertexAttributeDescriptionCount = vertexAttributeDescriptionCount;
+	vertexInputInfo.pVertexAttributeDescriptions	= vertexAttributeDescriptions;
 
 	VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
 	inputAssembly.sType					 = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -275,7 +260,11 @@ static Pointer<u32> compileShaderToSPIRV_Vulkan(glslang_stage_t stage, const cha
 	return bin;
 }
 
-static Result reflectShaderInputs(const Pointer<u32>& spirvCode, VkPipelineVertexInputStateCreateInfo& vertexInputInfo)
+static Result reflectShaderInputs(const Pointer<u32>&				 spirvCode,
+								  VkVertexInputBindingDescription*	 vertexBindingDescriptions,
+								  u32&								 vertexBindingDescriptionCount,
+								  VkVertexInputAttributeDescription* vertexAttributeDescriptions,
+								  u32&								 vertexAttributeDescriptionCount)
 {
 	SpvReflectShaderModule module;
 	SpvReflectResult	   result = spvReflectCreateShaderModule((size_t)spirvCode.size, spirvCode.Get(), &module);
@@ -308,13 +297,35 @@ static Result reflectShaderInputs(const Pointer<u32>& spirvCode, VkPipelineVerte
 		return RESULT_VULKAN_ERROR;
 	}
 
+	u32 bindingDescriptonStride = 0;
+	u32 attributeCount			= 0;
 	// Output variables, descriptor bindings, descriptor sets, and push constants
 	for (uint32_t i = 0; i < var_count; ++i)
 	{
 		SpvReflectInterfaceVariable* var = input_vars.Get()[i];
+		// Skip built-in variables (e.g. gl_VertexIndex) — they are not vertex attributes
+		if (var->built_in != -1)
+		{
+			NTT_VULKAN_INFO("Skipping built-in input: %s", var->name);
+			continue;
+		}
 		NTT_VULKAN_INFO("Input Variable: %s, Location: %u, Format: %d", var->name, var->location, var->format);
-		NTT_UNUSED(vertexInputInfo);
+		u32 componentCount = var->numeric.vector.component_count;
+		u32 componentWidth = var->numeric.scalar.width / 8;
+
+		vertexAttributeDescriptions[attributeCount].location = var->location;
+		vertexAttributeDescriptions[attributeCount].binding	 = 0; // Assuming a single binding for simplicity
+		vertexAttributeDescriptions[attributeCount].format	 = static_cast<VkFormat>(var->format);
+		vertexAttributeDescriptions[attributeCount].offset	 = bindingDescriptonStride;
+
+		bindingDescriptonStride += componentCount * componentWidth;
+		++attributeCount;
 	}
+	vertexAttributeDescriptionCount		   = attributeCount;
+	vertexBindingDescriptionCount		   = 1; // Assuming a single binding for simplicity
+	vertexBindingDescriptions[0].binding   = 0;
+	vertexBindingDescriptions[0].stride	   = bindingDescriptonStride; // Set the stride based on your vertex structure
+	vertexBindingDescriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 	// can be enumerated and extracted using a similar mechanism.
 
 	NTT_ASSERT_RESULT_SUCCESS(input_vars.Free()); // Free the allocated memory for input variables

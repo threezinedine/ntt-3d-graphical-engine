@@ -48,7 +48,7 @@ MeshID MeshStorage::AddMesh(Mesh&& mesh, RenderContextID renderContextID) noexce
 	node.pRenderContext =
 		SystemGlobals::pRenderSystem->m_pRenderContextStorage->Get(renderContextID)->pRenderContextHandle;
 
-	NTT_ASSERT(AddMeshImpl(node.mesh, node.pMeshHandle) == RESULT_SUCCESS);
+	NTT_ASSERT(AddMeshImpl(node.mesh, node.pMeshHandle, node.pRenderContext) == RESULT_SUCCESS);
 
 	return m_pMeshStorage->Add(static_cast<MeshNode&&>(node));
 }
@@ -72,7 +72,7 @@ Result MeshStorage::RemoveMesh(MeshID meshID)
 		return RESULT_INDEX_OUT_OF_BOUNDS;
 	}
 
-	NTT_ASSERT_RESULT_SUCCESS(RemoveMeshImpl(pNode->pMeshHandle));
+	NTT_ASSERT_RESULT_SUCCESS(RemoveMeshImpl(pNode->pMeshHandle, pNode->pRenderContext));
 	NTT_ASSERT_RESULT_SUCCESS(pNode->pMeshHandle.Free());
 
 	return m_pMeshStorage->Remove(meshID);

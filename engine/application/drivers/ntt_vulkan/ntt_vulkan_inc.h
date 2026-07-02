@@ -45,10 +45,9 @@ namespace ntt {
 
 struct MeshHandle
 {
-	u32 vertexBuffer;
-	u32 indexBuffer;
-	u32 vertexCount;
-	u32 indexCount;
+	VkBuffer	   vertexBuffer;
+	VkDeviceMemory vertexBufferMemory;
+	u32			   vertexCount;
 };
 
 #define VK_MESH_CAST(handle)                                                                                           \
@@ -82,6 +81,7 @@ struct ShaderHandle
 struct VulkanContextHandle
 {
 	Pointer<void>				  pWindowHandle;
+	VkPhysicalDevice			  physicalDevice;
 	VkSurfaceKHR				  surface;
 	u32							  graphicsQueueFamilyIndex;
 	u32							  presentQueueFamilyIndex;
