@@ -14,10 +14,10 @@
 #define _VK_ASSERT(exp, ret)                                                                                           \
 	do                                                                                                                 \
 	{                                                                                                                  \
-		VkResult _result = (exp);                                                                                       \
-		if (_result != VK_SUCCESS)                                                                                      \
+		VkResult _result = (exp);                                                                                      \
+		if (_result != VK_SUCCESS)                                                                                     \
 		{                                                                                                              \
-			NTT_VULKAN_ERROR("Vulkan error: %d", _result);                                                              \
+			NTT_VULKAN_ERROR("Vulkan error: %d", _result);                                                             \
 			debug_break();                                                                                             \
 			return ret;                                                                                                \
 		}                                                                                                              \
@@ -26,10 +26,10 @@
 #define _VK_ASSERT(exp, ret)                                                                                           \
 	do                                                                                                                 \
 	{                                                                                                                  \
-		VkResult _result = (exp);                                                                                       \
-		if (_result != VK_SUCCESS)                                                                                      \
+		VkResult _result = (exp);                                                                                      \
+		if (_result != VK_SUCCESS)                                                                                     \
 		{                                                                                                              \
-			NTT_VULKAN_ERROR("Vulkan error: %d", _result);                                                              \
+			NTT_VULKAN_ERROR("Vulkan error: %d", _result);                                                             \
 			return ret;                                                                                                \
 		}                                                                                                              \
 	} while (0)
@@ -48,6 +48,7 @@ struct MeshHandle
 	VkBuffer	   vertexBuffer;
 	VkDeviceMemory vertexBufferMemory;
 	u32			   vertexCount;
+	bool		   isDynamic;
 };
 
 #define VK_MESH_CAST(handle)                                                                                           \
@@ -90,6 +91,7 @@ struct VulkanContextHandle
 	VkDevice					  logicalDevice;
 	VkQueue						  graphicsQueue;
 	VkQueue						  presentQueue;
+	VkQueue						  transferQueue;
 	VkSwapchainKHR				  swapchain;
 	Scope<Array<VkImage>>		  pSwapchainImages;
 	u32							  swapchainImageCount;
@@ -100,6 +102,7 @@ struct VulkanContextHandle
 	Scope<Array<VkFramebuffer>>	  pSwapchainFramebuffers;
 	VkCommandPool				  graphicsCommandPool;
 	VkCommandPool				  presentCommandPool;
+	VkCommandPool				  transferCommandPool;
 	Scope<Array<VkCommandBuffer>> pCommandBuffers;
 	Scope<Array<VkSemaphore>>	  pImageAvailableSemaphores;
 	Scope<Array<VkSemaphore>>	  pRenderFinishedSemaphores;

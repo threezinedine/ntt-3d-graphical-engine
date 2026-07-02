@@ -24,8 +24,11 @@ Result VulkanMeshStorage::ShutdownImpl()
 	return RESULT_SUCCESS;
 }
 
-static Result createVertexBuffer(VulkanContextHandle* pVulkanContext, MeshHandle* pMeshHandle, Mesh& mesh);
-static Result destroyVertexBuffer(VulkanContextHandle* pVulkanContext, MeshHandle* pMeshHandle);
+static Result createDynamicVertexBuffer(VulkanContextHandle* pVulkanContext, MeshHandle* pMeshHandle, Mesh& mesh);
+static Result destroyDynamicVertexBuffer(VulkanContextHandle* pVulkanContext, MeshHandle* pMeshHandle);
+
+static Result createStaticVertexBuffer(VulkanContextHandle* pVulkanContext, MeshHandle* pMeshHandle, Mesh& mesh);
+static Result destroyStaticVertexBuffer(VulkanContextHandle* pVulkanContext, MeshHandle* pMeshHandle);
 
 Result VulkanMeshStorage::AddMeshImpl(Mesh&				   mesh,
 									  Pointer<void>&	   pMeshHandle,
@@ -37,7 +40,18 @@ Result VulkanMeshStorage::AddMeshImpl(Mesh&				   mesh,
 	MeshHandle*			 pHandle		= VK_MESH_CAST(pMeshHandle);
 	VulkanContextHandle* pVulkanContext = VK_CONTEXT_CAST(pRenderContext);
 
-	NTT_ASSERT_RESULT_SUCCESS(createVertexBuffer(pVulkanContext, pHandle, mesh));
+	pHandle->isDynamic = dynamic;
+
+	if (dynamic)
+	{
+		NTT_ASSERT_RESULT_SUCCESS(createDynamicVertexBuffer(pVulkanContext, pHandle, mesh));
+	}
+	else
+	{
+		NTT_ASSERT_RESULT_SUCCESS(createStaticVertexBuffer(pVulkanContext, pHandle, mesh));
+	}
+
+	pHandle->vertexCount = mesh.vertices.GetCount();
 
 	return RESULT_SUCCESS;
 }
@@ -45,36 +59,119 @@ Result VulkanMeshStorage::AddMeshImpl(Mesh&				   mesh,
 static VkMemoryRequirements getBufferMemoryRequirements(VulkanContextHandle* pVulkanContext, VkBuffer buffer);
 static u32 findMemoryType(VulkanContextHandle* pVulkanContext, u32 typeFilter, VkMemoryPropertyFlags properties);
 
-static Result createVertexBuffer(VulkanContextHandle* pVulkanContext, MeshHandle* pMeshHandle, Mesh& mesh)
+static Result createBuffer(VkBuffer&			 buffer,
+						   VkDeviceMemory&		 bufferMemory,
+						   VulkanContextHandle*	 pVulkanContext,
+						   VkDeviceSize			 size,
+						   VkBufferUsageFlags	 usage,
+						   VkMemoryPropertyFlags properties);
+
+static Result createDynamicVertexBuffer(VulkanContextHandle* pVulkanContext, MeshHandle* pMeshHandle, Mesh& mesh)
+{
+	u32 sizeInBytes = sizeof(Vertex) * mesh.vertices.GetCount();
+
+	NTT_ASSERT_RESULT_SUCCESS(createBuffer(pMeshHandle->vertexBuffer,
+										   pMeshHandle->vertexBufferMemory,
+										   pVulkanContext,
+										   sizeInBytes,
+										   VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+										   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
+	void* pData;
+	vkMapMemory(pVulkanContext->logicalDevice, pMeshHandle->vertexBufferMemory, 0, sizeInBytes, 0, &pData);
+	MemCopy(pData, &mesh.vertices[0], sizeInBytes);
+	vkUnmapMemory(pVulkanContext->logicalDevice, pMeshHandle->vertexBufferMemory);
+
+	return RESULT_SUCCESS;
+}
+
+static Result createStaticVertexBuffer(VulkanContextHandle* pVulkanContext, MeshHandle* pMeshHandle, Mesh& mesh)
+{
+	u32 sizeInBytes = sizeof(Vertex) * mesh.vertices.GetCount();
+
+	VkBuffer	   stagingBuffer;
+	VkDeviceMemory stagingBufferMemory;
+
+	createBuffer(stagingBuffer,
+				 stagingBufferMemory,
+				 pVulkanContext,
+				 sizeInBytes,
+				 VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+				 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+	void* pData;
+	vkMapMemory(pVulkanContext->logicalDevice, stagingBufferMemory, 0, sizeInBytes, 0, &pData);
+	MemCopy(pData, &mesh.vertices[0], sizeInBytes);
+	vkUnmapMemory(pVulkanContext->logicalDevice, stagingBufferMemory);
+
+	createBuffer(pMeshHandle->vertexBuffer,
+				 pMeshHandle->vertexBufferMemory,
+				 pVulkanContext,
+				 sizeInBytes,
+				 VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+				 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+	VkCommandBufferAllocateInfo allocInfo{};
+	allocInfo.sType				 = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	allocInfo.level				 = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	allocInfo.commandPool		 = pVulkanContext->transferCommandPool;
+	allocInfo.commandBufferCount = 1;
+
+	VkCommandBuffer commandBuffer;
+	VK_ASSERT(vkAllocateCommandBuffers(pVulkanContext->logicalDevice, &allocInfo, &commandBuffer));
+
+	VkCommandBufferBeginInfo beginInfo{};
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+	VK_ASSERT(vkBeginCommandBuffer(commandBuffer, &beginInfo));
+
+	VkBufferCopy copyRegion{};
+	copyRegion.srcOffset = 0;
+	copyRegion.dstOffset = 0;
+	copyRegion.size		 = sizeInBytes;
+	vkCmdCopyBuffer(commandBuffer, stagingBuffer, pMeshHandle->vertexBuffer, 1, &copyRegion);
+
+	VkSubmitInfo submitInfo{};
+	submitInfo.sType			  = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers	  = &commandBuffer;
+
+	VK_ASSERT(vkEndCommandBuffer(commandBuffer));
+
+	VK_ASSERT(vkQueueSubmit(pVulkanContext->transferQueue, 1, &submitInfo, VK_NULL_HANDLE));
+	VK_ASSERT(vkQueueWaitIdle(pVulkanContext->transferQueue));
+
+	vkFreeCommandBuffers(pVulkanContext->logicalDevice, pVulkanContext->transferCommandPool, 1, &commandBuffer);
+
+	vkDestroyBuffer(pVulkanContext->logicalDevice, stagingBuffer, nullptr);
+	vkFreeMemory(pVulkanContext->logicalDevice, stagingBufferMemory, nullptr);
+
+	return RESULT_SUCCESS;
+}
+
+static Result createBuffer(VkBuffer&			 buffer,
+						   VkDeviceMemory&		 bufferMemory,
+						   VulkanContextHandle*	 pVulkanContext,
+						   VkDeviceSize			 size,
+						   VkBufferUsageFlags	 usage,
+						   VkMemoryPropertyFlags properties)
 {
 	VkBufferCreateInfo bufferCreateInfo{};
 	bufferCreateInfo.sType		 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-	bufferCreateInfo.size		 = sizeof(Vertex) * mesh.vertices.GetCount();
-	bufferCreateInfo.usage		 = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+	bufferCreateInfo.size		 = size;
+	bufferCreateInfo.usage		 = usage;
 	bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-	VK_ASSERT(vkCreateBuffer(pVulkanContext->logicalDevice, &bufferCreateInfo, nullptr, &pMeshHandle->vertexBuffer));
+	VK_ASSERT(vkCreateBuffer(pVulkanContext->logicalDevice, &bufferCreateInfo, nullptr, &buffer));
 
-	VkMemoryRequirements memRequirements = getBufferMemoryRequirements(pVulkanContext, pMeshHandle->vertexBuffer);
+	VkMemoryRequirements memRequirements = getBufferMemoryRequirements(pVulkanContext, buffer);
 
 	VkMemoryAllocateInfo allocInfo{};
-	allocInfo.sType			 = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	allocInfo.allocationSize = memRequirements.size;
-	allocInfo.memoryTypeIndex =
-		findMemoryType(pVulkanContext,
-					   memRequirements.memoryTypeBits,
-					   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	allocInfo.sType			  = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	allocInfo.allocationSize  = memRequirements.size;
+	allocInfo.memoryTypeIndex = findMemoryType(pVulkanContext, memRequirements.memoryTypeBits, properties);
 
-	VK_ASSERT(vkAllocateMemory(pVulkanContext->logicalDevice, &allocInfo, nullptr, &pMeshHandle->vertexBufferMemory));
-	VK_ASSERT(vkBindBufferMemory(
-		pVulkanContext->logicalDevice, pMeshHandle->vertexBuffer, pMeshHandle->vertexBufferMemory, 0));
-
-	void* data;
-	vkMapMemory(pVulkanContext->logicalDevice, pMeshHandle->vertexBufferMemory, 0, bufferCreateInfo.size, 0, &data);
-	MemCopy(data, &mesh.vertices[0], sizeof(Vertex) * mesh.vertices.GetCount());
-	vkUnmapMemory(pVulkanContext->logicalDevice, pMeshHandle->vertexBufferMemory);
-
-	pMeshHandle->vertexCount = mesh.vertices.GetCount();
+	VK_ASSERT(vkAllocateMemory(pVulkanContext->logicalDevice, &allocInfo, nullptr, &bufferMemory));
+	VK_ASSERT(vkBindBufferMemory(pVulkanContext->logicalDevice, buffer, bufferMemory, 0));
 
 	return RESULT_SUCCESS;
 }
@@ -129,12 +226,27 @@ Result VulkanMeshStorage::RemoveMeshImpl(const Pointer<void>& pMeshHandle, const
 	MeshHandle*			 pHandle		= VK_MESH_CAST(pMeshHandle);
 	VulkanContextHandle* pVulkanContext = VK_CONTEXT_CAST(pRenderContext);
 
-	NTT_ASSERT_RESULT_SUCCESS(destroyVertexBuffer(pVulkanContext, pHandle));
+	if (pHandle->isDynamic)
+	{
+		NTT_ASSERT_RESULT_SUCCESS(destroyDynamicVertexBuffer(pVulkanContext, pHandle));
+	}
+	else
+	{
+		NTT_ASSERT_RESULT_SUCCESS(destroyStaticVertexBuffer(pVulkanContext, pHandle));
+	}
 
 	return RESULT_SUCCESS;
 }
 
-static Result destroyVertexBuffer(VulkanContextHandle* pVulkanContext, MeshHandle* pMeshHandle)
+static Result destroyDynamicVertexBuffer(VulkanContextHandle* pVulkanContext, MeshHandle* pMeshHandle)
+{
+	vkDestroyBuffer(pVulkanContext->logicalDevice, pMeshHandle->vertexBuffer, nullptr);
+	vkFreeMemory(pVulkanContext->logicalDevice, pMeshHandle->vertexBufferMemory, nullptr);
+
+	return RESULT_SUCCESS;
+}
+
+static Result destroyStaticVertexBuffer(VulkanContextHandle* pVulkanContext, MeshHandle* pMeshHandle)
 {
 	vkDestroyBuffer(pVulkanContext->logicalDevice, pMeshHandle->vertexBuffer, nullptr);
 	vkFreeMemory(pVulkanContext->logicalDevice, pMeshHandle->vertexBufferMemory, nullptr);

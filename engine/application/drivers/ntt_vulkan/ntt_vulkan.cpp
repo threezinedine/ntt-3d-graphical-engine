@@ -811,6 +811,8 @@ static Result createLogicalDevice(VulkanContextHandle* pContextHandle)
 		pContextHandle->logicalDevice, pContextHandle->graphicsQueueFamilyIndex, 0, &pContextHandle->graphicsQueue);
 	vkGetDeviceQueue(
 		pContextHandle->logicalDevice, pContextHandle->presentQueueFamilyIndex, 0, &pContextHandle->presentQueue);
+	vkGetDeviceQueue(
+		pContextHandle->logicalDevice, pContextHandle->transferQueueFamilyIndex, 0, &pContextHandle->transferQueue);
 
 	return RESULT_SUCCESS;
 }
@@ -1126,6 +1128,27 @@ static Result createCommandPools(VulkanContextHandle* pContextHandle)
 		pContextHandle->presentCommandPool = pContextHandle->graphicsCommandPool;
 	}
 
+	if (pContextHandle->transferQueueFamilyIndex != INVALID_QUEUE_FAMILY_INDEX)
+	{
+		if (pContextHandle->transferQueueFamilyIndex == pContextHandle->graphicsQueueFamilyIndex)
+		{
+			pContextHandle->transferCommandPool = pContextHandle->graphicsCommandPool;
+		}
+		else if (pContextHandle->transferQueueFamilyIndex == pContextHandle->presentQueueFamilyIndex)
+		{
+			pContextHandle->transferCommandPool = pContextHandle->presentCommandPool;
+		}
+		else
+		{
+			VkCommandPoolCreateInfo transferPoolInfo{};
+			transferPoolInfo.sType			  = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+			transferPoolInfo.queueFamilyIndex = pContextHandle->transferQueueFamilyIndex;
+			transferPoolInfo.flags			  = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+			VK_ASSERT(vkCreateCommandPool(
+				pContextHandle->logicalDevice, &transferPoolInfo, nullptr, &pContextHandle->transferCommandPool));
+		}
+	}
+
 	NTT_VULKAN_DEBUG("Created command pools.");
 
 	return RESULT_SUCCESS;
@@ -1137,6 +1160,12 @@ static Result destroyCommandPools(VulkanContextHandle* pContextHandle)
 	if (pContextHandle->presentCommandPool != pContextHandle->graphicsCommandPool)
 	{
 		vkDestroyCommandPool(pContextHandle->logicalDevice, pContextHandle->presentCommandPool, nullptr);
+	}
+
+	if (pContextHandle->transferCommandPool != pContextHandle->graphicsCommandPool &&
+		pContextHandle->transferCommandPool != pContextHandle->presentCommandPool)
+	{
+		vkDestroyCommandPool(pContextHandle->logicalDevice, pContextHandle->transferCommandPool, nullptr);
 	}
 
 	NTT_VULKAN_DEBUG("Destroyed command pools.");
