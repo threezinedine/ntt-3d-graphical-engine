@@ -51,8 +51,9 @@ Result OpenGLMeshStorage::AddMeshImpl(Mesh& mesh, Pointer<void>& pMeshHandle)
 	return RESULT_SUCCESS;
 }
 
-Result OpenGLMeshStorage::DrawMeshImpl(const Pointer<void>& pMeshHandle)
+Result OpenGLMeshStorage::DrawMeshImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext)
 {
+	NTT_UNUSED(pRenderContext);
 	MeshHandle* pHandle = CAST_MESH_HANDLE(pMeshHandle);
 
 	GL_ASSERT(glBindVertexArray(pHandle->vao));

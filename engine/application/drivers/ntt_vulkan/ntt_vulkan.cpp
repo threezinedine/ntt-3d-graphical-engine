@@ -1246,11 +1246,6 @@ static Result recordCommandBuffer(VulkanContextHandle* pContextHandle, u32 image
 						 &renderPassInfo,
 						 VK_SUBPASS_CONTENTS_INLINE);
 
-	return RESULT_SUCCESS;
-}
-
-static Result endRecordCommandBuffer(VulkanContextHandle* pContextHandle)
-{
 	VkViewport viewport{};
 	viewport.x		  = 0.0f;
 	viewport.y		  = 0.0f;
@@ -1267,6 +1262,11 @@ static Result endRecordCommandBuffer(VulkanContextHandle* pContextHandle)
 	vkCmdSetScissor(
 		GET_SCOPE_ARRAY_INDEX(pContextHandle->pCommandBuffers, pContextHandle->currentFrame), 0, 1, &scissor);
 
+	return RESULT_SUCCESS;
+}
+
+static Result endRecordCommandBuffer(VulkanContextHandle* pContextHandle)
+{
 	vkCmdEndRenderPass(GET_SCOPE_ARRAY_INDEX(pContextHandle->pCommandBuffers, pContextHandle->currentFrame));
 
 	VK_ASSERT(vkEndCommandBuffer(GET_SCOPE_ARRAY_INDEX(pContextHandle->pCommandBuffers, pContextHandle->currentFrame)));

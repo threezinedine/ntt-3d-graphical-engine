@@ -31,9 +31,12 @@ Result VulkanMeshStorage::AddMeshImpl(Mesh& mesh, Pointer<void>& pMeshHandle)
 	return RESULT_SUCCESS;
 }
 
-Result VulkanMeshStorage::DrawMeshImpl(const Pointer<void>& pMeshHandle)
+Result VulkanMeshStorage::DrawMeshImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext)
 {
+	VulkanContextHandle* pVulkanContext = VK_CONTEXT_CAST(pRenderContext);
 	NTT_UNUSED(pMeshHandle);
+
+	vkCmdDraw(GET_SCOPE_ARRAY_INDEX(pVulkanContext->pCommandBuffers, pVulkanContext->currentFrame), 3, 1, 0, 0);
 	return RESULT_SUCCESS;
 }
 

@@ -51,6 +51,16 @@ struct MeshHandle
 	u32 indexCount;
 };
 
+#define VK_MESH_CAST(handle)                                                                                           \
+	reinterpret_cast<MeshHandle*>(handle.Get());                                                                       \
+	do                                                                                                                 \
+	{                                                                                                                  \
+		if (handle == nullptr)                                                                                         \
+		{                                                                                                              \
+			return RESULT_NULL_POINTER;                                                                                \
+		}                                                                                                              \
+	} while (0)
+
 struct ShaderHandle
 {
 	VkShaderModule	 vertexModule;

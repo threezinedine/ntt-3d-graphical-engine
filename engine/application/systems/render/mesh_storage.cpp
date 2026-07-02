@@ -1,4 +1,7 @@
 #include "mesh_storage.h"
+#include "render_system.h"
+#include "systems/render/render_system.h"
+#include "systems/system_globals.h"
 
 namespace ntt {
 
@@ -37,11 +40,13 @@ MeshStorage::~MeshStorage()
 {
 }
 
-MeshID MeshStorage::AddMesh(Mesh&& mesh) noexcept
+MeshID MeshStorage::AddMesh(Mesh&& mesh, RenderContextID renderContextID) noexcept
 {
 	MeshNode node;
 	node.mesh		 = static_cast<Mesh&&>(mesh);
 	node.pMeshHandle = ALLOCATOR_SAFE(m_pAllocator)->Allocate(GetMeshHandleSize());
+	node.pRenderContext =
+		SystemGlobals::pRenderSystem->m_pRenderContextStorage->Get(renderContextID)->pRenderContextHandle;
 
 	NTT_ASSERT(AddMeshImpl(node.mesh, node.pMeshHandle) == RESULT_SUCCESS);
 
@@ -56,7 +61,7 @@ Result MeshStorage::DrawMesh(MeshID meshID)
 		return RESULT_INDEX_OUT_OF_BOUNDS;
 	}
 
-	return DrawMeshImpl(pNode->pMeshHandle);
+	return DrawMeshImpl(pNode->pMeshHandle, pNode->pRenderContext);
 }
 
 Result MeshStorage::RemoveMesh(MeshID meshID)

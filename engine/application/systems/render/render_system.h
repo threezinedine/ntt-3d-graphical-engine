@@ -37,6 +37,7 @@ public:
 	};
 
 	friend class ShaderStorage;
+	friend class MeshStorage;
 
 private:
 	Scope<Storage<RenderContext>> m_pRenderContextStorage;

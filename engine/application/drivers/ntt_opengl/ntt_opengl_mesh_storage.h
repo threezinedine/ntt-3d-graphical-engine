@@ -15,7 +15,7 @@ protected:
 	virtual Result ShutdownImpl() override;
 
 	virtual Result AddMeshImpl(Mesh& mesh, Pointer<void>& pMeshHandle) override;
-	virtual Result DrawMeshImpl(const Pointer<void>& pMeshHandle) override;
+	virtual Result DrawMeshImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext) override;
 	virtual Result RemoveMeshImpl(const Pointer<void>& pMeshHandle) override;
 
 protected:
