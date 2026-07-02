@@ -5,6 +5,7 @@
 #include "glslang/Public/resource_limits_c.h"
 #include "ntt_vulkan_inc.h"
 #include "services.h"
+#include "spirv_reflect.h"
 
 namespace ntt {
 
@@ -30,6 +31,7 @@ Result VulkanShaderStorage::ShutdownImpl()
 }
 
 static Pointer<u32> compileShaderToSPIRV_Vulkan(glslang_stage_t stage, const char* shaderSource);
+static Result reflectShaderInputs(const Pointer<u32>& spirvCode, VkPipelineVertexInputStateCreateInfo& vertexInputInfo);
 
 Result VulkanShaderStorage::AddShaderImpl(const Pointer<void>& pRenderContext,
 										  const char*		   pVertexShaderSource,
@@ -49,16 +51,12 @@ Result VulkanShaderStorage::AddShaderImpl(const Pointer<void>& pRenderContext,
 	VK_ASSERT(
 		vkCreateShaderModule(pVulkanContext->logicalDevice, &vertexModuleCreateInfo, nullptr, &pHandle->vertexModule));
 
-	NTT_ASSERT_RESULT_SUCCESS(vertexShaderSPIRV.Free());
-
 	VkShaderModuleCreateInfo fragmentModuleCreateInfo{};
 	fragmentModuleCreateInfo.sType	  = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 	fragmentModuleCreateInfo.codeSize = fragmentShaderSPIRV.size;
 	fragmentModuleCreateInfo.pCode	  = fragmentShaderSPIRV.Get();
 	VK_ASSERT(vkCreateShaderModule(
 		pVulkanContext->logicalDevice, &fragmentModuleCreateInfo, nullptr, &pHandle->fragmentModule));
-
-	NTT_ASSERT_RESULT_SUCCESS(fragmentShaderSPIRV.Free());
 
 	VkPipelineShaderStageCreateInfo vertexShaderStageInfo{};
 	vertexShaderStageInfo.sType	 = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -107,6 +105,11 @@ Result VulkanShaderStorage::AddShaderImpl(const Pointer<void>& pRenderContext,
 	vertexInputInfo.sType						  = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 	vertexInputInfo.vertexBindingDescriptionCount = 0;
 	vertexInputInfo.pVertexBindingDescriptions	  = nullptr;
+
+	NTT_ASSERT_RESULT_SUCCESS(reflectShaderInputs(vertexShaderSPIRV, vertexInputInfo));
+	NTT_ASSERT_RESULT_SUCCESS(reflectShaderInputs(fragmentShaderSPIRV, vertexInputInfo));
+	NTT_ASSERT_RESULT_SUCCESS(vertexShaderSPIRV.Free());
+	NTT_ASSERT_RESULT_SUCCESS(fragmentShaderSPIRV.Free());
 
 #if 0
 	vertexInputInfo.vertexAttributeDescriptionCount = vertexAttributeCount;
@@ -270,6 +273,54 @@ static Pointer<u32> compileShaderToSPIRV_Vulkan(glslang_stage_t stage, const cha
 	glslang_shader_delete(shader);
 
 	return bin;
+}
+
+static Result reflectShaderInputs(const Pointer<u32>& spirvCode, VkPipelineVertexInputStateCreateInfo& vertexInputInfo)
+{
+	SpvReflectShaderModule module;
+	SpvReflectResult	   result = spvReflectCreateShaderModule((size_t)spirvCode.size, spirvCode.Get(), &module);
+
+	if (result != SPV_REFLECT_RESULT_SUCCESS)
+	{
+		NTT_VULKAN_ERROR("Failed to create SPIR-V reflection module");
+		return RESULT_VULKAN_ERROR;
+	}
+
+	// Enumerate and extract shader's input variables
+	uint32_t var_count = 0;
+	result			   = spvReflectEnumerateInputVariables(&module, &var_count, NULL);
+
+	if (result != SPV_REFLECT_RESULT_SUCCESS)
+	{
+		NTT_VULKAN_ERROR("Failed to enumerate input variables");
+		spvReflectDestroyShaderModule(&module);
+		return RESULT_VULKAN_ERROR;
+	}
+
+	Pointer<SpvReflectInterfaceVariable*> input_vars =
+		g_GlobalAllocators.pStack->Allocate(var_count * sizeof(SpvReflectInterfaceVariable*))
+			.Cast<SpvReflectInterfaceVariable*>();
+	result = spvReflectEnumerateInputVariables(&module, &var_count, input_vars.Get());
+	if (result != SPV_REFLECT_RESULT_SUCCESS)
+	{
+		NTT_VULKAN_ERROR("Failed to enumerate input variables");
+		spvReflectDestroyShaderModule(&module);
+		return RESULT_VULKAN_ERROR;
+	}
+
+	// Output variables, descriptor bindings, descriptor sets, and push constants
+	for (uint32_t i = 0; i < var_count; ++i)
+	{
+		SpvReflectInterfaceVariable* var = input_vars.Get()[i];
+		NTT_VULKAN_INFO("Input Variable: %s, Location: %u, Format: %d", var->name, var->location, var->format);
+		NTT_UNUSED(vertexInputInfo);
+	}
+	// can be enumerated and extracted using a similar mechanism.
+
+	NTT_ASSERT_RESULT_SUCCESS(input_vars.Free()); // Free the allocated memory for input variables
+	// Destroy the reflection data when no longer required.
+	spvReflectDestroyShaderModule(&module);
+	return RESULT_SUCCESS;
 }
 
 Result VulkanShaderStorage::UseShaderImpl(const Pointer<void>& pRenderContext, const Pointer<void>& pShaderHandle)

@@ -23,10 +23,27 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(glslang)
 
+FetchContent_Declare(
+    spirv-reflect
+    GIT_REPOSITORY
+    https://github.com/KhronosGroup/SPIRV-Reflect.git
+    GIT_TAG main
+    SOURCE_DIR
+    "${CMAKE_SOURCE_DIR}/externals/SPIRV-Reflect"
+)
+
+set(SPIRV_REFLECT_EXAMPLES OFF)
+set(SPIRV_REFLECT_EXECUTABLE OFF)
+set(SPIRV_REFLECT_INSTALL OFF)
+set(SPIRV_REFLECT_STATIC_LIB ON)
+set(SPIRV_REFLECT_BUILD_TESTS OFF)
+FetchContent_MakeAvailable(spirv-reflect)
+
 target_link_libraries(
     ${VULKAN_TARGET}
     INTERFACE 
     Vulkan::Vulkan
     glslang::glslang
     glslang::glslang-default-resource-limits
+    spirv-reflect-static
 )
