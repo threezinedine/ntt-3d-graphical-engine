@@ -148,8 +148,8 @@ static Result createStaticVertexBuffer(VulkanContextHandle* pVulkanContext, Mesh
 	return RESULT_SUCCESS;
 }
 
-static Result createBuffer(VkBuffer&			 buffer,
-						   VkDeviceMemory&		 bufferMemory,
+static Result createBuffer(VkBuffer&			 outBuffer,
+						   VkDeviceMemory&		 outBufferMemory,
 						   VulkanContextHandle*	 pVulkanContext,
 						   VkDeviceSize			 size,
 						   VkBufferUsageFlags	 usage,
@@ -161,17 +161,17 @@ static Result createBuffer(VkBuffer&			 buffer,
 	bufferCreateInfo.usage		 = usage;
 	bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-	VK_ASSERT(vkCreateBuffer(pVulkanContext->logicalDevice, &bufferCreateInfo, nullptr, &buffer));
+	VK_ASSERT(vkCreateBuffer(pVulkanContext->logicalDevice, &bufferCreateInfo, nullptr, &outBuffer));
 
-	VkMemoryRequirements memRequirements = getBufferMemoryRequirements(pVulkanContext, buffer);
+	VkMemoryRequirements memRequirements = getBufferMemoryRequirements(pVulkanContext, outBuffer);
 
 	VkMemoryAllocateInfo allocInfo{};
 	allocInfo.sType			  = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	allocInfo.allocationSize  = memRequirements.size;
 	allocInfo.memoryTypeIndex = findMemoryType(pVulkanContext, memRequirements.memoryTypeBits, properties);
 
-	VK_ASSERT(vkAllocateMemory(pVulkanContext->logicalDevice, &allocInfo, nullptr, &bufferMemory));
-	VK_ASSERT(vkBindBufferMemory(pVulkanContext->logicalDevice, buffer, bufferMemory, 0));
+	VK_ASSERT(vkAllocateMemory(pVulkanContext->logicalDevice, &allocInfo, nullptr, &outBufferMemory));
+	VK_ASSERT(vkBindBufferMemory(pVulkanContext->logicalDevice, outBuffer, outBufferMemory, 0));
 
 	return RESULT_SUCCESS;
 }
