@@ -48,7 +48,7 @@ struct Matrix
 	template <int OtherCols>
 	Matrix<T, Rows, OtherCols> dot(const Matrix<T, Cols, OtherCols>& other) const;
 
-	T m_Data[Rows][Cols];
+	T m_Data[Rows][Cols] = {};
 };
 
 #define NTT_PRIMITIVE_MATRIX_OP(op)                                                                                    \

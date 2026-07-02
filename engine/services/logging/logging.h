@@ -79,11 +79,13 @@ private:
 #define NTT_OPENGL_ERROR(format, ...) NTT_LOG_ERROR(LOGGING_TYPE_OPENGL, format, ##__VA_ARGS__)
 #define NTT_OPENGL_FATAL(format, ...) NTT_LOG_FATAL(LOGGING_TYPE_OPENGL, format, ##__VA_ARGS__)
 
+#if NTT_VULKAN
 #define NTT_VULKAN_TRACE(format, ...) NTT_LOG_TRACE(LOGGING_TYPE_VULKAN, format, ##__VA_ARGS__)
 #define NTT_VULKAN_DEBUG(format, ...) NTT_LOG_DEBUG(LOGGING_TYPE_VULKAN, format, ##__VA_ARGS__)
 #define NTT_VULKAN_INFO(format, ...)  NTT_LOG_INFO(LOGGING_TYPE_VULKAN, format, ##__VA_ARGS__)
 #define NTT_VULKAN_WARN(format, ...)  NTT_LOG_WARN(LOGGING_TYPE_VULKAN, format, ##__VA_ARGS__)
 #define NTT_VULKAN_ERROR(format, ...) NTT_LOG_ERROR(LOGGING_TYPE_VULKAN, format, ##__VA_ARGS__)
 #define NTT_VULKAN_FATAL(format, ...) NTT_LOG_FATAL(LOGGING_TYPE_VULKAN, format, ##__VA_ARGS__)
+#endif // NTT_VULKAN
 
 } // namespace ntt
