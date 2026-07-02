@@ -9,6 +9,8 @@ class RenderSystem;
 typedef u32		   WindowID;
 constexpr WindowID INVALID_WINDOW_ID = static_cast<u32>(-1);
 
+typedef Result (*OnWindowResizeCallback)(u32 width, u32 height, void* pUserData);
+
 class DisplaySystem : public System
 {
 	NTT_OBJECT_DERIVED_DECLARE(DisplaySystem, System)
@@ -25,6 +27,8 @@ public:
 	WindowID CreateWindow(u32 width, u32 height, const char* title);
 	Result	 DestroyWindow(WindowID windowID);
 	bool	 ShouldCloseWindow(WindowID windowID);
+
+	Result SetOnWindowResizeCallback(WindowID windowID, OnWindowResizeCallback callback, void* pUserData);
 
 public:
 	Result OnBeginFrame(WindowID windowID);

@@ -119,4 +119,22 @@ Result DisplaySystem::OnEndFrame(WindowID windowID)
 	return g_DisplayDriver.OnEndFrame(m_pWindowIDStorage->Get(windowID)->pWindowHandle);
 }
 
+Result DisplaySystem::SetOnWindowResizeCallback(WindowID windowID, OnWindowResizeCallback callback, void* pUserData)
+{
+	WindowInfo* pWindowInfo = m_pWindowIDStorage->Get(windowID);
+	if (pWindowInfo == nullptr)
+	{
+		NTT_DISPLAY_ERROR("Invalid window ID: %u", windowID);
+		return RESULT_INACTIVE_STORAGE_INDEX;
+	}
+
+	if (g_DisplayDriver.SetOnWindowResizeCallback == nullptr)
+	{
+		NTT_DISPLAY_ERROR("Display driver SetOnWindowResizeCallback function is not initialized.");
+		return RESULT_DISPLAY_DRIVER_NOT_INITIALIZED;
+	}
+
+	return g_DisplayDriver.SetOnWindowResizeCallback(pWindowInfo->pWindowHandle, callback, pUserData);
+}
+
 } // namespace ntt

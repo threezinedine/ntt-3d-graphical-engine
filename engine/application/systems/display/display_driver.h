@@ -1,5 +1,6 @@
 #pragma once
 
+#include "display_system.h"
 #include "services.h"
 
 namespace ntt {
@@ -16,9 +17,7 @@ struct DisplayDriver
 	u32 (*GetWindowHandleSize)();
 	void* (*GetWindowHandle)(Pointer<void> pWindowHandle);
 	Vec2u (*GetWindowSize)(Pointer<void> pWindowHandle);
-
-	// callback events
-	Result (*OnWindowResize)(Pointer<void> pWindowHandle, u32 width, u32 height);
+	Result (*SetOnWindowResizeCallback)(Pointer<void> pWindowHandle, OnWindowResizeCallback callback, void* pUserData);
 };
 
 extern DisplayDriver g_DisplayDriver;

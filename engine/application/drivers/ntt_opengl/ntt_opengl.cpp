@@ -18,7 +18,7 @@ static Result OpenGLDriver_EndRender(Pointer<void> pDriverHandle);
 static Result OpenGLDriver_Present(Pointer<void> pDriverHandle);
 static u32	  OpenGLDriver_GetRenderContextSize();
 
-static Result OpenGLDriver_OnWindowResize(Pointer<void> pWindowHandle, u32 width, u32 height);
+static Result OpenGLDriver_OnWindowResize(u32 width, u32 height, void* pUserData);
 
 Result RegisterOpenGLDriver()
 {
@@ -30,8 +30,6 @@ Result RegisterOpenGLDriver()
 	g_RenderDriver.EndRender				  = OpenGLDriver_EndRender;
 	g_RenderDriver.Present					  = OpenGLDriver_Present;
 	g_RenderDriver.GetRenderContextHandleSize = OpenGLDriver_GetRenderContextSize;
-
-	g_DisplayDriver.OnWindowResize = OpenGLDriver_OnWindowResize;
 
 	return RESULT_SUCCESS;
 }
@@ -97,6 +95,8 @@ static Result OpenGLDriver_CreateRenderContext(Pointer<void> pWindowHandle, Poin
 	OpenGLContextHandle* pHandle = CAST_CONTEXT_HANDLE(pRenderContextHandle);
 	pHandle->pWindow			 = reinterpret_cast<GLFWwindow*>(g_DisplayDriver.GetWindowHandle(pWindowHandle));
 
+	g_DisplayDriver.SetOnWindowResizeCallback(pWindowHandle, OpenGLDriver_OnWindowResize, pHandle);
+
 	return RESULT_SUCCESS;
 }
 
@@ -106,11 +106,11 @@ static Result OpenGLDriver_DestroyRenderContext(Pointer<void>& pRenderContextHan
 	return RESULT_SUCCESS;
 }
 
-static Result OpenGLDriver_OnWindowResize(Pointer<void> pWindowHandle, u32 width, u32 height)
+static Result OpenGLDriver_OnWindowResize(u32 width, u32 height, void* pUserData)
 {
-	GLFWwindow* pWindow = reinterpret_cast<GLFWwindow*>(g_DisplayDriver.GetWindowHandle(pWindowHandle));
+	OpenGLContextHandle* pHandle = reinterpret_cast<OpenGLContextHandle*>(pUserData);
 
-	glfwMakeContextCurrent(pWindow);
+	glfwMakeContextCurrent(pHandle->pWindow);
 	glViewport(0, 0, width, height);
 
 	return RESULT_SUCCESS;
