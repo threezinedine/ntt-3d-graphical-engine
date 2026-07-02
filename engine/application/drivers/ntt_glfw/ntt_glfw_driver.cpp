@@ -123,7 +123,6 @@ static Result GLFWDisplayDriver_CreateWindow(u32 width, u32 height, const char* 
 		pHandle->width		  = width;
 		pHandle->height		  = height;
 		glfwSetWindowUserPointer(pHandle->pWindow, pHandle);
-		glfwSetWindowSize(pHandle->pWindow, static_cast<i32>(width), static_cast<i32>(height));
 		return RESULT_SUCCESS;
 	}
 
