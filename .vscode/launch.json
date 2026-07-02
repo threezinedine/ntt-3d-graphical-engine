@@ -6,6 +6,7 @@
 			"type": "cppdbg",
 			"request": "launch",
 			"program": "${workspaceRoot}/build/debug/engine/main/engine/ntt-engine",
+			"args": ["-v"],
 			"preLaunchTask": "Build Engine (linux-debug)",
 			"cwd": "${workspaceRoot}/build/debug/engine/main"
 		},

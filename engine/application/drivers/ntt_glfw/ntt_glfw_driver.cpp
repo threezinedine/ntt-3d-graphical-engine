@@ -236,6 +236,7 @@ static Result GLFWDisplayDriver_SetOnWindowResizeCallback(Pointer<void>			 pWind
 	glfwMakeContextCurrent(pHandle->pWindow);
 	glfwSetWindowUserPointer(pHandle->pWindow, pHandle);
 	glfwSetWindowSizeCallback(pHandle->pWindow, GLFWDisplayDriver_OnWindowResize);
+	glfwSetWindowSize(pHandle->pWindow, static_cast<i32>(pHandle->width), static_cast<i32>(pHandle->height));
 	return RESULT_SUCCESS;
 }
 
