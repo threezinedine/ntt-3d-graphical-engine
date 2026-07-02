@@ -21,3 +21,53 @@
 			return RESULT_OPENGL_ERROR;                                                                                \
 		}                                                                                                              \
 	} while (0)
+
+namespace ntt {
+
+struct OpenGLContextHandle
+{
+	GLFWwindow* pWindow;
+};
+
+#define CAST_CONTEXT_HANDLE(handle)                                                                                    \
+	reinterpret_cast<OpenGLContextHandle*>(handle.Get());                                                              \
+	do                                                                                                                 \
+	{                                                                                                                  \
+		if (handle == nullptr)                                                                                         \
+		{                                                                                                              \
+			return RESULT_NULL_POINTER;                                                                                \
+		}                                                                                                              \
+	} while (0)
+
+struct ShaderHandle
+{
+	u32 program;
+};
+
+#define CAST_SHADER_HANDLE(handle)                                                                                     \
+	reinterpret_cast<ShaderHandle*>(handle.Get());                                                                     \
+	do                                                                                                                 \
+	{                                                                                                                  \
+		if (handle == nullptr)                                                                                         \
+		{                                                                                                              \
+			return RESULT_NULL_POINTER;                                                                                \
+		}                                                                                                              \
+	} while (0)
+
+struct MeshHandle
+{
+	u32 vao;
+	u32 vbo;
+};
+
+#define CAST_MESH_HANDLE(handle)                                                                                       \
+	reinterpret_cast<MeshHandle*>(handle.Get());                                                                       \
+	do                                                                                                                 \
+	{                                                                                                                  \
+		if (handle == nullptr)                                                                                         \
+		{                                                                                                              \
+			return RESULT_NULL_POINTER;                                                                                \
+		}                                                                                                              \
+	} while (0)
+
+} // namespace ntt

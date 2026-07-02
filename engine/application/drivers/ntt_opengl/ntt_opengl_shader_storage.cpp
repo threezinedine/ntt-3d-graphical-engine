@@ -3,11 +3,6 @@
 
 namespace ntt {
 
-struct ShaderHandle
-{
-	u32 program;
-};
-
 OpenGLShaderStorage::OpenGLShaderStorage(IAllocator* pAllocator)
 	: ShaderStorage(pAllocator)
 {
@@ -36,12 +31,7 @@ Result OpenGLShaderStorage::AddShaderImpl(const Pointer<void>& pRenderContext,
 {
 	NTT_UNUSED(pRenderContext);
 
-	if (pShaderHandle == nullptr)
-	{
-		return RESULT_NULL_POINTER;
-	}
-
-	ShaderHandle* pHandle = reinterpret_cast<ShaderHandle*>(pShaderHandle.Get());
+	ShaderHandle* pHandle = CAST_SHADER_HANDLE(pShaderHandle);
 
 	u32 vertexShader = glCreateShader(GL_VERTEX_SHADER);
 	GL_ASSERT(glShaderSource(vertexShader, 1, &pVertexShaderSource, nullptr));
@@ -100,7 +90,7 @@ Result OpenGLShaderStorage::AddShaderImpl(const Pointer<void>& pRenderContext,
 Result OpenGLShaderStorage::UseShaderImpl(const Pointer<void>& pRenderContext, const Pointer<void>& pShaderHandle)
 {
 	NTT_UNUSED(pRenderContext);
-	ShaderHandle* pHandle = reinterpret_cast<ShaderHandle*>(pShaderHandle.Get());
+	ShaderHandle* pHandle = CAST_SHADER_HANDLE(pShaderHandle);
 
 	GL_ASSERT(glUseProgram(pHandle->program));
 
@@ -110,7 +100,7 @@ Result OpenGLShaderStorage::UseShaderImpl(const Pointer<void>& pRenderContext, c
 Result OpenGLShaderStorage::RemoveShaderImpl(const Pointer<void>& pRenderContext, const Pointer<void>& pShaderHandle)
 {
 	NTT_UNUSED(pRenderContext);
-	ShaderHandle* pHandle = reinterpret_cast<ShaderHandle*>(pShaderHandle.Get());
+	ShaderHandle* pHandle = CAST_SHADER_HANDLE(pShaderHandle);
 
 	GL_ASSERT(glDeleteProgram(pHandle->program));
 

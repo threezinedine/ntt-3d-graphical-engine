@@ -4,15 +4,10 @@
 
 #include "ntt_opengl_mesh_storage.h"
 #include "ntt_opengl_shader_storage.h"
-#include "systems/render/render_globals.h"
 #include "systems/display/display_driver.h"
+#include "systems/render/render_globals.h"
 
 namespace ntt {
-
-struct OpenGLContextHandle
-{
-	GLFWwindow* pWindow;
-};
 
 static Result OpenGLDriver_Initialize();
 static Result OpenGLDriver_Shutdown();
@@ -82,11 +77,7 @@ static Result OpenGLDriver_EndRender(Pointer<void> pDriverHandle)
 
 static Result OpenGLDriver_Present(Pointer<void> pDriverHandle)
 {
-	Pointer<OpenGLContextHandle> pHandle = pDriverHandle.Cast<OpenGLContextHandle>();
-	if (pHandle == nullptr || pHandle.Get() == nullptr)
-	{
-		return RESULT_NULL_POINTER;
-	}
+	OpenGLContextHandle* pHandle = CAST_CONTEXT_HANDLE(pDriverHandle);
 
 	glfwSwapBuffers(pHandle->pWindow);
 	return RESULT_SUCCESS;
@@ -99,14 +90,8 @@ static u32 OpenGLDriver_GetRenderContextSize()
 
 static Result OpenGLDriver_CreateRenderContext(Pointer<void> pWindowHandle, Pointer<void>& pRenderContextHandle)
 {
-	Pointer<OpenGLContextHandle> pHandle = pRenderContextHandle.Cast<OpenGLContextHandle>();
-
-	if (pHandle == nullptr)
-	{
-		return RESULT_NULL_POINTER;
-	}
-
-	pHandle->pWindow = reinterpret_cast<GLFWwindow*>(g_DisplayDriver.GetWindowHandle(pWindowHandle));
+	OpenGLContextHandle* pHandle = CAST_CONTEXT_HANDLE(pRenderContextHandle);
+	pHandle->pWindow			 = reinterpret_cast<GLFWwindow*>(g_DisplayDriver.GetWindowHandle(pWindowHandle));
 
 	return RESULT_SUCCESS;
 }

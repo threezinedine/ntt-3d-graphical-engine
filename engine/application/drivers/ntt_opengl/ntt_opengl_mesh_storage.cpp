@@ -3,12 +3,6 @@
 
 namespace ntt {
 
-struct MeshHandle
-{
-	u32 vao;
-	u32 vbo;
-};
-
 OpenGLMeshStorage::OpenGLMeshStorage(IAllocator* pAllocator)
 	: MeshStorage(pAllocator)
 {
@@ -34,12 +28,7 @@ Result OpenGLMeshStorage::AddMeshImpl(Mesh& mesh, Pointer<void>& pMeshHandle)
 	u32 sizeInBytes	  = verticesCount * sizeof(Vertex);
 	u8* pVertexData	  = reinterpret_cast<u8*>(&mesh.vertices[0]);
 
-	MeshHandle* pHandle = reinterpret_cast<MeshHandle*>(pMeshHandle.Get());
-
-	if (pHandle == nullptr)
-	{
-		return RESULT_NULL_POINTER;
-	}
+	MeshHandle* pHandle = CAST_MESH_HANDLE(pMeshHandle);
 
 	GL_ASSERT(glGenVertexArrays(1, &pHandle->vao));
 	GL_ASSERT(glGenBuffers(1, &pHandle->vbo));
@@ -64,12 +53,7 @@ Result OpenGLMeshStorage::AddMeshImpl(Mesh& mesh, Pointer<void>& pMeshHandle)
 
 Result OpenGLMeshStorage::DrawMeshImpl(const Pointer<void>& pMeshHandle)
 {
-	MeshHandle* pHandle = reinterpret_cast<MeshHandle*>(pMeshHandle.Get());
-
-	if (pHandle == nullptr)
-	{
-		return RESULT_NULL_POINTER;
-	}
+	MeshHandle* pHandle = CAST_MESH_HANDLE(pMeshHandle);
 
 	GL_ASSERT(glBindVertexArray(pHandle->vao));
 	GL_ASSERT(glDrawArrays(GL_TRIANGLES, 0, 3)); // Assuming the mesh is made of triangles
@@ -80,12 +64,7 @@ Result OpenGLMeshStorage::DrawMeshImpl(const Pointer<void>& pMeshHandle)
 
 Result OpenGLMeshStorage::RemoveMeshImpl(const Pointer<void>& pMeshHandle)
 {
-	MeshHandle* pHandle = reinterpret_cast<MeshHandle*>(pMeshHandle.Get());
-
-	if (pHandle == nullptr)
-	{
-		return RESULT_NULL_POINTER;
-	}
+	MeshHandle* pHandle = CAST_MESH_HANDLE(pMeshHandle);
 
 	GL_ASSERT(glDeleteBuffers(1, &pHandle->vbo));
 	GL_ASSERT(glDeleteVertexArrays(1, &pHandle->vao));
