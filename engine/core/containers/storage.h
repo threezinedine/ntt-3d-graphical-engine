@@ -50,8 +50,7 @@ public:
 	}
 
 public:
-	template <typename... Args>
-	u32 Add(Args&&... args) noexcept;
+	u32 Add();
 
 	Result Remove(u32 index);
 	bool   IsActive(u32 index) const;
@@ -76,8 +75,7 @@ private:
 };
 
 template <typename DataType>
-template <typename... Args>
-u32 Storage<DataType>::Add(Args&&... args) noexcept
+u32 Storage<DataType>::Add()
 {
 	u32 index;
 	if (!m_FreeIndices.IsEmpty())
@@ -90,15 +88,12 @@ u32 Storage<DataType>::Add(Args&&... args) noexcept
 		index = m_CurrentIndex++;
 	}
 
-	if (index < m_Nodes.GetCount())
+	if (index >= m_Nodes.GetCapacity())
 	{
-		m_Nodes[index].data	  = DataType(static_cast<Args&&>(args)...);
-		m_Nodes[index].active = true;
+		m_Nodes.Resize(m_Nodes.GetCapacity() * 2);
 	}
-	else
-	{
-		m_Nodes.Emplace(static_cast<Args&&>(args)...);
-	}
+
+	m_Nodes[index].active = true;
 
 	return index;
 }

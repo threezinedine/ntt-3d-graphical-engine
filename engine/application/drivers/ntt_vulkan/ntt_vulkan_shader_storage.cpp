@@ -37,11 +37,14 @@ static Result		reflectShaderInputs(const Pointer<u32>&				   spirvCode,
 										VkVertexInputAttributeDescription* vertexAttributeDescriptions,
 										u32&							   vertexAttributeDescriptionCount);
 
-Result VulkanShaderStorage::AddShaderImpl(const Pointer<void>& pRenderContext,
-										  const char*		   pVertexShaderSource,
-										  const char*		   pFragmentShaderSource,
-										  Pointer<void>&	   pShaderHandle)
+Result VulkanShaderStorage::AddShaderImpl(const Pointer<void>&	 pRenderContext,
+										  const char*			 pVertexShaderSource,
+										  const char*			 pFragmentShaderSource,
+										  Pointer<void>&		 pShaderHandle,
+										  Scope<Array<Uniform>>& pUniforms)
 {
+	NTT_UNUSED(pUniforms);
+
 	Pointer<u32> vertexShaderSPIRV	 = compileShaderToSPIRV_Vulkan(GLSLANG_STAGE_VERTEX, pVertexShaderSource);
 	Pointer<u32> fragmentShaderSPIRV = compileShaderToSPIRV_Vulkan(GLSLANG_STAGE_FRAGMENT, pFragmentShaderSource);
 
@@ -187,6 +190,19 @@ Result VulkanShaderStorage::AddShaderImpl(const Pointer<void>& pRenderContext,
 
 	return RESULT_SUCCESS;
 }
+
+#define UNIFORM_TYPE_DEF(type, name, uppercase, glType)                                                                \
+	Result VulkanShaderStorage::SetUniform##name##Impl(                                                                \
+		const char* pUniformName, type value, const Pointer<void>& pShaderHandle, const Pointer<void>& pRenderContext) \
+	{                                                                                                                  \
+		NTT_UNUSED(pShaderHandle);                                                                                     \
+		NTT_UNUSED(pRenderContext);                                                                                    \
+		NTT_UNUSED(pUniformName);                                                                                      \
+		NTT_UNUSED(value);                                                                                             \
+		return RESULT_SUCCESS;                                                                                         \
+	}
+#include "systems/render/uniform_type.def"
+#undef UNIFORM_TYPE_DEF
 
 static Pointer<u32> compileShaderToSPIRV_Vulkan(glslang_stage_t stage, const char* shaderSource)
 {

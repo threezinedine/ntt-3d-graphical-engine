@@ -67,6 +67,13 @@ ntt_set_source_group("src/systems/render"
     "systems/render/render_globals.cpp"
     "systems/render/shader_storage.h"
     "systems/render/shader_storage.cpp"
+    "systems/render/uniform.h"
+    "systems/render/uniform.cpp"
+)
+
+ntt_set_source_group("src/systems/render/defs"
+    NTT_APPLICATION_SOURCES
+    "systems/render/uniform_type.def"
 )
 
 if (NTT_PLATFORM_WEB)

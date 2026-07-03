@@ -25,7 +25,14 @@ Result ECS::Shutdown()
 
 ECSSystemID ECS::RegisterSystem(System* pSystem)
 {
-	return m_pSystems->Add(SystemInfo{pSystem});
+	ECSSystemID systemID	= m_pSystems->Add();
+	SystemInfo* pSystemInfo = m_pSystems->Get(systemID);
+	if (pSystemInfo == nullptr)
+	{
+		return INVALID_ECS_SYSTEM_ID;
+	}
+	pSystemInfo->pSystem = pSystem;
+	return systemID;
 }
 
 Result ECS::UnregisterSystem(ECSSystemID systemID)

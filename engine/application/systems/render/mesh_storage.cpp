@@ -42,16 +42,17 @@ MeshStorage::~MeshStorage()
 
 MeshID MeshStorage::AddMesh(Mesh&& mesh, RenderContextID renderContextID, bool dynamic) noexcept
 {
-	MeshNode node;
-	node.mesh		 = static_cast<Mesh&&>(mesh);
-	node.pMeshHandle = ALLOCATOR_SAFE(m_pAllocator)->Allocate(GetMeshHandleSize());
-	node.dynamic	 = dynamic;
-	node.pRenderContext =
+	MeshID	  meshID   = m_pMeshStorage->Add();
+	MeshNode* pNode	   = m_pMeshStorage->Get(meshID);
+	pNode->mesh		   = static_cast<Mesh&&>(mesh);
+	pNode->pMeshHandle = ALLOCATOR_SAFE(m_pAllocator)->Allocate(GetMeshHandleSize());
+	pNode->dynamic	   = dynamic;
+	pNode->pRenderContext =
 		SystemGlobals::pRenderSystem->m_pRenderContextStorage->Get(renderContextID)->pRenderContextHandle;
 
-	NTT_ASSERT(AddMeshImpl(node.mesh, node.pMeshHandle, node.pRenderContext, node.dynamic) == RESULT_SUCCESS);
+	NTT_ASSERT(AddMeshImpl(pNode->mesh, pNode->pMeshHandle, pNode->pRenderContext, pNode->dynamic) == RESULT_SUCCESS);
 
-	return m_pMeshStorage->Add(static_cast<MeshNode&&>(node));
+	return meshID;
 }
 
 Result MeshStorage::DrawMesh(MeshID meshID)

@@ -50,10 +50,11 @@ Result DisplaySystem::ShutdownImpl()
 
 WindowID DisplaySystem::CreateWindow(u32 width, u32 height, const char* title)
 {
-	WindowInfo windowInfo;
-	windowInfo.pWindowHandle =
+	WindowID	windowID	= m_pWindowIDStorage->Add();
+	WindowInfo* pWindowInfo = m_pWindowIDStorage->Get(windowID);
+	pWindowInfo->pWindowHandle =
 		ALLOCATOR_SAFE(g_GlobalAllocators.pMalloc)->Allocate(g_DisplayDriver.GetWindowHandleSize());
-	Result result = g_DisplayDriver.CreateWindow(width, height, title, windowInfo.pWindowHandle);
+	Result result = g_DisplayDriver.CreateWindow(width, height, title, pWindowInfo->pWindowHandle);
 
 	if (result != RESULT_SUCCESS)
 	{
@@ -61,10 +62,10 @@ WindowID DisplaySystem::CreateWindow(u32 width, u32 height, const char* title)
 		return INVALID_WINDOW_ID;
 	}
 
-	windowInfo.width  = width;
-	windowInfo.height = height;
+	pWindowInfo->width	= width;
+	pWindowInfo->height = height;
 
-	return m_pWindowIDStorage->Add(windowInfo);
+	return windowID;
 }
 
 Result DisplaySystem::DestroyWindow(WindowID windowID)

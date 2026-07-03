@@ -71,6 +71,8 @@ Result Application::Update()
 	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pRenderSystem->BeginRender(g_RenderContextID));
 
 	NTT_ASSERT_RESULT_SUCCESS(g_RenderGlobals.pShaderStorage->UseShader(g_DefaultMeshShaderID));
+	NTT_ASSERT_RESULT_SUCCESS(g_RenderGlobals.pShaderStorage->SetUniformFloat4(
+		g_DefaultMeshShaderID, "uColor", Color{1.0f, 1.0f, 1.0f, 1.0f}));
 	NTT_ASSERT_RESULT_SUCCESS(g_RenderGlobals.pMeshStorage->DrawMesh(g_MeshID));
 
 	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pRenderSystem->EndRender(g_RenderContextID));

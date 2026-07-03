@@ -10,6 +10,10 @@ typedef u32 ECSSystemID;
 typedef u32 ECSComponentID;
 typedef u32 ECSEntityID;
 
+constexpr ECSSystemID	 INVALID_ECS_SYSTEM_ID	  = static_cast<u32>(-1);
+constexpr ECSComponentID INVALID_ECS_COMPONENT_ID = static_cast<u32>(-1);
+constexpr ECSEntityID	 INVALID_ECS_ENTITY_ID	  = static_cast<u32>(-1);
+
 class ECS
 {
 public:

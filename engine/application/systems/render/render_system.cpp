@@ -87,7 +87,7 @@ RenderContextID RenderSystem::CreateRenderContext(WindowID windowID)
 
 	DisplaySystem::WindowInfo* pWindowInfo = SystemGlobals::pDisplaySystem->m_pWindowIDStorage->Get(windowID);
 
-	RenderContextID id			   = m_pRenderContextStorage->Add(RenderContext{});
+	RenderContextID id			   = m_pRenderContextStorage->Add();
 	RenderContext*	pRenderContext = m_pRenderContextStorage->Get(id);
 	pRenderContext->pRenderContextHandle =
 		ALLOCATOR_SAFE(g_GlobalAllocators.pMalloc)->Allocate(g_RenderDriver.GetRenderContextHandleSize());

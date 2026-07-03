@@ -1,6 +1,30 @@
 #include "ntt_opengl_shader_storage.h"
 #include "ntt_opengl_inc.h"
 
+namespace {
+
+static void setUniformValue(GLint location, float value)
+{
+	glUniform1f(location, value);
+}
+
+static void setUniformValue(GLint location, ntt::Vec2f value)
+{
+	glUniform2f(location, value[0], value[1]);
+}
+
+static void setUniformValue(GLint location, ntt::Vec3f value)
+{
+	glUniform3f(location, value[0], value[1], value[2]);
+}
+
+static void setUniformValue(GLint location, ntt::Vec4f value)
+{
+	glUniform4f(location, value[0], value[1], value[2], value[3]);
+}
+
+} // anonymous namespace
+
 namespace ntt {
 
 OpenGLShaderStorage::OpenGLShaderStorage(IAllocator* pAllocator)
@@ -24,10 +48,13 @@ Result OpenGLShaderStorage::ShutdownImpl()
 	return RESULT_SUCCESS;
 }
 
-Result OpenGLShaderStorage::AddShaderImpl(const Pointer<void>& pRenderContext,
-										  const char*		   pVertexShaderSource,
-										  const char*		   pFragmentShaderSource,
-										  Pointer<void>&	   pShaderHandle)
+static Result extractUniforms(u32 shaderProgram, Scope<Array<Uniform>>& pUniforms);
+
+Result OpenGLShaderStorage::AddShaderImpl(const Pointer<void>&	 pRenderContext,
+										  const char*			 pVertexShaderSource,
+										  const char*			 pFragmentShaderSource,
+										  Pointer<void>&		 pShaderHandle,
+										  Scope<Array<Uniform>>& pUniforms)
 {
 	NTT_UNUSED(pRenderContext);
 
@@ -84,8 +111,68 @@ Result OpenGLShaderStorage::AddShaderImpl(const Pointer<void>& pRenderContext,
 	GL_ASSERT(glDeleteShader(vertexShader));
 	GL_ASSERT(glDeleteShader(fragmentShader));
 
+	NTT_ASSERT_RESULT_SUCCESS(extractUniforms(pHandle->program, pUniforms));
+
 	return RESULT_SUCCESS;
 }
+
+static Result extractUniforms(u32 shaderProgram, Scope<Array<Uniform>>& pUniforms)
+{
+	i32 count = 0;
+	GL_ASSERT(glGetProgramiv(shaderProgram, GL_ACTIVE_UNIFORMS, &count));
+	pUniforms = MakeScope<Array<Uniform>>(g_GlobalAllocators.pMalloc, (u32)count);
+
+	for (i32 i = 0; i < count; ++i)
+	{
+		char	name[256];
+		GLsizei length;
+		GLint	size;
+		GLenum	type;
+
+		GL_ASSERT(glGetActiveUniform(shaderProgram, i, sizeof(name), &length, &size, &type, name));
+
+		Uniform uniform{};
+		uniform.name = String(name, g_GlobalAllocators.pMalloc);
+#define UNIFORM_TYPE_DEF(typeName, name, uppercase, glType)                                                            \
+	if (type == glType)                                                                                                \
+	{                                                                                                                  \
+		uniform.type = UNIFORM_TYPE_##uppercase;                                                                       \
+	}
+#include "systems/render/uniform_type.def"
+#undef UNIFORM_TYPE_DEF
+		uniform.value		  = {};		 // Initialize the value based on the type
+		uniform.pInternalData = nullptr; // Set internal data if needed
+
+		pUniforms->Append((Uniform&&)uniform);
+	}
+
+	return RESULT_SUCCESS;
+}
+
+#define UNIFORM_TYPE_DEF(type, name, uppercase, glType)                                                                \
+	Result OpenGLShaderStorage::SetUniform##name##Impl(                                                                \
+		const char* pUniformName, type value, const Pointer<void>& pShaderHandle, const Pointer<void>& pRenderContext) \
+	{                                                                                                                  \
+		NTT_UNUSED(pRenderContext);                                                                                    \
+		ShaderHandle* pHandle = CAST_SHADER_HANDLE(pShaderHandle);                                                     \
+		if (!pHandle)                                                                                                  \
+		{                                                                                                              \
+			return RESULT_UNKNOWN;                                                                                     \
+		}                                                                                                              \
+                                                                                                                       \
+		GLint location = glGetUniformLocation(pHandle->program, pUniformName);                                         \
+		if (location == -1)                                                                                            \
+		{                                                                                                              \
+			return RESULT_UNKNOWN;                                                                                     \
+		}                                                                                                              \
+                                                                                                                       \
+		GL_ASSERT(glUseProgram(pHandle->program));                                                                     \
+		GL_ASSERT(setUniformValue(location, value));                                                                   \
+                                                                                                                       \
+		return RESULT_SUCCESS;                                                                                         \
+	}
+#include "systems/render/uniform_type.def"
+#undef UNIFORM_TYPE_DEF
 
 Result OpenGLShaderStorage::UseShaderImpl(const Pointer<void>& pRenderContext, const Pointer<void>& pShaderHandle)
 {

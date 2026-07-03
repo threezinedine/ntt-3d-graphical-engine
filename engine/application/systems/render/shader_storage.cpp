@@ -1,4 +1,5 @@
 #include "shader_storage.h"
+#include "systems/render/render_system.h"
 #include "systems/system_globals.h"
 
 extern unsigned char mesh_vs_data[];
@@ -74,7 +75,7 @@ ShaderID ShaderStorage::AddShader(RenderContextID renderContextID,
 								  const char*	  pVertexShaderSource,
 								  const char*	  pFragmentShaderSource) noexcept
 {
-	ShaderID shaderID = m_pStorage->Add((ShaderNode&&)ShaderNode{nullptr, INVALID_RENDER_CONTEXT_ID});
+	ShaderID shaderID = m_pStorage->Add();
 
 	if (shaderID == INVALID_SHADER_ID)
 	{
@@ -94,8 +95,32 @@ ShaderID ShaderStorage::AddShader(RenderContextID renderContextID,
 	RenderSystem::RenderContext* pRenderContext =
 		SystemGlobals::pRenderSystem->m_pRenderContextStorage->Get(renderContextID);
 
-	Result result = AddShaderImpl(
-		pRenderContext->pRenderContextHandle, pVertexShaderSource, pFragmentShaderSource, pShaderNode->pShaderHandle);
+	Result result = AddShaderImpl(pRenderContext->pRenderContextHandle,
+								  pVertexShaderSource,
+								  pFragmentShaderSource,
+								  pShaderNode->pShaderHandle,
+								  pShaderNode->pUniforms);
+
+	char uniformBufferName[1024] = {};
+
+	for (u32 i = 0; i < pShaderNode->pUniforms->GetCount(); ++i)
+	{
+		const Uniform& uniform = GET_SCOPE_ARRAY_INDEX(pShaderNode->pUniforms, i);
+		format(uniformBufferName,
+			   sizeof(uniformBufferName),
+			   "\tUniform:\n\tName: %s\n\tType: %s\n",
+			   uniform.name.ToStringView().Data(),
+			   ToString(uniform.type));
+	}
+
+	if (pShaderNode->pUniforms->GetCount() == 0)
+	{
+		NTT_RENDER_INFO("Add shader: No uniforms found.");
+	}
+	else
+	{
+		NTT_RENDER_INFO("Add shader: \n%s", uniformBufferName);
+	}
 
 	if (result != RESULT_SUCCESS)
 	{
@@ -138,5 +163,34 @@ Result ShaderStorage::UseShader(ShaderID shaderID)
 
 	return UseShaderImpl(pRenderContext->pRenderContextHandle, pShaderNode->pShaderHandle);
 }
+
+#define UNIFORM_TYPE_DEF(type, typeName, uppercase, glType)                                                            \
+	Result ShaderStorage::SetUniform##typeName(ShaderID shaderID, const char* pUniformName, type value)                \
+	{                                                                                                                  \
+		ShaderNode* pShaderNode = m_pStorage->Get(shaderID);                                                           \
+		if (!pShaderNode)                                                                                              \
+		{                                                                                                              \
+			return RESULT_INACTIVE_STORAGE_INDEX;                                                                      \
+		}                                                                                                              \
+		Pointer<void> pRenderContext =                                                                                 \
+			SystemGlobals::pRenderSystem->m_pRenderContextStorage->Get(pShaderNode->renderContextID)                   \
+				->pRenderContextHandle;                                                                                \
+		bool uniformFound = false;                                                                                     \
+		for (u32 i = 0; i < pShaderNode->pUniforms->GetCount(); i++)                                                   \
+		{                                                                                                              \
+			if (GET_SCOPE_ARRAY_INDEX(pShaderNode->pUniforms, i).name.ToStringView() == StringView(pUniformName))      \
+			{                                                                                                          \
+				uniformFound = true;                                                                                   \
+				break;                                                                                                 \
+			}                                                                                                          \
+		}                                                                                                              \
+		if (!uniformFound)                                                                                             \
+		{                                                                                                              \
+			return RESULT_UNIFORM_NOT_FOUND;                                                                           \
+		}                                                                                                              \
+		return SetUniform##typeName##Impl(pUniformName, value, pShaderNode->pShaderHandle, pRenderContext);            \
+	}
+#include "uniform_type.def"
+#undef UNIFORM_TYPE_DEF
 
 } // namespace ntt

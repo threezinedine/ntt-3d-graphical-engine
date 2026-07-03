@@ -2,6 +2,7 @@
 
 #include "render_system.h"
 #include "services.h"
+#include "uniform.h"
 
 namespace ntt {
 
@@ -28,14 +29,27 @@ public:
 	Result	 UseShader(ShaderID shaderID);
 	Result	 RemoveShader(ShaderID shaderID);
 
+#define UNIFORM_TYPE_DEF(type, typeName, uppercase, glType)                                                            \
+public:                                                                                                                \
+	Result SetUniform##typeName(ShaderID shaderID, const char* pUniformName, type value);                              \
+                                                                                                                       \
+protected:                                                                                                             \
+	virtual Result SetUniform##typeName##Impl(const char*		   pUniformName,                                       \
+											  type				   value,                                              \
+											  const Pointer<void>& pShaderHandle,                                      \
+											  const Pointer<void>& pRenderContext) = 0;
+#include "uniform_type.def"
+#undef UNIFORM_TYPE_DEF
+
 protected:
 	virtual Result InitializeImpl() = 0;
 	virtual Result ShutdownImpl()	= 0;
 
-	virtual Result AddShaderImpl(const Pointer<void>& pRenderContext,
-								 const char*		  pVertexShaderSource,
-								 const char*		  pFragmentShaderSource,
-								 Pointer<void>&		  pShaderHandle)												 = 0;
+	virtual Result AddShaderImpl(const Pointer<void>&	pRenderContext,
+								 const char*			pVertexShaderSource,
+								 const char*			pFragmentShaderSource,
+								 Pointer<void>&			pShaderHandle,
+								 Scope<Array<Uniform>>& pUniforms)											 = 0;
 	virtual Result UseShaderImpl(const Pointer<void>& pRenderContext, const Pointer<void>& pShaderHandle)	 = 0;
 	virtual Result RemoveShaderImpl(const Pointer<void>& pRenderContext, const Pointer<void>& pShaderHandle) = 0;
 
@@ -45,8 +59,9 @@ protected:
 private:
 	struct ShaderNode
 	{
-		Pointer<void>	pShaderHandle;
-		RenderContextID renderContextID;
+		Pointer<void>		  pShaderHandle;
+		RenderContextID		  renderContextID;
+		Scope<Array<Uniform>> pUniforms;
 	};
 
 private:
