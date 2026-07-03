@@ -52,6 +52,11 @@ public:
 		return m_Value;
 	}
 
+	void SetValue(i32 value)
+	{
+		m_Value = value;
+	}
+
 private:
 	i32 m_Value;
 };
