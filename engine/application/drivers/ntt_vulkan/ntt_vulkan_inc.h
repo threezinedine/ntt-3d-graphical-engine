@@ -123,6 +123,13 @@ struct VulkanContextHandle
 		}                                                                                                              \
 	} while (0)
 
+Result createBuffer(VkBuffer&			  outBuffer,
+					VkDeviceMemory&		  outBufferMemory,
+					VulkanContextHandle*  pVulkanContext,
+					VkDeviceSize		  size,
+					VkBufferUsageFlags	  usage,
+					VkMemoryPropertyFlags properties);
+
 } // namespace ntt
 
 #endif // NTT_VULKAN
