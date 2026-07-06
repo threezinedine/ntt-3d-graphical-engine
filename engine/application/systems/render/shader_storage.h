@@ -45,11 +45,12 @@ protected:
 	virtual Result InitializeImpl() = 0;
 	virtual Result ShutdownImpl()	= 0;
 
-	virtual Result AddShaderImpl(const Pointer<void>&	pRenderContext,
-								 const char*			pVertexShaderSource,
-								 const char*			pFragmentShaderSource,
-								 Pointer<void>&			pShaderHandle,
-								 Scope<Array<Uniform>>& pUniforms)											 = 0;
+	virtual Result AddShaderImpl(const Pointer<void>& pRenderContext,
+								 const char*		  pVertexShaderSource,
+								 const char*		  pFragmentShaderSource,
+								 Pointer<void>&		  pShaderHandle,
+								 Uniform*			  pUniforms,
+								 u32&				  uniformCount)															 = 0;
 	virtual Result UseShaderImpl(const Pointer<void>& pRenderContext, const Pointer<void>& pShaderHandle)	 = 0;
 	virtual Result RemoveShaderImpl(const Pointer<void>& pRenderContext, const Pointer<void>& pShaderHandle) = 0;
 
@@ -59,9 +60,10 @@ protected:
 private:
 	struct ShaderNode
 	{
-		Pointer<void>		  pShaderHandle;
-		RenderContextID		  renderContextID;
-		Scope<Array<Uniform>> pUniforms;
+		Pointer<void>	pShaderHandle;
+		RenderContextID renderContextID;
+		Uniform			uniforms[16];
+		u32				uniformCount;
 	};
 
 private:

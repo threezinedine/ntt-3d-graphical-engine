@@ -99,31 +99,30 @@ ShaderID ShaderStorage::AddShader(RenderContextID renderContextID,
 								  pVertexShaderSource,
 								  pFragmentShaderSource,
 								  pShaderNode->pShaderHandle,
-								  pShaderNode->pUniforms);
+								  pShaderNode->uniforms,
+								  pShaderNode->uniformCount);
 
 	char uniformBufferName[1024] = {};
 
-	if (pShaderNode->pUniforms != nullptr)
+	for (u32 i = 0; i < pShaderNode->uniformCount; ++i)
 	{
-		for (u32 i = 0; i < pShaderNode->pUniforms->GetCount(); ++i)
-		{
-			const Uniform& uniform = GET_SCOPE_ARRAY_INDEX(pShaderNode->pUniforms, i);
-			format(uniformBufferName,
-				   sizeof(uniformBufferName),
-				   "\tUniform:\n\tName: %s\n\tType: %s\n",
-				   uniform.name.ToStringView().Data(),
-				   ToString(uniform.type));
-		}
-
-		if (pShaderNode->pUniforms->GetCount() == 0)
-		{
-			NTT_RENDER_INFO("Add shader: No uniforms found.");
-		}
-		else
-		{
-			NTT_RENDER_INFO("Add shader: \n%s", uniformBufferName);
-		}
+		const Uniform& uniform = pShaderNode->uniforms[i];
+		format(uniformBufferName,
+			   sizeof(uniformBufferName),
+			   "\tUniform:\n\tName: %s\n\tType: %s\n",
+			   uniform.name.ToStringView().Data(),
+			   ToString(uniform.type));
 	}
+
+	if (pShaderNode->uniformCount == 0)
+	{
+		NTT_RENDER_INFO("Add shader: No uniforms found.");
+	}
+	else
+	{
+		NTT_RENDER_INFO("Add shader: \n%s", uniformBufferName);
+	}
+
 	if (result != RESULT_SUCCESS)
 	{
 		m_pStorage->Remove(shaderID);	   // Remove the shader node if adding the shader failed
@@ -177,14 +176,10 @@ Result ShaderStorage::UseShader(ShaderID shaderID)
 		Pointer<void> pRenderContext =                                                                                 \
 			SystemGlobals::pRenderSystem->m_pRenderContextStorage->Get(pShaderNode->renderContextID)                   \
 				->pRenderContextHandle;                                                                                \
-		if (pShaderNode->pUniforms == nullptr)                                                                         \
-		{                                                                                                              \
-			return RESULT_UNIFORM_NOT_FOUND;                                                                           \
-		}                                                                                                              \
 		bool uniformFound = false;                                                                                     \
-		for (u32 i = 0; i < pShaderNode->pUniforms->GetCount(); i++)                                                   \
+		for (u32 i = 0; i < pShaderNode->uniformCount; i++)                                                            \
 		{                                                                                                              \
-			if (GET_SCOPE_ARRAY_INDEX(pShaderNode->pUniforms, i).name.ToStringView() == StringView(pUniformName))      \
+			if (pShaderNode->uniforms[i].name.ToStringView() == StringView(pUniformName))                              \
 			{                                                                                                          \
 				uniformFound = true;                                                                                   \
 				break;                                                                                                 \

@@ -48,13 +48,14 @@ Result OpenGLShaderStorage::ShutdownImpl()
 	return RESULT_SUCCESS;
 }
 
-static Result extractUniforms(u32 shaderProgram, Scope<Array<Uniform>>& pUniforms);
+static Result extractUniforms(u32 shaderProgram, Uniform* pUniforms, u32& uniformCount);
 
-Result OpenGLShaderStorage::AddShaderImpl(const Pointer<void>&	 pRenderContext,
-										  const char*			 pVertexShaderSource,
-										  const char*			 pFragmentShaderSource,
-										  Pointer<void>&		 pShaderHandle,
-										  Scope<Array<Uniform>>& pUniforms)
+Result OpenGLShaderStorage::AddShaderImpl(const Pointer<void>& pRenderContext,
+										  const char*		   pVertexShaderSource,
+										  const char*		   pFragmentShaderSource,
+										  Pointer<void>&	   pShaderHandle,
+										  Uniform*			   pUniforms,
+										  u32&				   uniformCount)
 {
 	NTT_UNUSED(pRenderContext);
 
@@ -111,16 +112,15 @@ Result OpenGLShaderStorage::AddShaderImpl(const Pointer<void>&	 pRenderContext,
 	GL_ASSERT(glDeleteShader(vertexShader));
 	GL_ASSERT(glDeleteShader(fragmentShader));
 
-	NTT_ASSERT_RESULT_SUCCESS(extractUniforms(pHandle->program, pUniforms));
+	NTT_ASSERT_RESULT_SUCCESS(extractUniforms(pHandle->program, pUniforms, uniformCount));
 
 	return RESULT_SUCCESS;
 }
 
-static Result extractUniforms(u32 shaderProgram, Scope<Array<Uniform>>& pUniforms)
+static Result extractUniforms(u32 shaderProgram, Uniform* pUniforms, u32& uniformCount)
 {
 	i32 count = 0;
 	GL_ASSERT(glGetProgramiv(shaderProgram, GL_ACTIVE_UNIFORMS, &count));
-	pUniforms = MakeScope<Array<Uniform>>(g_GlobalAllocators.pMalloc, (u32)count);
 
 	for (i32 i = 0; i < count; ++i)
 	{
@@ -131,8 +131,8 @@ static Result extractUniforms(u32 shaderProgram, Scope<Array<Uniform>>& pUniform
 
 		GL_ASSERT(glGetActiveUniform(shaderProgram, i, sizeof(name), &length, &size, &type, name));
 
-		Uniform uniform{};
-		uniform.name = String(name, g_GlobalAllocators.pMalloc);
+		Uniform& uniform = pUniforms[uniformCount++];
+		uniform.name	 = String(name, g_GlobalAllocators.pMalloc);
 #define UNIFORM_TYPE_DEF(typeName, name, uppercase, glType)                                                            \
 	if (type == glType)                                                                                                \
 	{                                                                                                                  \
@@ -142,8 +142,6 @@ static Result extractUniforms(u32 shaderProgram, Scope<Array<Uniform>>& pUniform
 #undef UNIFORM_TYPE_DEF
 		uniform.value		  = {};		 // Initialize the value based on the type
 		uniform.pInternalData = nullptr; // Set internal data if needed
-
-		pUniforms->Append((Uniform&&)uniform);
 	}
 
 	return RESULT_SUCCESS;

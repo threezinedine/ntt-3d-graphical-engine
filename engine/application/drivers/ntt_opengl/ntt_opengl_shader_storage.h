@@ -12,11 +12,12 @@ protected:
 	virtual Result InitializeImpl() override;
 	virtual Result ShutdownImpl() override;
 
-	virtual Result AddShaderImpl(const Pointer<void>&	pRenderContext,
-								 const char*			pVertexShaderSource,
-								 const char*			pFragmentShaderSource,
-								 Pointer<void>&			pShaderHandle,
-								 Scope<Array<Uniform>>& pUniforms) override;
+	virtual Result AddShaderImpl(const Pointer<void>& pRenderContext,
+								 const char*		  pVertexShaderSource,
+								 const char*		  pFragmentShaderSource,
+								 Pointer<void>&		  pShaderHandle,
+								 Uniform*			  pUniforms,
+								 u32&				  uniformCount) override;
 	virtual Result UseShaderImpl(const Pointer<void>& pRenderContext, const Pointer<void>& pShaderHandle) override;
 	virtual Result RemoveShaderImpl(const Pointer<void>& pRenderContext, const Pointer<void>& pShaderHandle) override;
 

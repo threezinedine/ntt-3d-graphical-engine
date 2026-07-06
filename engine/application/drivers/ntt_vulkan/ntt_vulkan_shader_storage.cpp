@@ -37,13 +37,15 @@ static Result		reflectShaderInputs(const Pointer<u32>&				   spirvCode,
 										VkVertexInputAttributeDescription* vertexAttributeDescriptions,
 										u32&							   vertexAttributeDescriptionCount);
 
-Result VulkanShaderStorage::AddShaderImpl(const Pointer<void>&	 pRenderContext,
-										  const char*			 pVertexShaderSource,
-										  const char*			 pFragmentShaderSource,
-										  Pointer<void>&		 pShaderHandle,
-										  Scope<Array<Uniform>>& pUniforms)
+Result VulkanShaderStorage::AddShaderImpl(const Pointer<void>& pRenderContext,
+										  const char*		   pVertexShaderSource,
+										  const char*		   pFragmentShaderSource,
+										  Pointer<void>&	   pShaderHandle,
+										  Uniform*			   pUniforms,
+										  u32&				   uniformCount)
 {
 	NTT_UNUSED(pUniforms);
+	NTT_UNUSED(uniformCount);
 
 	Pointer<u32> vertexShaderSPIRV	 = compileShaderToSPIRV_Vulkan(GLSLANG_STAGE_VERTEX, pVertexShaderSource);
 	Pointer<u32> fragmentShaderSPIRV = compileShaderToSPIRV_Vulkan(GLSLANG_STAGE_FRAGMENT, pFragmentShaderSource);
