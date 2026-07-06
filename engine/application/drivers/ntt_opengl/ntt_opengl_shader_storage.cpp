@@ -147,9 +147,9 @@ static Result extractUniforms(u32 shaderProgram, Uniform* pUniforms, u32& unifor
 	return RESULT_SUCCESS;
 }
 
-#define UNIFORM_TYPE_DEF(type, name, uppercase, glType)                                                                \
-	Result OpenGLShaderStorage::SetUniform##name##Impl(                                                                \
-		const char* pUniformName, type value, const Pointer<void>& pShaderHandle, const Pointer<void>& pRenderContext) \
+#define UNIFORM_TYPE_DEF(type, _name, uppercase, glType)                                                               \
+	Result OpenGLShaderStorage::SetUniform##_name##Impl(                                                               \
+		Uniform& uniform, type value, const Pointer<void>& pShaderHandle, const Pointer<void>& pRenderContext)         \
 	{                                                                                                                  \
 		NTT_UNUSED(pRenderContext);                                                                                    \
 		ShaderHandle* pHandle = CAST_SHADER_HANDLE(pShaderHandle);                                                     \
@@ -158,7 +158,7 @@ static Result extractUniforms(u32 shaderProgram, Uniform* pUniforms, u32& unifor
 			return RESULT_UNKNOWN;                                                                                     \
 		}                                                                                                              \
                                                                                                                        \
-		GLint location = glGetUniformLocation(pHandle->program, pUniformName);                                         \
+		GLint location = glGetUniformLocation(pHandle->program, uniform.name.CStr());                                  \
 		if (location == -1)                                                                                            \
 		{                                                                                                              \
 			return RESULT_UNKNOWN;                                                                                     \

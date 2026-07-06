@@ -34,12 +34,13 @@ public:                                                                         
 	Result SetUniform##typeName(ShaderID shaderID, const char* pUniformName, type value);                              \
                                                                                                                        \
 protected:                                                                                                             \
-	virtual Result SetUniform##typeName##Impl(const char*		   pUniformName,                                       \
-											  type				   value,                                              \
-											  const Pointer<void>& pShaderHandle,                                      \
-											  const Pointer<void>& pRenderContext) = 0;
+	virtual Result SetUniform##typeName##Impl(                                                                         \
+		Uniform& uniform, type value, const Pointer<void>& pShaderHandle, const Pointer<void>& pRenderContext) = 0;
 #include "uniform_type.def"
 #undef UNIFORM_TYPE_DEF
+
+protected:
+	virtual u32 GetUniformInfoSize() const = 0;
 
 protected:
 	virtual Result InitializeImpl() = 0;

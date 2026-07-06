@@ -1,5 +1,11 @@
 #version 450
 
+layout(binding = 0) uniform UniformBlock
+{
+	mat4 uModel;
+	vec4 uColor;
+};
+
 layout(location = 0) in vec2 fragTexCoord;
 layout(location = 1) in vec4 fragColor;
 

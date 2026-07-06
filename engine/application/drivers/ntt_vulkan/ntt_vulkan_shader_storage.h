@@ -23,10 +23,13 @@ protected:
 	virtual Result UseShaderImpl(const Pointer<void>& pRenderContext, const Pointer<void>& pShaderHandle) override;
 	virtual Result RemoveShaderImpl(const Pointer<void>& pRenderContext, const Pointer<void>& pShaderHandle) override;
 
+protected:
+	u32 GetUniformInfoSize() const override;
+
 #define UNIFORM_TYPE_DEF(type, typeName, uppercase, glType)                                                            \
 protected:                                                                                                             \
 	virtual Result SetUniform##typeName##Impl(                                                                         \
-		const char* pUniformName, type value, const Pointer<void>& pShaderHandle, const Pointer<void>& pRenderContext) \
+		Uniform& uniform, type value, const Pointer<void>& pShaderHandle, const Pointer<void>& pRenderContext)         \
 		override;
 #include "systems/render/uniform_type.def"
 #undef UNIFORM_TYPE_DEF

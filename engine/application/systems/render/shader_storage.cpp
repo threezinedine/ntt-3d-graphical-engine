@@ -89,6 +89,15 @@ ShaderID ShaderStorage::AddShader(RenderContextID renderContextID,
 		return RESULT_INACTIVE_STORAGE_INDEX; // Return RESULT_INACTIVE_STORAGE_INDEX if the shader node is not found
 	}
 
+	if (GetUniformInfoSize() != 0)
+	{
+		for (u32 i = 0; i < 16; ++i)
+		{
+			Uniform& uniform	  = pShaderNode->uniforms[i];
+			uniform.pInternalData = g_GlobalAllocators.pMalloc->Allocate(GetUniformInfoSize());
+		}
+	}
+
 	pShaderNode->pShaderHandle	 = ALLOCATOR_SAFE(m_pAllocator)->Allocate(GetShaderHandleSize());
 	pShaderNode->renderContextID = renderContextID;
 
@@ -112,15 +121,12 @@ ShaderID ShaderStorage::AddShader(RenderContextID renderContextID,
 			   "\tUniform:\n\tName: %s\n\tType: %s\n",
 			   uniform.name.ToStringView().Data(),
 			   ToString(uniform.type));
+		NTT_RENDER_INFO("Add shader: \n%s", uniformBufferName);
 	}
 
 	if (pShaderNode->uniformCount == 0)
 	{
 		NTT_RENDER_INFO("Add shader: No uniforms found.");
-	}
-	else
-	{
-		NTT_RENDER_INFO("Add shader: \n%s", uniformBufferName);
 	}
 
 	if (result != RESULT_SUCCESS)
@@ -147,6 +153,17 @@ Result ShaderStorage::RemoveShader(ShaderID shaderID)
 
 	NTT_ASSERT_RESULT_SUCCESS(RemoveShaderImpl(pRenderContext->pRenderContextHandle, pShaderNode->pShaderHandle));
 	NTT_ASSERT_RESULT_SUCCESS(pShaderNode->pShaderHandle.Free()); // Free the allocated shader handle
+
+	for (u32 i = 0; i < pShaderNode->uniformCount; ++i)
+	{
+		Uniform& uniform = pShaderNode->uniforms[i];
+		if (uniform.pInternalData != nullptr)
+		{
+			NTT_ASSERT_RESULT_SUCCESS(uniform.pInternalData.Free());
+			uniform.pInternalData = nullptr;
+		}
+	}
+
 	return m_pStorage->Remove(shaderID);
 }
 
@@ -177,11 +194,13 @@ Result ShaderStorage::UseShader(ShaderID shaderID)
 			SystemGlobals::pRenderSystem->m_pRenderContextStorage->Get(pShaderNode->renderContextID)                   \
 				->pRenderContextHandle;                                                                                \
 		bool uniformFound = false;                                                                                     \
+		u32	 uniformIndex = static_cast<u32>(-1);                                                                      \
 		for (u32 i = 0; i < pShaderNode->uniformCount; i++)                                                            \
 		{                                                                                                              \
 			if (pShaderNode->uniforms[i].name.ToStringView() == StringView(pUniformName))                              \
 			{                                                                                                          \
 				uniformFound = true;                                                                                   \
+				uniformIndex = i;                                                                                      \
 				break;                                                                                                 \
 			}                                                                                                          \
 		}                                                                                                              \
@@ -189,7 +208,8 @@ Result ShaderStorage::UseShader(ShaderID shaderID)
 		{                                                                                                              \
 			return RESULT_UNIFORM_NOT_FOUND;                                                                           \
 		}                                                                                                              \
-		return SetUniform##typeName##Impl(pUniformName, value, pShaderNode->pShaderHandle, pRenderContext);            \
+		return SetUniform##typeName##Impl(                                                                             \
+			pShaderNode->uniforms[uniformIndex], value, pShaderNode->pShaderHandle, pRenderContext);                   \
 	}
 #include "uniform_type.def"
 #undef UNIFORM_TYPE_DEF

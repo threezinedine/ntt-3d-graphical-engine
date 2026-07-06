@@ -36,6 +36,25 @@ static Result		reflectShaderInputs(const Pointer<u32>&				   spirvCode,
 										u32&							   vertexBindingDescriptionCount,
 										VkVertexInputAttributeDescription* vertexAttributeDescriptions,
 										u32&							   vertexAttributeDescriptionCount);
+static Result		reflectShaderUniforms(const Pointer<u32>&			spirvCode,
+										  VkShaderStageFlagBits			stageFlags,
+										  VkDescriptorSetLayoutBinding* pSetLayoutBindings,
+										  u32*							pSetLayoutBindingSizes,
+										  u32&							setLayoutBindingCount,
+										  Uniform*						pUniforms,
+										  u32&							uniformCount);
+
+static Result createDescriptorSetLayout(VulkanContextHandle*		  pVulkanContext,
+										ShaderHandle*				  pShaderHandle,
+										VkDescriptorSetLayoutBinding* pSetLayoutBindings,
+										u32							  setLayoutBindingCount);
+static Result destroyDescriptorSetLayout(VulkanContextHandle* pVulkanContext, ShaderHandle* pShaderHandle);
+
+static Result createUniformBuffers(VulkanContextHandle* pVulkanContext,
+								   ShaderHandle*		pShaderHandle,
+								   u32*					pSetLayoutBindingSizes,
+								   u32					setLayoutBindingCount);
+static Result destroyUniformBuffers(VulkanContextHandle* pVulkanContext, ShaderHandle* pShaderHandle);
 
 Result VulkanShaderStorage::AddShaderImpl(const Pointer<void>& pRenderContext,
 										  const char*		   pVertexShaderSource,
@@ -44,9 +63,6 @@ Result VulkanShaderStorage::AddShaderImpl(const Pointer<void>& pRenderContext,
 										  Uniform*			   pUniforms,
 										  u32&				   uniformCount)
 {
-	NTT_UNUSED(pUniforms);
-	NTT_UNUSED(uniformCount);
-
 	Pointer<u32> vertexShaderSPIRV	 = compileShaderToSPIRV_Vulkan(GLSLANG_STAGE_VERTEX, pVertexShaderSource);
 	Pointer<u32> fragmentShaderSPIRV = compileShaderToSPIRV_Vulkan(GLSLANG_STAGE_FRAGMENT, pFragmentShaderSource);
 
@@ -94,11 +110,29 @@ Result VulkanShaderStorage::AddShaderImpl(const Pointer<void>& pRenderContext,
 	VkVertexInputAttributeDescription vertexAttributeDescriptions[16] = {};
 	MemSet(vertexAttributeDescriptions, 0, sizeof(vertexAttributeDescriptions));
 
+	u32 descriptorSetLayoutBindingCount = 0;
+	u32 descriptorSetLayoutSizes[16]	= {}; // Array to hold the sizes of each descriptor set layout
+	VkDescriptorSetLayoutBinding descriptorSetLayoutBindings[16] = {};
+
 	NTT_ASSERT_RESULT_SUCCESS(reflectShaderInputs(vertexShaderSPIRV,
 												  vertexBindingDescriptions,
 												  vertexBindingDescriptionCount,
 												  vertexAttributeDescriptions,
 												  vertexAttributeDescriptionCount));
+	NTT_ASSERT_RESULT_SUCCESS(reflectShaderUniforms(vertexShaderSPIRV,
+													VK_SHADER_STAGE_VERTEX_BIT,
+													descriptorSetLayoutBindings,
+													descriptorSetLayoutSizes,
+													descriptorSetLayoutBindingCount,
+													pUniforms,
+													uniformCount));
+	NTT_ASSERT_RESULT_SUCCESS(reflectShaderUniforms(fragmentShaderSPIRV,
+													VK_SHADER_STAGE_FRAGMENT_BIT,
+													descriptorSetLayoutBindings,
+													descriptorSetLayoutSizes,
+													descriptorSetLayoutBindingCount,
+													pUniforms,
+													uniformCount));
 	NTT_ASSERT_RESULT_SUCCESS(vertexShaderSPIRV.Free());
 	NTT_ASSERT_RESULT_SUCCESS(fragmentShaderSPIRV.Free());
 
@@ -190,18 +224,80 @@ Result VulkanShaderStorage::AddShaderImpl(const Pointer<void>& pRenderContext,
 	VK_ASSERT(vkCreateGraphicsPipelines(
 		pVulkanContext->logicalDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pHandle->pipeline));
 
+	NTT_ASSERT_RESULT_SUCCESS(createDescriptorSetLayout(
+		pVulkanContext, pHandle, descriptorSetLayoutBindings, descriptorSetLayoutBindingCount));
+
+	pHandle->descriptorSetLayoutBindingCount = descriptorSetLayoutBindingCount;
+	NTT_ASSERT_RESULT_SUCCESS(
+		createUniformBuffers(pVulkanContext, pHandle, descriptorSetLayoutSizes, descriptorSetLayoutBindingCount));
+
 	return RESULT_SUCCESS;
 }
 
-#define UNIFORM_TYPE_DEF(type, name, uppercase, glType)                                                                \
-	Result VulkanShaderStorage::SetUniform##name##Impl(                                                                \
-		const char* pUniformName, type value, const Pointer<void>& pShaderHandle, const Pointer<void>& pRenderContext) \
-	{                                                                                                                  \
-		NTT_UNUSED(pShaderHandle);                                                                                     \
-		NTT_UNUSED(pRenderContext);                                                                                    \
-		NTT_UNUSED(pUniformName);                                                                                      \
-		NTT_UNUSED(value);                                                                                             \
-		return RESULT_SUCCESS;                                                                                         \
+static Result createUniformBuffers(VulkanContextHandle* pVulkanContext,
+								   ShaderHandle*		pShaderHandle,
+								   u32*					pSetLayoutBindingSizes,
+								   u32					setLayoutBindingCount)
+{
+	pShaderHandle->pBuffers =
+		MakeScope<Array<VkBuffer>>(g_GlobalAllocators.pMalloc, setLayoutBindingCount * MAX_FRAMES_IN_FLIGHT);
+	pShaderHandle->pMemories =
+		MakeScope<Array<VkDeviceMemory>>(g_GlobalAllocators.pMalloc, setLayoutBindingCount * MAX_FRAMES_IN_FLIGHT);
+	pShaderHandle->pMapped =
+		MakeScope<Array<void*>>(g_GlobalAllocators.pMalloc, setLayoutBindingCount * MAX_FRAMES_IN_FLIGHT);
+
+	for (u32 i = 0; i < setLayoutBindingCount; ++i)
+	{
+		for (u32 j = 0; j < MAX_FRAMES_IN_FLIGHT; ++j)
+		{
+			u32 bufferSize	= pSetLayoutBindingSizes[i];
+			u32 bufferIndex = i * MAX_FRAMES_IN_FLIGHT + j;
+			createBuffer(GET_SCOPE_ARRAY_INDEX(pShaderHandle->pBuffers, bufferIndex),
+						 GET_SCOPE_ARRAY_INDEX(pShaderHandle->pMemories, bufferIndex),
+						 pVulkanContext,
+						 bufferSize,
+						 VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+						 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+			vkMapMemory(pVulkanContext->logicalDevice,
+						GET_SCOPE_ARRAY_INDEX(pShaderHandle->pMemories, bufferIndex),
+						0,
+						bufferSize,
+						0,
+						&GET_SCOPE_ARRAY_INDEX(pShaderHandle->pMapped, bufferIndex));
+		}
+	}
+
+	return RESULT_SUCCESS;
+}
+
+static Result createDescriptorSetLayout(VulkanContextHandle*		  pVulkanContext,
+										ShaderHandle*				  pShaderHandle,
+										VkDescriptorSetLayoutBinding* pSetLayoutBindings,
+										u32							  setLayoutBindingCount)
+{
+	VkDescriptorSetLayoutCreateInfo layoutInfo{};
+	layoutInfo.sType		= VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	layoutInfo.bindingCount = setLayoutBindingCount;
+	layoutInfo.pBindings	= pSetLayoutBindings;
+	VK_ASSERT(vkCreateDescriptorSetLayout(
+		pVulkanContext->logicalDevice, &layoutInfo, nullptr, &pShaderHandle->descriptorSetLayout));
+
+	return RESULT_SUCCESS;
+}
+
+#define UNIFORM_TYPE_DEF(type, typeName, uppercase, glType)                                                             \
+	Result VulkanShaderStorage::SetUniform##typeName##Impl(                                                             \
+		Uniform& uniform, type value, const Pointer<void>& pShaderHandle, const Pointer<void>& pRenderContext)          \
+	{                                                                                                                   \
+		VulkanContextHandle*	 pVulkanContext		= VK_CONTEXT_CAST(pRenderContext);                                  \
+		ShaderHandle*			 pHandle			= VK_SHADER_CAST(pShaderHandle);                                    \
+		Scope<VulkanUniformInfo> pUniformInfo		= uniform.pInternalData.Cast<VulkanUniformInfo>();                  \
+		u32						 currentFrameIndex	= pVulkanContext->currentFrame;                                     \
+		u32						 currentBufferIndex = pUniformInfo->binding * MAX_FRAMES_IN_FLIGHT + currentFrameIndex; \
+		void*					 pMappedMemory		= GET_SCOPE_ARRAY_INDEX(pHandle->pMapped, currentBufferIndex);      \
+		MemCopy((u8*)pMappedMemory + pUniformInfo->offset, &value, pUniformInfo->size);                                 \
+		return RESULT_SUCCESS;                                                                                          \
 	}
 #include "systems/render/uniform_type.def"
 #undef UNIFORM_TYPE_DEF
@@ -352,6 +448,143 @@ static Result reflectShaderInputs(const Pointer<u32>&				 spirvCode,
 	return RESULT_SUCCESS;
 }
 
+static UniformType getUniformTypeFromFlags(const SpvReflectBlockVariable& member);
+
+static Result reflectShaderUniforms(const Pointer<u32>&			  spirvCode,
+									VkShaderStageFlagBits		  stageFlags,
+									VkDescriptorSetLayoutBinding* pSetLayoutBindings,
+									u32*						  pSetLayoutBindingSizes,
+									u32&						  setLayoutBindingCount,
+									Uniform*					  pUniforms,
+									u32&						  uniformCount)
+{
+	SpvReflectShaderModule module;
+	SpvReflectResult	   result = spvReflectCreateShaderModule((size_t)spirvCode.size, spirvCode.Get(), &module);
+
+	if (result != SPV_REFLECT_RESULT_SUCCESS)
+	{
+		NTT_VULKAN_ERROR("Failed to create SPIR-V reflection module");
+		return RESULT_VULKAN_ERROR;
+	}
+
+	// Enumerate and extract shader's uniform variables
+	uint32_t var_count = 0;
+	result			   = spvReflectEnumerateDescriptorBindings(&module, &var_count, NULL);
+	if (result != SPV_REFLECT_RESULT_SUCCESS)
+	{
+		NTT_VULKAN_ERROR("Failed to enumerate descriptor bindings");
+		spvReflectDestroyShaderModule(&module);
+		return RESULT_VULKAN_ERROR;
+	}
+
+	Pointer<SpvReflectDescriptorBinding*> descriptor_bindings =
+		g_GlobalAllocators.pStack->Allocate(var_count * sizeof(SpvReflectDescriptorBinding*))
+			.Cast<SpvReflectDescriptorBinding*>();
+	result = spvReflectEnumerateDescriptorBindings(&module, &var_count, descriptor_bindings.Get());
+	if (result != SPV_REFLECT_RESULT_SUCCESS)
+	{
+		NTT_VULKAN_ERROR("Failed to enumerate descriptor bindings");
+		NTT_ASSERT_RESULT_SUCCESS(descriptor_bindings.Free());
+		spvReflectDestroyShaderModule(&module);
+		return RESULT_VULKAN_ERROR;
+	}
+
+	for (u32 i = 0; i < var_count; ++i)
+	{
+		SpvReflectDescriptorBinding* binding = descriptor_bindings.Get()[i];
+
+		VkDescriptorSetLayoutBinding& layoutBinding		= pSetLayoutBindings[setLayoutBindingCount++];
+		u32&						  layoutBindingSize = pSetLayoutBindingSizes[setLayoutBindingCount - 1];
+		layoutBinding.binding							= binding->binding;
+		layoutBinding.descriptorType					= static_cast<VkDescriptorType>(binding->descriptor_type);
+		layoutBinding.descriptorCount					= binding->count;
+		layoutBinding.stageFlags						= stageFlags;
+		layoutBinding.pImmutableSamplers				= nullptr; // Optional
+		layoutBindingSize								= binding->block.size;
+
+		u32 uniformSize = 0;
+
+		if (binding->descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+		{
+			for (u32 j = 0; j < binding->block.member_count; ++j)
+			{
+				SpvReflectBlockVariable& member	 = binding->block.members[j];
+				Uniform&				 uniform = pUniforms[uniformCount++];
+				uniform.name					 = String(member.name);
+
+				NTT_VULKAN_INFO(
+					"Uniform: %s, Type: %d, Size: %u", member.name, member.type_description->type_flags, member.size);
+
+				uniform.type  = getUniformTypeFromFlags(member);
+				uniform.value = {}; // Initialize the value as needed
+
+				Pointer<VulkanUniformInfo> pUniformInfo = uniform.pInternalData.Cast<VulkanUniformInfo>();
+				pUniformInfo->offset					= member.offset;
+				pUniformInfo->size						= member.size;
+				pUniformInfo->binding					= binding->binding;
+
+				uniformSize += sizeof(uniform.type) / sizeof(f32);
+			}
+		}
+
+		if (layoutBindingSize != uniformSize)
+		{
+			NTT_VULKAN_WARN("Uniform size mismatch for binding %u: expected %u, got %u",
+							layoutBinding.binding,
+							layoutBindingSize,
+							uniformSize);
+		}
+	}
+
+	NTT_ASSERT_RESULT_SUCCESS(descriptor_bindings.Free()); // Free the allocated memory for descriptor bindings
+	spvReflectDestroyShaderModule(&module);
+	return RESULT_SUCCESS;
+}
+
+static UniformType getUniformTypeFromFlags(const SpvReflectBlockVariable& member)
+{
+	if (!member.type_description)
+	{
+		return UNIFORM_TYPE_FLOAT;
+	}
+
+	SpvReflectTypeFlags		typeFlags = member.type_description->type_flags;
+	SpvReflectNumericTraits numeric	  = member.type_description->traits.numeric;
+
+	if (typeFlags & SPV_REFLECT_TYPE_FLAG_MATRIX)
+	{
+		if (typeFlags & SPV_REFLECT_TYPE_FLAG_FLOAT)
+		{
+			if (numeric.matrix.column_count == 4 && numeric.matrix.row_count == 4)
+				return UNIFORM_TYPE_MAT4;
+			else if (numeric.matrix.column_count == 3 && numeric.matrix.row_count == 3)
+				return UNIFORM_TYPE_MAT3;
+			else if (numeric.matrix.column_count == 2 && numeric.matrix.row_count == 2)
+				return UNIFORM_TYPE_MAT2;
+		}
+	}
+
+	if (typeFlags & SPV_REFLECT_TYPE_FLAG_VECTOR)
+	{
+		if (typeFlags & SPV_REFLECT_TYPE_FLAG_FLOAT)
+		{
+			if (numeric.vector.component_count == 4)
+				return UNIFORM_TYPE_FLOAT4;
+			else if (numeric.vector.component_count == 3)
+				return UNIFORM_TYPE_FLOAT3;
+			else if (numeric.vector.component_count == 2)
+				return UNIFORM_TYPE_FLOAT2;
+		}
+	}
+
+	if (typeFlags & SPV_REFLECT_TYPE_FLAG_FLOAT)
+	{
+		return UNIFORM_TYPE_FLOAT;
+	}
+
+	return UNIFORM_TYPE_FLOAT; // Default to float if type is unrecognized
+}
+
 Result VulkanShaderStorage::UseShaderImpl(const Pointer<void>& pRenderContext, const Pointer<void>& pShaderHandle)
 {
 	VulkanContextHandle* pVulkanContext = VK_CONTEXT_CAST(pRenderContext);
@@ -369,6 +602,8 @@ Result VulkanShaderStorage::RemoveShaderImpl(const Pointer<void>& pRenderContext
 	ShaderHandle*		 pHandle		= VK_SHADER_CAST(pShaderHandle);
 	VulkanContextHandle* pVulkanContext = VK_CONTEXT_CAST(pRenderContext);
 
+	NTT_ASSERT_RESULT_SUCCESS(destroyUniformBuffers(pVulkanContext, pHandle));
+	NTT_ASSERT_RESULT_SUCCESS(destroyDescriptorSetLayout(pVulkanContext, pHandle));
 	vkDestroyPipeline(pVulkanContext->logicalDevice, pHandle->pipeline, nullptr);
 	vkDestroyPipelineLayout(pVulkanContext->logicalDevice, pHandle->pipelineLayout, nullptr);
 	vkDestroyShaderModule(pVulkanContext->logicalDevice, pHandle->vertexModule, nullptr);
@@ -377,9 +612,45 @@ Result VulkanShaderStorage::RemoveShaderImpl(const Pointer<void>& pRenderContext
 	return RESULT_SUCCESS;
 }
 
+static Result destroyUniformBuffers(VulkanContextHandle* pVulkanContext, ShaderHandle* pShaderHandle)
+{
+	for (u32 i = 0; i < pShaderHandle->descriptorSetLayoutBindingCount; ++i)
+	{
+		for (u32 j = 0; j < MAX_FRAMES_IN_FLIGHT; ++j)
+		{
+			u32 bufferIndex = i * MAX_FRAMES_IN_FLIGHT + j;
+
+			vkUnmapMemory(pVulkanContext->logicalDevice, GET_SCOPE_ARRAY_INDEX(pShaderHandle->pMemories, bufferIndex));
+
+			vkDestroyBuffer(
+				pVulkanContext->logicalDevice, GET_SCOPE_ARRAY_INDEX(pShaderHandle->pBuffers, bufferIndex), nullptr);
+			vkFreeMemory(
+				pVulkanContext->logicalDevice, GET_SCOPE_ARRAY_INDEX(pShaderHandle->pMemories, bufferIndex), nullptr);
+		}
+	}
+
+	pShaderHandle->pBuffers.Reset();
+	pShaderHandle->pMemories.Reset();
+	pShaderHandle->pMapped.Reset();
+
+	return RESULT_SUCCESS;
+}
+
+static Result destroyDescriptorSetLayout(VulkanContextHandle* pVulkanContext, ShaderHandle* pShaderHandle)
+{
+	vkDestroyDescriptorSetLayout(pVulkanContext->logicalDevice, pShaderHandle->descriptorSetLayout, nullptr);
+
+	return RESULT_SUCCESS;
+}
+
 u32 VulkanShaderStorage::GetShaderHandleSize() const
 {
 	return (u32)sizeof(ShaderHandle);
+}
+
+u32 VulkanShaderStorage::GetUniformInfoSize() const
+{
+	return (u32)sizeof(VulkanUniformInfo);
 }
 
 } // namespace ntt
