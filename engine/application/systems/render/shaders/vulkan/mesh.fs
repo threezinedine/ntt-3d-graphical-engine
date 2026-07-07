@@ -1,6 +1,6 @@
 #version 450
 
-layout(binding = 0) uniform UniformBlock
+layout(binding = 1) uniform UniformBlock1
 {
 	vec4 uColor;
 };

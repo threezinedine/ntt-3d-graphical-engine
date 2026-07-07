@@ -73,9 +73,15 @@ Result Application::Update()
 	NTT_ASSERT_RESULT_SUCCESS(g_RenderGlobals.pShaderStorage->UseShader(g_DefaultMeshShaderID));
 
 	if (g_RenderGlobals.pShaderStorage->SetUniformFloat4(
-			g_DefaultMeshShaderID, "uColor", Color{0.0f, 0.0f, 1.0f, 1.0f}) != RESULT_SUCCESS)
+			g_DefaultMeshShaderID, "uColor", Color{1.0f, 0.0f, 1.0f, 1.0f}) != RESULT_SUCCESS)
 	{
 		NTT_APPLICATION_WARN("Failed to set uniform 'uColor' for shader ID: %u", g_DefaultMeshShaderID);
+	}
+
+	if (g_RenderGlobals.pShaderStorage->SetUniformFloat4(
+			g_DefaultMeshShaderID, "uTransform", Vec4f{0.2f, 0.0f, 0.0f, 0.0f}) != RESULT_SUCCESS)
+	{
+		NTT_APPLICATION_WARN("Failed to set uniform 'uTransform' for shader ID: %u", g_DefaultMeshShaderID);
 	}
 
 	NTT_ASSERT_RESULT_SUCCESS(g_RenderGlobals.pMeshStorage->DrawMesh(g_MeshID));

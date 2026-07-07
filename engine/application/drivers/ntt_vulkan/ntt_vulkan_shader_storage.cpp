@@ -258,17 +258,16 @@ static Result createDescriptorPool(VulkanContextHandle* pVulkanContext, ShaderHa
 	poolInfo.sType		   = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 	poolInfo.poolSizeCount = 1;
 	poolInfo.pPoolSizes	   = &poolSize;
-	poolInfo.maxSets	   = pShaderHandle->descriptorSetLayoutBindingCount * MAX_FRAMES_IN_FLIGHT;
+	poolInfo.maxSets	   = MAX_FRAMES_IN_FLIGHT;
 	VK_ASSERT(
 		vkCreateDescriptorPool(pVulkanContext->logicalDevice, &poolInfo, nullptr, &pShaderHandle->descriptorPool));
 
-	pShaderHandle->pDescriptorSets = MakeScope<Array<VkDescriptorSet>>(
-		g_GlobalAllocators.pMalloc, pShaderHandle->descriptorSetLayoutBindingCount * MAX_FRAMES_IN_FLIGHT);
+	pShaderHandle->pDescriptorSets =
+		MakeScope<Array<VkDescriptorSet>>(g_GlobalAllocators.pMalloc, MAX_FRAMES_IN_FLIGHT);
 
-	Array<VkDescriptorSetLayout> layouts(pShaderHandle->descriptorSetLayoutBindingCount * MAX_FRAMES_IN_FLIGHT,
-										 g_GlobalAllocators.pStack);
+	Array<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, g_GlobalAllocators.pStack);
 
-	for (u32 i = 0; i < pShaderHandle->descriptorSetLayoutBindingCount * MAX_FRAMES_IN_FLIGHT; ++i)
+	for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
 	{
 		layouts[i] = pShaderHandle->descriptorSetLayout;
 	}
@@ -276,7 +275,7 @@ static Result createDescriptorPool(VulkanContextHandle* pVulkanContext, ShaderHa
 	VkDescriptorSetAllocateInfo allocInfo{};
 	allocInfo.sType				 = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 	allocInfo.descriptorPool	 = pShaderHandle->descriptorPool;
-	allocInfo.descriptorSetCount = pShaderHandle->descriptorSetLayoutBindingCount * MAX_FRAMES_IN_FLIGHT;
+	allocInfo.descriptorSetCount = MAX_FRAMES_IN_FLIGHT;
 	allocInfo.pSetLayouts		 = &layouts[0];
 
 	VK_ASSERT(vkAllocateDescriptorSets(
@@ -648,19 +647,15 @@ Result VulkanShaderStorage::UseShaderImpl(const Pointer<void>& pRenderContext, c
 
 	if (pHandle->pDescriptorSets.Get() != nullptr && pHandle->descriptorSetLayoutBindingCount > 0)
 	{
-		for (u32 i = 0; i < pHandle->descriptorSetLayoutBindingCount; ++i)
-		{
-			u32 bufferIndex = i * MAX_FRAMES_IN_FLIGHT + pVulkanContext->currentFrame;
-			vkCmdBindDescriptorSets(
-				GET_SCOPE_ARRAY_INDEX(pVulkanContext->pCommandBuffers, pVulkanContext->currentFrame),
-				VK_PIPELINE_BIND_POINT_GRAPHICS,
-				pHandle->pipelineLayout,
-				0,
-				1,
-				&GET_SCOPE_ARRAY_INDEX(pHandle->pDescriptorSets, bufferIndex),
-				0,
-				nullptr);
-		}
+		vkCmdBindDescriptorSets(
+			GET_SCOPE_ARRAY_INDEX(pVulkanContext->pCommandBuffers, pVulkanContext->currentFrame),
+			VK_PIPELINE_BIND_POINT_GRAPHICS,
+			pHandle->pipelineLayout,
+			0,
+			1,
+			&GET_SCOPE_ARRAY_INDEX(pHandle->pDescriptorSets, pVulkanContext->currentFrame),
+			0,
+			nullptr);
 	}
 
 	return RESULT_SUCCESS;
