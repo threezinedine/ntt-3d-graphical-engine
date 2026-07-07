@@ -26,5 +26,6 @@ struct Uniform
 };
 
 const char* ToString(UniformType uniformType);
+u32			GetUniformTypeSize(UniformType uniformType);
 
 } // namespace ntt

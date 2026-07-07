@@ -56,6 +56,9 @@ static Result createUniformBuffers(VulkanContextHandle* pVulkanContext,
 								   u32					setLayoutBindingCount);
 static Result destroyUniformBuffers(VulkanContextHandle* pVulkanContext, ShaderHandle* pShaderHandle);
 
+static Result createDescriptorPool(VulkanContextHandle* pVulkanContext, ShaderHandle* pShaderHandle);
+static Result destroyDescriptorPool(VulkanContextHandle* pVulkanContext, ShaderHandle* pShaderHandle);
+
 Result VulkanShaderStorage::AddShaderImpl(const Pointer<void>& pRenderContext,
 										  const char*		   pVertexShaderSource,
 										  const char*		   pFragmentShaderSource,
@@ -231,6 +234,45 @@ Result VulkanShaderStorage::AddShaderImpl(const Pointer<void>& pRenderContext,
 	NTT_ASSERT_RESULT_SUCCESS(
 		createUniformBuffers(pVulkanContext, pHandle, descriptorSetLayoutSizes, descriptorSetLayoutBindingCount));
 
+	NTT_ASSERT_RESULT_SUCCESS(createDescriptorPool(pVulkanContext, pHandle));
+
+	return RESULT_SUCCESS;
+}
+
+static Result createDescriptorPool(VulkanContextHandle* pVulkanContext, ShaderHandle* pShaderHandle)
+{
+	VkDescriptorPoolSize poolSize{};
+	poolSize.type			 = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	poolSize.descriptorCount = pShaderHandle->descriptorSetLayoutBindingCount * MAX_FRAMES_IN_FLIGHT;
+
+	VkDescriptorPoolCreateInfo poolInfo{};
+	poolInfo.sType		   = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	poolInfo.poolSizeCount = 1;
+	poolInfo.pPoolSizes	   = &poolSize;
+	poolInfo.maxSets	   = pShaderHandle->descriptorSetLayoutBindingCount * MAX_FRAMES_IN_FLIGHT;
+	VK_ASSERT(
+		vkCreateDescriptorPool(pVulkanContext->logicalDevice, &poolInfo, nullptr, &pShaderHandle->descriptorPool));
+
+	pShaderHandle->pDescriptorSets = MakeScope<Array<VkDescriptorSet>>(
+		g_GlobalAllocators.pMalloc, pShaderHandle->descriptorSetLayoutBindingCount * MAX_FRAMES_IN_FLIGHT);
+
+	Array<VkDescriptorSetLayout> layouts(pShaderHandle->descriptorSetLayoutBindingCount * MAX_FRAMES_IN_FLIGHT,
+										 g_GlobalAllocators.pStack);
+
+	for (u32 i = 0; i < pShaderHandle->descriptorSetLayoutBindingCount * MAX_FRAMES_IN_FLIGHT; ++i)
+	{
+		layouts[i] = pShaderHandle->descriptorSetLayout;
+	}
+
+	VkDescriptorSetAllocateInfo allocInfo{};
+	allocInfo.sType				 = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	allocInfo.descriptorPool	 = pShaderHandle->descriptorPool;
+	allocInfo.descriptorSetCount = pShaderHandle->descriptorSetLayoutBindingCount * MAX_FRAMES_IN_FLIGHT;
+	allocInfo.pSetLayouts		 = &layouts[0];
+
+	VK_ASSERT(vkAllocateDescriptorSets(
+		pVulkanContext->logicalDevice, &allocInfo, &GET_SCOPE_ARRAY_INDEX(pShaderHandle->pDescriptorSets, 0)));
+
 	return RESULT_SUCCESS;
 }
 
@@ -286,18 +328,18 @@ static Result createDescriptorSetLayout(VulkanContextHandle*		  pVulkanContext,
 	return RESULT_SUCCESS;
 }
 
-#define UNIFORM_TYPE_DEF(type, typeName, uppercase, glType)                                                             \
-	Result VulkanShaderStorage::SetUniform##typeName##Impl(                                                             \
-		Uniform& uniform, type value, const Pointer<void>& pShaderHandle, const Pointer<void>& pRenderContext)          \
-	{                                                                                                                   \
-		VulkanContextHandle*	 pVulkanContext		= VK_CONTEXT_CAST(pRenderContext);                                  \
-		ShaderHandle*			 pHandle			= VK_SHADER_CAST(pShaderHandle);                                    \
-		Scope<VulkanUniformInfo> pUniformInfo		= uniform.pInternalData.Cast<VulkanUniformInfo>();                  \
-		u32						 currentFrameIndex	= pVulkanContext->currentFrame;                                     \
-		u32						 currentBufferIndex = pUniformInfo->binding * MAX_FRAMES_IN_FLIGHT + currentFrameIndex; \
-		void*					 pMappedMemory		= GET_SCOPE_ARRAY_INDEX(pHandle->pMapped, currentBufferIndex);      \
-		MemCopy((u8*)pMappedMemory + pUniformInfo->offset, &value, pUniformInfo->size);                                 \
-		return RESULT_SUCCESS;                                                                                          \
+#define UNIFORM_TYPE_DEF(_type, typeName, uppercase, glType)                                                             \
+	Result VulkanShaderStorage::SetUniform##typeName##Impl(                                                              \
+		Uniform& uniform, _type value, const Pointer<void>& pShaderHandle, const Pointer<void>& pRenderContext)          \
+	{                                                                                                                    \
+		VulkanContextHandle*	   pVulkanContext	 = VK_CONTEXT_CAST(pRenderContext);                                  \
+		ShaderHandle*			   pHandle			 = VK_SHADER_CAST(pShaderHandle);                                    \
+		Pointer<VulkanUniformInfo> pUniformInfo		 = uniform.pInternalData.Cast<VulkanUniformInfo>();                  \
+		u32						   currentFrameIndex = pVulkanContext->currentFrame;                                     \
+		u32	  currentBufferIndex					 = pUniformInfo->binding * MAX_FRAMES_IN_FLIGHT + currentFrameIndex; \
+		void* pMappedMemory							 = GET_SCOPE_ARRAY_INDEX(pHandle->pMapped, currentBufferIndex);      \
+		MemCopy((u8*)pMappedMemory + pUniformInfo->offset, &value, pUniformInfo->size);                                  \
+		return RESULT_SUCCESS;                                                                                           \
 	}
 #include "systems/render/uniform_type.def"
 #undef UNIFORM_TYPE_DEF
@@ -519,21 +561,22 @@ static Result reflectShaderUniforms(const Pointer<u32>&			  spirvCode,
 				uniform.value = {}; // Initialize the value as needed
 
 				Pointer<VulkanUniformInfo> pUniformInfo = uniform.pInternalData.Cast<VulkanUniformInfo>();
-				pUniformInfo->offset					= member.offset;
-				pUniformInfo->size						= member.size;
+				pUniformInfo->offset					= uniformSize;
+				pUniformInfo->size						= GetUniformTypeSize(uniform.type) / sizeof(f32);
 				pUniformInfo->binding					= binding->binding;
 
-				uniformSize += sizeof(uniform.type) / sizeof(f32);
+				uniformSize += pUniformInfo->size;
 			}
 		}
 
-		if (layoutBindingSize != uniformSize)
-		{
-			NTT_VULKAN_WARN("Uniform size mismatch for binding %u: expected %u, got %u",
-							layoutBinding.binding,
-							layoutBindingSize,
-							uniformSize);
-		}
+		layoutBindingSize = uniformSize;
+		// if (layoutBindingSize != uniformSize)
+		// {
+		// 	NTT_VULKAN_WARN("Uniform size mismatch for binding %u: expected %u, got %u",
+		// 					layoutBinding.binding,
+		// 					layoutBindingSize,
+		// 					uniformSize);
+		// }
 	}
 
 	NTT_ASSERT_RESULT_SUCCESS(descriptor_bindings.Free()); // Free the allocated memory for descriptor bindings
@@ -602,12 +645,22 @@ Result VulkanShaderStorage::RemoveShaderImpl(const Pointer<void>& pRenderContext
 	ShaderHandle*		 pHandle		= VK_SHADER_CAST(pShaderHandle);
 	VulkanContextHandle* pVulkanContext = VK_CONTEXT_CAST(pRenderContext);
 
+	NTT_ASSERT_RESULT_SUCCESS(destroyDescriptorPool(pVulkanContext, pHandle));
 	NTT_ASSERT_RESULT_SUCCESS(destroyUniformBuffers(pVulkanContext, pHandle));
 	NTT_ASSERT_RESULT_SUCCESS(destroyDescriptorSetLayout(pVulkanContext, pHandle));
 	vkDestroyPipeline(pVulkanContext->logicalDevice, pHandle->pipeline, nullptr);
 	vkDestroyPipelineLayout(pVulkanContext->logicalDevice, pHandle->pipelineLayout, nullptr);
 	vkDestroyShaderModule(pVulkanContext->logicalDevice, pHandle->vertexModule, nullptr);
 	vkDestroyShaderModule(pVulkanContext->logicalDevice, pHandle->fragmentModule, nullptr);
+
+	return RESULT_SUCCESS;
+}
+
+static Result destroyDescriptorPool(VulkanContextHandle* pVulkanContext, ShaderHandle* pShaderHandle)
+{
+	vkDestroyDescriptorPool(pVulkanContext->logicalDevice, pShaderHandle->descriptorPool, nullptr);
+
+	pShaderHandle->pDescriptorSets.Reset();
 
 	return RESULT_SUCCESS;
 }

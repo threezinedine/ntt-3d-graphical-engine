@@ -118,9 +118,10 @@ ShaderID ShaderStorage::AddShader(RenderContextID renderContextID,
 		const Uniform& uniform = pShaderNode->uniforms[i];
 		format(uniformBufferName,
 			   sizeof(uniformBufferName),
-			   "\tUniform:\n\tName: %s\n\tType: %s\n",
+			   "\tUniform:\n\tName: %s\n\tType: %s\n\tSize: %u\n",
 			   uniform.name.ToStringView().Data(),
-			   ToString(uniform.type));
+			   ToString(uniform.type),
+			   GetUniformTypeSize(uniform.type));
 		NTT_RENDER_INFO("Add shader: \n%s", uniformBufferName);
 	}
 
@@ -154,7 +155,7 @@ Result ShaderStorage::RemoveShader(ShaderID shaderID)
 	NTT_ASSERT_RESULT_SUCCESS(RemoveShaderImpl(pRenderContext->pRenderContextHandle, pShaderNode->pShaderHandle));
 	NTT_ASSERT_RESULT_SUCCESS(pShaderNode->pShaderHandle.Free()); // Free the allocated shader handle
 
-	for (u32 i = 0; i < pShaderNode->uniformCount; ++i)
+	for (u32 i = 0; i < 16; ++i)
 	{
 		Uniform& uniform = pShaderNode->uniforms[i];
 		if (uniform.pInternalData != nullptr)

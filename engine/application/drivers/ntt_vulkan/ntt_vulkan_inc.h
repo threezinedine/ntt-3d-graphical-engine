@@ -63,15 +63,17 @@ struct MeshHandle
 
 struct ShaderHandle
 {
-	VkShaderModule				 vertexModule;
-	VkShaderModule				 fragmentModule;
-	VkPipelineLayout			 pipelineLayout;
-	VkPipeline					 pipeline;
-	VkDescriptorSetLayout		 descriptorSetLayout;
-	u32							 descriptorSetLayoutBindingCount;
-	Scope<Array<VkBuffer>>		 pBuffers;
-	Scope<Array<VkDeviceMemory>> pMemories;
-	Scope<Array<void*>>			 pMapped;
+	VkShaderModule				  vertexModule;
+	VkShaderModule				  fragmentModule;
+	VkPipelineLayout			  pipelineLayout;
+	VkPipeline					  pipeline;
+	VkDescriptorSetLayout		  descriptorSetLayout;
+	VkDescriptorPool			  descriptorPool;
+	u32							  descriptorSetLayoutBindingCount;
+	Scope<Array<VkBuffer>>		  pBuffers;
+	Scope<Array<VkDeviceMemory>>  pMemories;
+	Scope<Array<void*>>			  pMapped;
+	Scope<Array<VkDescriptorSet>> pDescriptorSets;
 };
 
 struct VulkanUniformInfo
