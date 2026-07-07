@@ -59,6 +59,8 @@ static Result destroyUniformBuffers(VulkanContextHandle* pVulkanContext, ShaderH
 static Result createDescriptorPool(VulkanContextHandle* pVulkanContext, ShaderHandle* pShaderHandle);
 static Result destroyDescriptorPool(VulkanContextHandle* pVulkanContext, ShaderHandle* pShaderHandle);
 
+static Result updateDescriptorSets(VulkanContextHandle* pVulkanContext, ShaderHandle* pShaderHandle, u32 currentFrame);
+
 Result VulkanShaderStorage::AddShaderImpl(const Pointer<void>& pRenderContext,
 										  const char*		   pVertexShaderSource,
 										  const char*		   pFragmentShaderSource,
@@ -197,10 +199,16 @@ Result VulkanShaderStorage::AddShaderImpl(const Pointer<void>& pRenderContext,
 	colorBlending.attachmentCount = 1;
 	colorBlending.pAttachments	  = &colorBlendAttachment;
 
+	// Descriptor set layout must be created before the pipeline layout
+	NTT_ASSERT_RESULT_SUCCESS(createDescriptorSetLayout(
+		pVulkanContext, pHandle, descriptorSetLayoutBindings, descriptorSetLayoutBindingCount));
+	pHandle->descriptorSetLayoutBindingCount = descriptorSetLayoutBindingCount;
+
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-	pipelineLayoutInfo.sType				  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipelineLayoutInfo.setLayoutCount		  = 0;
-	pipelineLayoutInfo.pSetLayouts			  = nullptr;
+	pipelineLayoutInfo.sType		  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	pipelineLayoutInfo.setLayoutCount = pHandle->descriptorSetLayoutBindingCount > 0 ? 1 : 0;
+	pipelineLayoutInfo.pSetLayouts =
+		pHandle->descriptorSetLayoutBindingCount > 0 ? &pHandle->descriptorSetLayout : nullptr;
 	pipelineLayoutInfo.pushConstantRangeCount = 0;
 	pipelineLayoutInfo.pPushConstantRanges	  = nullptr;
 
@@ -227,14 +235,15 @@ Result VulkanShaderStorage::AddShaderImpl(const Pointer<void>& pRenderContext,
 	VK_ASSERT(vkCreateGraphicsPipelines(
 		pVulkanContext->logicalDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pHandle->pipeline));
 
-	NTT_ASSERT_RESULT_SUCCESS(createDescriptorSetLayout(
-		pVulkanContext, pHandle, descriptorSetLayoutBindings, descriptorSetLayoutBindingCount));
-
-	pHandle->descriptorSetLayoutBindingCount = descriptorSetLayoutBindingCount;
 	NTT_ASSERT_RESULT_SUCCESS(
 		createUniformBuffers(pVulkanContext, pHandle, descriptorSetLayoutSizes, descriptorSetLayoutBindingCount));
 
 	NTT_ASSERT_RESULT_SUCCESS(createDescriptorPool(pVulkanContext, pHandle));
+
+	for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+	{
+		NTT_ASSERT_RESULT_SUCCESS(updateDescriptorSets(pVulkanContext, pHandle, i));
+	}
 
 	return RESULT_SUCCESS;
 }
@@ -637,6 +646,23 @@ Result VulkanShaderStorage::UseShaderImpl(const Pointer<void>& pRenderContext, c
 					  VK_PIPELINE_BIND_POINT_GRAPHICS,
 					  pHandle->pipeline);
 
+	if (pHandle->pDescriptorSets.Get() != nullptr && pHandle->descriptorSetLayoutBindingCount > 0)
+	{
+		for (u32 i = 0; i < pHandle->descriptorSetLayoutBindingCount; ++i)
+		{
+			u32 bufferIndex = i * MAX_FRAMES_IN_FLIGHT + pVulkanContext->currentFrame;
+			vkCmdBindDescriptorSets(
+				GET_SCOPE_ARRAY_INDEX(pVulkanContext->pCommandBuffers, pVulkanContext->currentFrame),
+				VK_PIPELINE_BIND_POINT_GRAPHICS,
+				pHandle->pipelineLayout,
+				0,
+				1,
+				&GET_SCOPE_ARRAY_INDEX(pHandle->pDescriptorSets, bufferIndex),
+				0,
+				nullptr);
+		}
+	}
+
 	return RESULT_SUCCESS;
 }
 
@@ -704,6 +730,32 @@ u32 VulkanShaderStorage::GetShaderHandleSize() const
 u32 VulkanShaderStorage::GetUniformInfoSize() const
 {
 	return (u32)sizeof(VulkanUniformInfo);
+}
+
+static Result updateDescriptorSets(VulkanContextHandle* pVulkanContext, ShaderHandle* pShaderHandle, u32 currentFrame)
+{
+	for (u32 i = 0; i < pShaderHandle->descriptorSetLayoutBindingCount; ++i)
+	{
+		u32 bufferIndex = i * MAX_FRAMES_IN_FLIGHT + currentFrame;
+
+		VkDescriptorBufferInfo bufferInfo{};
+		bufferInfo.buffer = GET_SCOPE_ARRAY_INDEX(pShaderHandle->pBuffers, bufferIndex);
+		bufferInfo.offset = 0;
+		bufferInfo.range  = VK_WHOLE_SIZE;
+
+		VkWriteDescriptorSet descriptorWrite{};
+		descriptorWrite.sType			= VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrite.dstSet			= GET_SCOPE_ARRAY_INDEX(pShaderHandle->pDescriptorSets, currentFrame);
+		descriptorWrite.dstBinding		= i;
+		descriptorWrite.dstArrayElement = 0;
+		descriptorWrite.descriptorType	= VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		descriptorWrite.descriptorCount = 1;
+		descriptorWrite.pBufferInfo		= &bufferInfo;
+
+		vkUpdateDescriptorSets(pVulkanContext->logicalDevice, 1, &descriptorWrite, 0, nullptr);
+	}
+
+	return RESULT_SUCCESS;
 }
 
 } // namespace ntt

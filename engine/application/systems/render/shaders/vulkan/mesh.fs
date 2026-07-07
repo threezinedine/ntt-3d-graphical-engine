@@ -2,7 +2,6 @@
 
 layout(binding = 0) uniform UniformBlock
 {
-	mat4 uModel;
 	vec4 uColor;
 };
 
@@ -13,5 +12,5 @@ layout(location = 0) out vec4 outColor;
 
 void main()
 {
-	outColor = fragColor;
+	outColor = fragColor * uColor;
 }
