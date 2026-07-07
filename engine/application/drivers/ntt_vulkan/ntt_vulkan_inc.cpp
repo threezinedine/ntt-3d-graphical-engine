@@ -1,3 +1,5 @@
+#if NTT_VULKAN
+
 #include "ntt_vulkan_inc.h"
 
 namespace ntt {
@@ -55,3 +57,5 @@ Result createBuffer(VkBuffer&			  outBuffer,
 }
 
 } // namespace ntt
+
+#endif // NTT_VULKAN
