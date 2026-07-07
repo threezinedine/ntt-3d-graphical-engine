@@ -1,6 +1,8 @@
 #version 300 es
 precision mediump float;
 
+uniform vec4 uColor;
+
 // Custom output variable replaces gl_FragColor
 out vec4 FragColor;
 
@@ -10,5 +12,5 @@ in vec4 VertexColor;
 
 void main()
 {
-	FragColor = VertexColor;
+	FragColor = VertexColor * uColor;
 }
