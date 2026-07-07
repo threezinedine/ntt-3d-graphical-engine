@@ -571,14 +571,14 @@ static Result reflectShaderUniforms(const Pointer<u32>&			  spirvCode,
 
 				Pointer<VulkanUniformInfo> pUniformInfo = uniform.pInternalData.Cast<VulkanUniformInfo>();
 				pUniformInfo->offset					= uniformSize;
-				pUniformInfo->size						= GetUniformTypeSize(uniform.type) / sizeof(f32);
+				pUniformInfo->size						= GetUniformTypeSize(uniform.type);
 				pUniformInfo->binding					= binding->binding;
 
 				uniformSize += pUniformInfo->size;
 			}
 		}
 
-		layoutBindingSize = uniformSize;
+		layoutBindingSize = binding->block.size;
 		// if (layoutBindingSize != uniformSize)
 		// {
 		// 	NTT_VULKAN_WARN("Uniform size mismatch for binding %u: expected %u, got %u",
