@@ -75,6 +75,7 @@ ntt_set_source_group("src/systems/render"
 ntt_set_source_group("src/systems/render/defs"
     NTT_APPLICATION_SOURCES
     "systems/render/uniform_type.def"
+    "systems/render/shader_input_topology.def"
 )
 
 if (NTT_PLATFORM_WEB)

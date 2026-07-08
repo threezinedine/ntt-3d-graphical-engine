@@ -53,6 +53,29 @@ Result VulkanMeshStorage::AddMeshImpl(Mesh&				   mesh,
 
 	pHandle->vertexCount = mesh.vertices.GetCount();
 
+#if NTT_DEBUG
+	// Create debug vertex buffer for line rendering (each edge as 2 vertices)
+	u32				debugVertexCount = mesh.vertices.GetCount() * 2;
+	u32				debugSizeInBytes = debugVertexCount * sizeof(Vertex);
+	Pointer<Vertex> pDebugVertices	 = g_GlobalAllocators.pStack->Allocate(debugSizeInBytes).Cast<Vertex>();
+	for (u32 i = 0; i < mesh.vertices.GetCount(); ++i)
+	{
+		pDebugVertices.Get()[i * 2 + 0] = mesh.vertices[i];
+		pDebugVertices.Get()[i * 2 + 1] = mesh.vertices[(i + 1) % mesh.vertices.GetCount()];
+	}
+
+	NTT_ASSERT_RESULT_SUCCESS(createBuffer(pHandle->debugVertexBuffer,
+										   pHandle->debugVertexBufferMemory,
+										   pVulkanContext,
+										   debugSizeInBytes,
+										   VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+										   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
+	void* pDebugData;
+	vkMapMemory(pVulkanContext->logicalDevice, pHandle->debugVertexBufferMemory, 0, debugSizeInBytes, 0, &pDebugData);
+	MemCopy(pDebugData, pDebugVertices.Get(), debugSizeInBytes);
+	vkUnmapMemory(pVulkanContext->logicalDevice, pHandle->debugVertexBufferMemory);
+#endif
+
 	return RESULT_SUCCESS;
 }
 
@@ -164,9 +187,25 @@ Result VulkanMeshStorage::DrawDebugLineImpl(const Pointer<void>& pMeshHandle,
 											const Pointer<void>& pRenderContext,
 											u32					 lineWidth)
 {
-	NTT_UNUSED(pMeshHandle);
-	NTT_UNUSED(pRenderContext);
-	NTT_UNUSED(lineWidth);
+	VulkanContextHandle* pVulkanContext = VK_CONTEXT_CAST(pRenderContext);
+	MeshHandle*			 pHandle		= VK_MESH_CAST(pMeshHandle);
+
+	VkBuffer	 vertexBuffers[] = {pHandle->debugVertexBuffer};
+	VkDeviceSize offsets[]		 = {0};
+	vkCmdBindVertexBuffers(GET_SCOPE_ARRAY_INDEX(pVulkanContext->pCommandBuffers, pVulkanContext->currentFrame),
+						   0,
+						   1,
+						   vertexBuffers,
+						   offsets);
+
+	vkCmdSetLineWidth(GET_SCOPE_ARRAY_INDEX(pVulkanContext->pCommandBuffers, pVulkanContext->currentFrame),
+					  (float)lineWidth);
+
+	vkCmdDraw(GET_SCOPE_ARRAY_INDEX(pVulkanContext->pCommandBuffers, pVulkanContext->currentFrame),
+			  pHandle->vertexCount * 2,
+			  1,
+			  0,
+			  0);
 	return RESULT_SUCCESS;
 }
 #endif // NTT_DEBUG
@@ -184,6 +223,11 @@ Result VulkanMeshStorage::RemoveMeshImpl(const Pointer<void>& pMeshHandle, const
 	{
 		NTT_ASSERT_RESULT_SUCCESS(destroyStaticVertexBuffer(pVulkanContext, pHandle));
 	}
+
+#if NTT_DEBUG
+	vkDestroyBuffer(pVulkanContext->logicalDevice, pHandle->debugVertexBuffer, nullptr);
+	vkFreeMemory(pVulkanContext->logicalDevice, pHandle->debugVertexBufferMemory, nullptr);
+#endif
 
 	return RESULT_SUCCESS;
 }

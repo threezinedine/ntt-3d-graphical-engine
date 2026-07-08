@@ -15,6 +15,7 @@ protected:
 	virtual Result ShutdownImpl() override;
 
 	virtual Result AddShaderImpl(const Pointer<void>& pRenderContext,
+								 ShaderInputTopology  inputTopology,
 								 const char*		  pVertexShaderSource,
 								 const char*		  pFragmentShaderSource,
 								 Pointer<void>&		  pShaderHandle,

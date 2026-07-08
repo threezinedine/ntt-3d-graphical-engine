@@ -57,22 +57,28 @@ Result ShaderStorage::SetupDefaultShaders(RenderContextID renderContextID)
 	if (NTT_ARG_BOOL(USE_VULKAN))
 	{
 		g_DefaultMeshShaderID = AddShader(renderContextID,
+										  NTT_SHADER_INPUT_TOPOLOGY_TRIANGLES,
 										  reinterpret_cast<const char*>(vulkan_mesh_vs_data),
 										  reinterpret_cast<const char*>(vulkan_mesh_fs_data));
 
 		g_DebugLineShaderID = AddShader(renderContextID,
+										NTT_SHADER_INPUT_TOPOLOGY_LINES,
 										reinterpret_cast<const char*>(vulkan_line_vs_data),
 										reinterpret_cast<const char*>(vulkan_line_fs_data));
 	}
 	else
 #endif // NTT_VULKAN
 	{
-		g_DefaultMeshShaderID = AddShader(
-			renderContextID, reinterpret_cast<const char*>(mesh_vs_data), reinterpret_cast<const char*>(mesh_fs_data));
+		g_DefaultMeshShaderID = AddShader(renderContextID,
+										  NTT_SHADER_INPUT_TOPOLOGY_TRIANGLES,
+										  reinterpret_cast<const char*>(mesh_vs_data),
+										  reinterpret_cast<const char*>(mesh_fs_data));
 
 #if NTT_DEBUG
-		g_DebugLineShaderID = AddShader(
-			renderContextID, reinterpret_cast<const char*>(line_vs_data), reinterpret_cast<const char*>(line_fs_data));
+		g_DebugLineShaderID = AddShader(renderContextID,
+										NTT_SHADER_INPUT_TOPOLOGY_LINES,
+										reinterpret_cast<const char*>(line_vs_data),
+										reinterpret_cast<const char*>(line_fs_data));
 #endif // NTT_DEBUG
 	}
 
@@ -99,9 +105,10 @@ Result ShaderStorage::RemoveDefaultShaders()
 	return RESULT_SUCCESS;
 }
 
-ShaderID ShaderStorage::AddShader(RenderContextID renderContextID,
-								  const char*	  pVertexShaderSource,
-								  const char*	  pFragmentShaderSource) noexcept
+ShaderID ShaderStorage::AddShader(RenderContextID	  renderContextID,
+								  ShaderInputTopology inputTopology,
+								  const char*		  pVertexShaderSource,
+								  const char*		  pFragmentShaderSource) noexcept
 {
 	ShaderID shaderID = m_pStorage->Add();
 
@@ -128,11 +135,13 @@ ShaderID ShaderStorage::AddShader(RenderContextID renderContextID,
 
 	pShaderNode->pShaderHandle	 = ALLOCATOR_SAFE(m_pAllocator)->Allocate(GetShaderHandleSize());
 	pShaderNode->renderContextID = renderContextID;
+	pShaderNode->inputTopology	 = inputTopology;
 
 	RenderSystem::RenderContext* pRenderContext =
 		SystemGlobals::pRenderSystem->m_pRenderContextStorage->Get(renderContextID);
 
 	Result result = AddShaderImpl(pRenderContext->pRenderContextHandle,
+								  inputTopology,
 								  pVertexShaderSource,
 								  pFragmentShaderSource,
 								  pShaderNode->pShaderHandle,
@@ -262,5 +271,19 @@ Result ShaderStorage::UseShader(ShaderID shaderID)
 	}
 #include "uniform_type.def"
 #undef UNIFORM_TYPE_DEF
+
+const char* ShaderInputTopologyToString(ShaderInputTopology topology)
+{
+	switch (topology)
+	{
+#define SHADER_INPUT_TOPOLOGY_DEF(option, vkTopology, vkRasterizationMode)                                             \
+	case NTT_SHADER_INPUT_TOPOLOGY_##option:                                                                           \
+		return #option;
+#include "shader_input_topology.def"
+#undef SHADER_INPUT_TOPOLOGY_DEF
+	default:
+		return "Unknown";
+	}
+}
 
 } // namespace ntt

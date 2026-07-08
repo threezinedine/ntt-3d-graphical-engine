@@ -14,6 +14,14 @@ extern ShaderID g_DefaultMeshShaderID;
 extern ShaderID g_DebugLineShaderID;
 #endif // NTT_DEBUG
 
+enum ShaderInputTopology
+{
+#define SHADER_INPUT_TOPOLOGY_DEF(option, vkTopology, vkRasterizationMode) NTT_SHADER_INPUT_TOPOLOGY_##option,
+#include "shader_input_topology.def"
+#undef SHADER_INPUT_TOPOLOGY_DEF
+};
+
+const char* ShaderInputTopologyToString(ShaderInputTopology topology);
 class ShaderStorage
 {
 public:
@@ -26,9 +34,10 @@ public:
 	Result SetupDefaultShaders(RenderContextID renderContextID);
 	Result RemoveDefaultShaders();
 
-	ShaderID AddShader(RenderContextID renderContextID,
-					   const char*	   pVertexShaderSource,
-					   const char*	   pFragmentShaderSource) noexcept;
+	ShaderID AddShader(RenderContextID	   renderContextID,
+					   ShaderInputTopology inputTopology,
+					   const char*		   pVertexShaderSource,
+					   const char*		   pFragmentShaderSource) noexcept;
 	Result	 UseShader(ShaderID shaderID);
 	Result	 RemoveShader(ShaderID shaderID);
 
@@ -50,6 +59,7 @@ protected:
 	virtual Result ShutdownImpl()	= 0;
 
 	virtual Result AddShaderImpl(const Pointer<void>& pRenderContext,
+								 ShaderInputTopology  inputTopology,
 								 const char*		  pVertexShaderSource,
 								 const char*		  pFragmentShaderSource,
 								 Pointer<void>&		  pShaderHandle,
@@ -64,10 +74,11 @@ protected:
 private:
 	struct ShaderNode
 	{
-		Pointer<void>	pShaderHandle;
-		RenderContextID renderContextID;
-		Uniform			uniforms[16];
-		u32				uniformCount;
+		Pointer<void>		pShaderHandle;
+		RenderContextID		renderContextID;
+		Uniform				uniforms[16];
+		u32					uniformCount;
+		ShaderInputTopology inputTopology;
 	};
 
 private:

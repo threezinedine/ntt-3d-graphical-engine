@@ -799,6 +799,7 @@ static Result createLogicalDevice(VulkanContextHandle* pContextHandle)
 	VkPhysicalDeviceFeatures enabledFeatures{};
 	enabledFeatures.shaderClipDistance = VK_TRUE;
 	enabledFeatures.shaderCullDistance = VK_TRUE;
+	enabledFeatures.wideLines		   = VK_TRUE;
 
 	u32 deviceExtensionCount				 = sizeof(s_DeviceExtensions) / sizeof(s_DeviceExtensions[0]);
 	deviceCreateInfo.enabledExtensionCount	 = deviceExtensionCount;

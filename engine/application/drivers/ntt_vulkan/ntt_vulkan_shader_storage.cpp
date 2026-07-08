@@ -6,6 +6,7 @@
 #include "ntt_vulkan_inc.h"
 #include "services.h"
 #include "spirv_reflect.h"
+#include "systems/render/components/vertex.h"
 
 namespace ntt {
 
@@ -61,12 +62,13 @@ static Result destroyDescriptorPool(VulkanContextHandle* pVulkanContext, ShaderH
 
 static Result updateDescriptorSets(VulkanContextHandle* pVulkanContext, ShaderHandle* pShaderHandle, u32 currentFrame);
 
-Result VulkanShaderStorage::AddShaderImpl(const Pointer<void>& pRenderContext,
-										  const char*		   pVertexShaderSource,
-										  const char*		   pFragmentShaderSource,
-										  Pointer<void>&	   pShaderHandle,
-										  Uniform*			   pUniforms,
-										  u32&				   uniformCount)
+Result VulkanShaderStorage::AddShaderImpl(const Pointer<void>&		pRenderContext,
+										  const ShaderInputTopology inputTopology,
+										  const char*				pVertexShaderSource,
+										  const char*				pFragmentShaderSource,
+										  Pointer<void>&			pShaderHandle,
+										  Uniform*					pUniforms,
+										  u32&						uniformCount)
 {
 	Pointer<u32> vertexShaderSPIRV	 = compileShaderToSPIRV_Vulkan(GLSLANG_STAGE_VERTEX, pVertexShaderSource);
 	Pointer<u32> fragmentShaderSPIRV = compileShaderToSPIRV_Vulkan(GLSLANG_STAGE_FRAGMENT, pFragmentShaderSource);
@@ -100,8 +102,13 @@ Result VulkanShaderStorage::AddShaderImpl(const Pointer<void>& pRenderContext,
 	fragmentShaderStageInfo.module = pHandle->fragmentModule;
 	fragmentShaderStageInfo.pName  = "main";
 
-	VkDynamicState dynamicStates[]	 = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
-	u32			   dynamicStateCount = sizeof(dynamicStates) / sizeof(dynamicStates[0]);
+	VkDynamicState dynamicStates[3]	 = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+	u32			   dynamicStateCount = 2;
+
+	if (inputTopology == NTT_SHADER_INPUT_TOPOLOGY_LINES)
+	{
+		dynamicStates[dynamicStateCount++] = VK_DYNAMIC_STATE_LINE_WIDTH;
+	}
 
 	VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo{};
 	dynamicStateCreateInfo.sType			 = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
@@ -149,8 +156,14 @@ Result VulkanShaderStorage::AddShaderImpl(const Pointer<void>& pRenderContext,
 	vertexInputInfo.pVertexAttributeDescriptions	= vertexAttributeDescriptions;
 
 	VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
-	inputAssembly.sType					 = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-	inputAssembly.topology				 = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+#define SHADER_INPUT_TOPOLOGY_DEF(option, vkTopology, vkRasterizationMode)                                             \
+	if (inputTopology == NTT_SHADER_INPUT_TOPOLOGY_##option)                                                           \
+	{                                                                                                                  \
+		inputAssembly.topology = vkTopology;                                                                           \
+	}
+#include "systems/render/shader_input_topology.def"
+#undef SHADER_INPUT_TOPOLOGY_DEF
 	inputAssembly.primitiveRestartEnable = VK_FALSE;
 
 	VkViewport viewport{};
@@ -176,11 +189,18 @@ Result VulkanShaderStorage::AddShaderImpl(const Pointer<void>& pRenderContext,
 	rasterizer.sType				   = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 	rasterizer.depthClampEnable		   = VK_FALSE;
 	rasterizer.rasterizerDiscardEnable = VK_FALSE;
-	rasterizer.polygonMode			   = VK_POLYGON_MODE_FILL;
-	rasterizer.lineWidth			   = 1.0f;
-	rasterizer.cullMode				   = VK_CULL_MODE_BACK_BIT;
-	rasterizer.frontFace			   = VK_FRONT_FACE_CLOCKWISE;
-	rasterizer.depthBiasEnable		   = VK_FALSE;
+
+#define SHADER_INPUT_TOPOLOGY_DEF(option, vkTopology, vkRasterizationMode)                                             \
+	if (inputTopology == NTT_SHADER_INPUT_TOPOLOGY_##option)                                                           \
+	{                                                                                                                  \
+		rasterizer.polygonMode = vkRasterizationMode;                                                                  \
+	}
+#include "systems/render/shader_input_topology.def"
+#undef SHADER_INPUT_TOPOLOGY_DEF
+	rasterizer.lineWidth	   = 1.0f;
+	rasterizer.cullMode		   = VK_CULL_MODE_BACK_BIT;
+	rasterizer.frontFace	   = VK_FRONT_FACE_CLOCKWISE;
+	rasterizer.depthBiasEnable = VK_FALSE;
 
 	VkPipelineMultisampleStateCreateInfo multisampling{};
 	multisampling.sType				   = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
@@ -488,7 +508,7 @@ static Result reflectShaderInputs(const Pointer<u32>&				 spirvCode,
 	vertexAttributeDescriptionCount		   = attributeCount;
 	vertexBindingDescriptionCount		   = 1; // Assuming a single binding for simplicity
 	vertexBindingDescriptions[0].binding   = 0;
-	vertexBindingDescriptions[0].stride	   = bindingDescriptonStride; // Set the stride based on your vertex structure
+	vertexBindingDescriptions[0].stride	   = sizeof(Vertex);
 	vertexBindingDescriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 	// can be enumerated and extracted using a similar mechanism.
 

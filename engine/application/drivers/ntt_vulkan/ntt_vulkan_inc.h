@@ -49,6 +49,10 @@ struct MeshHandle
 	VkDeviceMemory vertexBufferMemory;
 	u32			   vertexCount;
 	bool		   isDynamic;
+#if NTT_DEBUG
+	VkBuffer	   debugVertexBuffer;
+	VkDeviceMemory debugVertexBufferMemory;
+#endif
 };
 
 #define VK_MESH_CAST(handle)                                                                                           \

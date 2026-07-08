@@ -51,6 +51,7 @@ Result OpenGLShaderStorage::ShutdownImpl()
 static Result extractUniforms(u32 shaderProgram, Uniform* pUniforms, u32& uniformCount);
 
 Result OpenGLShaderStorage::AddShaderImpl(const Pointer<void>& pRenderContext,
+										  ShaderInputTopology  inputTopology,
 										  const char*		   pVertexShaderSource,
 										  const char*		   pFragmentShaderSource,
 										  Pointer<void>&	   pShaderHandle,
@@ -58,6 +59,7 @@ Result OpenGLShaderStorage::AddShaderImpl(const Pointer<void>& pRenderContext,
 										  u32&				   uniformCount)
 {
 	NTT_UNUSED(pRenderContext);
+	NTT_UNUSED(inputTopology);
 
 	ShaderHandle* pHandle = CAST_SHADER_HANDLE(pShaderHandle);
 
