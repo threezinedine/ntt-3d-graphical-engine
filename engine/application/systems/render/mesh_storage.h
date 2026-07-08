@@ -19,9 +19,18 @@ public:
 	Result Initialize();
 	Result Shutdown();
 
-	MeshID AddMesh(Mesh&& mesh, RenderContextID renderContextID, ShaderID shaderID, bool dynamic = false) noexcept;
+	MeshID AddMesh(Mesh&& mesh, RenderContextID renderContextID, bool dynamic = false) noexcept;
 	Result DrawMesh(MeshID meshID);
+#if NTT_DEBUG
+	Result DrawDebugLine(MeshID meshID);
+#endif // NTT_DEBUG
 	Result RemoveMesh(MeshID meshID);
+
+	Result SetShader(MeshID meshID, ShaderID shaderID);
+#if NTT_DEBUG
+	Result SetDebugLineShader(MeshID meshID, ShaderID shaderID);
+	Result SetDebugLineColor(MeshID meshID, const Color& color);
+#endif // NTT_DEBUG
 
 #define UNIFORM_TYPE_DEF(type, typeName, uppercase, glType)                                                            \
 public:                                                                                                                \
@@ -35,8 +44,11 @@ protected:
 
 	virtual Result
 	AddMeshImpl(Mesh& mesh, Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext, bool dynamic) = 0;
-	virtual Result DrawMeshImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext)	   = 0;
-	virtual Result RemoveMeshImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext)   = 0;
+#if NTT_DEBUG
+	virtual Result DrawDebugLineImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext) = 0;
+#endif // NTT_DEBUG
+	virtual Result DrawMeshImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext)	 = 0;
+	virtual Result RemoveMeshImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext) = 0;
 
 protected:
 	virtual u32 GetMeshHandleSize() const = 0;
@@ -44,9 +56,13 @@ protected:
 private:
 	struct MeshNode
 	{
-		Mesh		  mesh;
-		bool		  dynamic;
-		ShaderID	  shaderID;
+		Mesh	 mesh;
+		bool	 dynamic;
+		ShaderID shaderID;
+#if NTT_DEBUG
+		ShaderID debugLineShaderID;
+		Color	 debugLineColor;
+#endif // NTT_DEBUG
 		Pointer<void> pMeshHandle;
 		Pointer<void> pRenderContext;
 	};

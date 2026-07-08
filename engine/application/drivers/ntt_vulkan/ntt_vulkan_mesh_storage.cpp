@@ -159,6 +159,15 @@ Result VulkanMeshStorage::DrawMeshImpl(const Pointer<void>& pMeshHandle, const P
 	return RESULT_SUCCESS;
 }
 
+#if NTT_DEBUG
+Result VulkanMeshStorage::DrawDebugLineImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext)
+{
+	NTT_UNUSED(pMeshHandle);
+	NTT_UNUSED(pRenderContext);
+	return RESULT_SUCCESS;
+}
+#endif // NTT_DEBUG
+
 Result VulkanMeshStorage::RemoveMeshImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext)
 {
 	MeshHandle*			 pHandle		= VK_MESH_CAST(pMeshHandle);

@@ -10,6 +10,9 @@ typedef u32		   ShaderID;
 constexpr ShaderID INVALID_SHADER_ID = static_cast<u32>(-1);
 
 extern ShaderID g_DefaultMeshShaderID;
+#if NTT_DEBUG
+extern ShaderID g_DebugLineShaderID;
+#endif // NTT_DEBUG
 
 class ShaderStorage
 {

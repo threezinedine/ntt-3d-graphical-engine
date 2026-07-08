@@ -41,14 +41,18 @@ MeshStorage::~MeshStorage()
 {
 }
 
-MeshID MeshStorage::AddMesh(Mesh&& mesh, RenderContextID renderContextID, ShaderID shaderID, bool dynamic) noexcept
+MeshID MeshStorage::AddMesh(Mesh&& mesh, RenderContextID renderContextID, bool dynamic) noexcept
 {
 	MeshID	  meshID   = m_pMeshStorage->Add();
 	MeshNode* pNode	   = m_pMeshStorage->Get(meshID);
 	pNode->mesh		   = static_cast<Mesh&&>(mesh);
 	pNode->pMeshHandle = ALLOCATOR_SAFE(m_pAllocator)->Allocate(GetMeshHandleSize());
-	pNode->shaderID	   = shaderID;
-	pNode->dynamic	   = dynamic;
+	pNode->shaderID	   = g_DefaultMeshShaderID;
+#if NTT_DEBUG
+	pNode->debugLineShaderID = g_DebugLineShaderID;
+	pNode->debugLineColor	 = Color{1.0f, 0.0f, 0.0f, 1.0f}; // Default debug line color (red)
+#endif														  // NTT_DEBUG
+	pNode->dynamic = dynamic;
 	pNode->pRenderContext =
 		SystemGlobals::pRenderSystem->m_pRenderContextStorage->Get(renderContextID)->pRenderContextHandle;
 
@@ -69,6 +73,24 @@ Result MeshStorage::DrawMesh(MeshID meshID)
 
 	return DrawMeshImpl(pNode->pMeshHandle, pNode->pRenderContext);
 }
+
+#if NTT_DEBUG
+Result MeshStorage::DrawDebugLine(MeshID meshID)
+{
+	MeshNode* pNode = m_pMeshStorage->Get(meshID);
+	if (pNode == nullptr)
+	{
+		return RESULT_INDEX_OUT_OF_BOUNDS;
+	}
+
+	NTT_ASSERT_RESULT_SUCCESS(
+		g_RenderGlobals.pShaderStorage->SetUniformFloat4(pNode->debugLineShaderID, "uColor", pNode->debugLineColor));
+
+	NTT_ASSERT_RESULT_SUCCESS(g_RenderGlobals.pShaderStorage->UseShader(pNode->debugLineShaderID));
+
+	return DrawDebugLineImpl(pNode->pMeshHandle, pNode->pRenderContext);
+}
+#endif // NTT_DEBUG
 
 Result MeshStorage::RemoveMesh(MeshID meshID)
 {
@@ -99,5 +121,31 @@ Result MeshStorage::RemoveMesh(MeshID meshID)
 	}
 #include "systems/render/uniform_type.def"
 #undef UNIFORM_TYPE_DEF
+
+Result MeshStorage::SetShader(MeshID meshID, ShaderID shaderID)
+{
+	MeshNode* pNode = m_pMeshStorage->Get(meshID);
+	if (pNode == nullptr)
+	{
+		return RESULT_INDEX_OUT_OF_BOUNDS;
+	}
+
+	pNode->shaderID = shaderID;
+	return RESULT_SUCCESS;
+}
+
+#if NTT_DEBUG
+Result MeshStorage::SetDebugLineShader(MeshID meshID, ShaderID shaderID)
+{
+	MeshNode* pNode = m_pMeshStorage->Get(meshID);
+	if (pNode == nullptr)
+	{
+		return RESULT_INDEX_OUT_OF_BOUNDS;
+	}
+
+	pNode->debugLineShaderID = shaderID;
+	return RESULT_SUCCESS;
+}
+#endif // NTT_DEBUG
 
 } // namespace ntt

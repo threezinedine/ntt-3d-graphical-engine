@@ -8,9 +8,18 @@ extern unsigned char mesh_fs_data[];
 extern unsigned char vulkan_mesh_vs_data[];
 extern unsigned char vulkan_mesh_fs_data[];
 
+extern unsigned char line_vs_data[];
+extern unsigned char line_fs_data[];
+
+extern unsigned char vulkan_line_vs_data[];
+extern unsigned char vulkan_line_fs_data[];
+
 namespace ntt {
 
 ShaderID g_DefaultMeshShaderID = INVALID_SHADER_ID;
+#if NTT_DEBUG
+ShaderID g_DebugLineShaderID = INVALID_SHADER_ID;
+#endif // NTT_DEBUG
 
 ShaderStorage::ShaderStorage(IAllocator* pAllocator)
 	: m_pAllocator(pAllocator)
@@ -50,12 +59,21 @@ Result ShaderStorage::SetupDefaultShaders(RenderContextID renderContextID)
 		g_DefaultMeshShaderID = AddShader(renderContextID,
 										  reinterpret_cast<const char*>(vulkan_mesh_vs_data),
 										  reinterpret_cast<const char*>(vulkan_mesh_fs_data));
+
+		g_DebugLineShaderID = AddShader(renderContextID,
+										reinterpret_cast<const char*>(vulkan_line_vs_data),
+										reinterpret_cast<const char*>(vulkan_line_fs_data));
 	}
 	else
 #endif // NTT_VULKAN
 	{
 		g_DefaultMeshShaderID = AddShader(
 			renderContextID, reinterpret_cast<const char*>(mesh_vs_data), reinterpret_cast<const char*>(mesh_fs_data));
+
+#if NTT_DEBUG
+		g_DebugLineShaderID = AddShader(
+			renderContextID, reinterpret_cast<const char*>(line_vs_data), reinterpret_cast<const char*>(line_fs_data));
+#endif // NTT_DEBUG
 	}
 
 	return RESULT_SUCCESS;
@@ -68,7 +86,17 @@ Result ShaderStorage::RemoveDefaultShaders()
 		return RESULT_UNKNOWN;
 	}
 
-	return RemoveShader(g_DefaultMeshShaderID);
+	NTT_ASSERT_RESULT_SUCCESS(RemoveShader(g_DefaultMeshShaderID));
+
+#if NTT_DEBUG
+	if (g_DebugLineShaderID == INVALID_SHADER_ID)
+	{
+		return RESULT_UNKNOWN;
+	}
+	NTT_ASSERT_RESULT_SUCCESS(RemoveShader(g_DebugLineShaderID));
+#endif // NTT_DEBUG
+
+	return RESULT_SUCCESS;
 }
 
 ShaderID ShaderStorage::AddShader(RenderContextID renderContextID,

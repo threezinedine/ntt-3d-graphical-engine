@@ -90,6 +90,8 @@ else()
         NTT_APPLICATION_SOURCES
         "systems/render/shaders/opengl/mesh.vs::generated_opengl_mesh_vs.cpp::mesh_vs_data"
         "systems/render/shaders/opengl/mesh.fs::generated_opengl_mesh_fs.cpp::mesh_fs_data"
+        "systems/render/shaders/opengl/line.vs::generated_opengl_line_vs.cpp::line_vs_data"
+        "systems/render/shaders/opengl/line.fs::generated_opengl_line_fs.cpp::line_fs_data"
     )
 
     if (NTT_VULKAN)
@@ -98,6 +100,8 @@ else()
             NTT_APPLICATION_SOURCES
             "systems/render/shaders/vulkan/mesh.vs::generated_vulkan_mesh_vs.cpp::vulkan_mesh_vs_data"
             "systems/render/shaders/vulkan/mesh.fs::generated_vulkan_mesh_fs.cpp::vulkan_mesh_fs_data"
+            "systems/render/shaders/vulkan/line.vs::generated_vulkan_line_vs.cpp::vulkan_line_vs_data"
+            "systems/render/shaders/vulkan/line.fs::generated_vulkan_line_fs.cpp::vulkan_line_fs_data"
         )
     endif()
 endif()

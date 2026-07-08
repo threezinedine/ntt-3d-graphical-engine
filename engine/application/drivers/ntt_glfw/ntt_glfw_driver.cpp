@@ -183,10 +183,12 @@ static Result GLFWDisplayDriver_OnBeginFrame(Pointer<void> pDriverHandle)
 	GLFWDriverHandle* pHandle = CAST_DRIVER_HANDLE(pDriverHandle);
 	glfwPollEvents();
 
+#if !NTT_PLATFORM_WEB
 	if (glfwGetKey(pHandle->pWindow, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 	{
 		glfwSetWindowShouldClose(pHandle->pWindow, true);
 	}
+#endif // !NTT_PLATFORM_WEB
 
 	return RESULT_SUCCESS;
 }

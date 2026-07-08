@@ -56,8 +56,13 @@ struct ShaderHandle
 
 struct MeshHandle
 {
+	u32 verticesCount;
 	u32 vao;
 	u32 vbo;
+#if NTT_DEBUG
+	u32 debugVAO;
+	u32 debugVBO;
+#endif // NTT_DEBUG
 };
 
 #define CAST_MESH_HANDLE(handle)                                                                                       \
