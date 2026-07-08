@@ -338,7 +338,7 @@ static Result createDescriptorSetLayout(VulkanContextHandle*		  pVulkanContext,
 
 #define UNIFORM_TYPE_DEF(_type, typeName, uppercase, glType)                                                             \
 	Result VulkanShaderStorage::SetUniform##typeName##Impl(                                                              \
-		Uniform& uniform, _type value, const Pointer<void>& pShaderHandle, const Pointer<void>& pRenderContext)          \
+		const Uniform& uniform, const Pointer<void>& pShaderHandle, const Pointer<void>& pRenderContext)                 \
 	{                                                                                                                    \
 		VulkanContextHandle*	   pVulkanContext	 = VK_CONTEXT_CAST(pRenderContext);                                  \
 		ShaderHandle*			   pHandle			 = VK_SHADER_CAST(pShaderHandle);                                    \
@@ -346,7 +346,7 @@ static Result createDescriptorSetLayout(VulkanContextHandle*		  pVulkanContext,
 		u32						   currentFrameIndex = pVulkanContext->currentFrame;                                     \
 		u32	  currentBufferIndex					 = pUniformInfo->binding * MAX_FRAMES_IN_FLIGHT + currentFrameIndex; \
 		void* pMappedMemory							 = GET_SCOPE_ARRAY_INDEX(pHandle->pMapped, currentBufferIndex);      \
-		MemCopy((u8*)pMappedMemory + pUniformInfo->offset, &value, pUniformInfo->size);                                  \
+		MemCopy((u8*)pMappedMemory + pUniformInfo->offset, &uniform.value.typeName, pUniformInfo->size);                 \
 		return RESULT_SUCCESS;                                                                                           \
 	}
 #include "systems/render/uniform_type.def"
@@ -647,15 +647,14 @@ Result VulkanShaderStorage::UseShaderImpl(const Pointer<void>& pRenderContext, c
 
 	if (pHandle->pDescriptorSets.Get() != nullptr && pHandle->descriptorSetLayoutBindingCount > 0)
 	{
-		vkCmdBindDescriptorSets(
-			GET_SCOPE_ARRAY_INDEX(pVulkanContext->pCommandBuffers, pVulkanContext->currentFrame),
-			VK_PIPELINE_BIND_POINT_GRAPHICS,
-			pHandle->pipelineLayout,
-			0,
-			1,
-			&GET_SCOPE_ARRAY_INDEX(pHandle->pDescriptorSets, pVulkanContext->currentFrame),
-			0,
-			nullptr);
+		vkCmdBindDescriptorSets(GET_SCOPE_ARRAY_INDEX(pVulkanContext->pCommandBuffers, pVulkanContext->currentFrame),
+								VK_PIPELINE_BIND_POINT_GRAPHICS,
+								pHandle->pipelineLayout,
+								0,
+								1,
+								&GET_SCOPE_ARRAY_INDEX(pHandle->pDescriptorSets, pVulkanContext->currentFrame),
+								0,
+								nullptr);
 	}
 
 	return RESULT_SUCCESS;

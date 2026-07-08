@@ -29,8 +29,7 @@ protected:
 #define UNIFORM_TYPE_DEF(type, typeName, uppercase, glType)                                                            \
 protected:                                                                                                             \
 	virtual Result SetUniform##typeName##Impl(                                                                         \
-		Uniform& uniform, type value, const Pointer<void>& pShaderHandle, const Pointer<void>& pRenderContext)         \
-		override;
+		const Uniform& uniform, const Pointer<void>& pShaderHandle, const Pointer<void>& pRenderContext) override;
 #include "systems/render/uniform_type.def"
 #undef UNIFORM_TYPE_DEF
 

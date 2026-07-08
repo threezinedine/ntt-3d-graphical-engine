@@ -35,7 +35,7 @@ public:                                                                         
                                                                                                                        \
 protected:                                                                                                             \
 	virtual Result SetUniform##typeName##Impl(                                                                         \
-		Uniform& uniform, type value, const Pointer<void>& pShaderHandle, const Pointer<void>& pRenderContext) = 0;
+		const Uniform& uniform, const Pointer<void>& pShaderHandle, const Pointer<void>& pRenderContext) = 0;
 #include "uniform_type.def"
 #undef UNIFORM_TYPE_DEF
 

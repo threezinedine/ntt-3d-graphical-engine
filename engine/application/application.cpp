@@ -59,7 +59,8 @@ Result Application::Initialize(i32 argc, char** argv)
 	mesh.vertices.Emplace(Vec3f{-0.5f, -0.5f, 0.0f}, Vec2f{0.5f, 1.0f}, Color{1.0f, 0.0f, 0.0f, 1.0f});
 	mesh.vertices.Emplace(Vec3f{0.5f, -0.5f, 0.0f}, Vec2f{1.0f, 0.0f}, Color{0.0f, 1.0f, 0.0f, 1.0f});
 	mesh.vertices.Emplace(Vec3f{0.0f, 0.5f, 0.0f}, Vec2f{0.0f, 0.0f}, Color{0.0f, 0.0f, 1.0f, 1.0f});
-	g_MeshID = g_RenderGlobals.pMeshStorage->AddMesh(static_cast<Mesh&&>(mesh), g_RenderContextID);
+	g_MeshID =
+		g_RenderGlobals.pMeshStorage->AddMesh(static_cast<Mesh&&>(mesh), g_DefaultMeshShaderID, g_RenderContextID);
 
 	return InitializeImpl();
 }
@@ -70,18 +71,16 @@ Result Application::Update()
 
 	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pRenderSystem->BeginRender(g_RenderContextID));
 
-	NTT_ASSERT_RESULT_SUCCESS(g_RenderGlobals.pShaderStorage->UseShader(g_DefaultMeshShaderID));
-
-	if (g_RenderGlobals.pShaderStorage->SetUniformFloat4(
-			g_DefaultMeshShaderID, "uColor", Color{1.0f, 0.0f, 1.0f, 1.0f}) != RESULT_SUCCESS)
+	if (g_RenderGlobals.pMeshStorage->SetUniformFloat4(g_MeshID, "uColor", Color{1.0f, 0.0f, 1.0f, 1.0f}) !=
+		RESULT_SUCCESS)
 	{
-		NTT_APPLICATION_WARN("Failed to set uniform 'uColor' for shader ID: %u", g_DefaultMeshShaderID);
+		NTT_APPLICATION_WARN("Failed to set uniform 'uColor' for mesh ID: %u", g_MeshID);
 	}
 
-	if (g_RenderGlobals.pShaderStorage->SetUniformFloat4(
-			g_DefaultMeshShaderID, "uTransform", Vec4f{0.2f, 0.0f, 0.0f, 0.0f}) != RESULT_SUCCESS)
+	if (g_RenderGlobals.pMeshStorage->SetUniformFloat4(g_MeshID, "uTransform", Vec4f{0.2f, 0.0f, 0.0f, 0.0f}) !=
+		RESULT_SUCCESS)
 	{
-		NTT_APPLICATION_WARN("Failed to set uniform 'uTransform' for shader ID: %u", g_DefaultMeshShaderID);
+		NTT_APPLICATION_WARN("Failed to set uniform 'uTransform' for mesh ID: %u", g_MeshID);
 	}
 
 	NTT_ASSERT_RESULT_SUCCESS(g_RenderGlobals.pMeshStorage->DrawMesh(g_MeshID));

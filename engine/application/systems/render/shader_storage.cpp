@@ -180,7 +180,27 @@ Result ShaderStorage::UseShader(ShaderID shaderID)
 	RenderSystem::RenderContext* pRenderContext =
 		SystemGlobals::pRenderSystem->m_pRenderContextStorage->Get(pShaderNode->renderContextID);
 
-	return UseShaderImpl(pRenderContext->pRenderContextHandle, pShaderNode->pShaderHandle);
+	NTT_ASSERT_RESULT_SUCCESS(UseShaderImpl(pRenderContext->pRenderContextHandle, pShaderNode->pShaderHandle));
+
+	for (u32 i = 0; i < pShaderNode->uniformCount; ++i)
+	{
+		const Uniform& uniform = pShaderNode->uniforms[i];
+		switch (uniform.type)
+		{
+#define UNIFORM_TYPE_DEF(type, typeName, uppercase, glType)                                                            \
+	case UNIFORM_TYPE_##uppercase:                                                                                     \
+		NTT_ASSERT_RESULT_SUCCESS(                                                                                     \
+			SetUniform##typeName##Impl(uniform, pShaderNode->pShaderHandle, pRenderContext->pRenderContextHandle));    \
+		break;
+#include "uniform_type.def"
+#undef UNIFORM_TYPE_DEF
+		default:
+			NTT_RENDER_ERROR("Unsupported uniform type: %d", uniform.type);
+			return RESULT_UNSUPPORTED_UNIFORM_TYPE;
+		}
+	}
+
+	return RESULT_SUCCESS;
 }
 
 #define UNIFORM_TYPE_DEF(type, typeName, uppercase, glType)                                                            \
@@ -209,8 +229,8 @@ Result ShaderStorage::UseShader(ShaderID shaderID)
 		{                                                                                                              \
 			return RESULT_UNIFORM_NOT_FOUND;                                                                           \
 		}                                                                                                              \
-		return SetUniform##typeName##Impl(                                                                             \
-			pShaderNode->uniforms[uniformIndex], value, pShaderNode->pShaderHandle, pRenderContext);                   \
+		pShaderNode->uniforms[uniformIndex].value.typeName = value;                                                    \
+		return RESULT_SUCCESS;                                                                                         \
 	}
 #include "uniform_type.def"
 #undef UNIFORM_TYPE_DEF

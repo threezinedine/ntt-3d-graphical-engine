@@ -149,7 +149,7 @@ static Result extractUniforms(u32 shaderProgram, Uniform* pUniforms, u32& unifor
 
 #define UNIFORM_TYPE_DEF(type, _name, uppercase, glType)                                                               \
 	Result OpenGLShaderStorage::SetUniform##_name##Impl(                                                               \
-		Uniform& uniform, type value, const Pointer<void>& pShaderHandle, const Pointer<void>& pRenderContext)         \
+		const Uniform& uniform, const Pointer<void>& pShaderHandle, const Pointer<void>& pRenderContext)               \
 	{                                                                                                                  \
 		NTT_UNUSED(pRenderContext);                                                                                    \
 		ShaderHandle* pHandle = CAST_SHADER_HANDLE(pShaderHandle);                                                     \
@@ -165,7 +165,7 @@ static Result extractUniforms(u32 shaderProgram, Uniform* pUniforms, u32& unifor
 		}                                                                                                              \
                                                                                                                        \
 		GL_ASSERT(glUseProgram(pHandle->program));                                                                     \
-		GL_ASSERT(setUniformValue(location, value));                                                                   \
+		GL_ASSERT(setUniformValue(location, uniform.value._name));                                                     \
                                                                                                                        \
 		return RESULT_SUCCESS;                                                                                         \
 	}

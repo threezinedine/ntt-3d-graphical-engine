@@ -2,6 +2,7 @@
 
 #include "components/components.h"
 #include "services.h"
+#include "shader_storage.h"
 #include "systems/render/render_system.h"
 
 namespace ntt {
@@ -18,9 +19,15 @@ public:
 	Result Initialize();
 	Result Shutdown();
 
-	MeshID AddMesh(Mesh&& mesh, RenderContextID renderContextID, bool dynamic = false) noexcept;
+	MeshID AddMesh(Mesh&& mesh, RenderContextID renderContextID, ShaderID shaderID, bool dynamic = false) noexcept;
 	Result DrawMesh(MeshID meshID);
 	Result RemoveMesh(MeshID meshID);
+
+#define UNIFORM_TYPE_DEF(type, typeName, uppercase, glType)                                                            \
+public:                                                                                                                \
+	Result SetUniform##typeName(MeshID meshID, const char* pUniformName, type value);
+#include "systems/render/uniform_type.def"
+#undef UNIFORM_TYPE_DEF
 
 protected:
 	virtual Result InitializeImpl() = 0;
@@ -39,6 +46,7 @@ private:
 	{
 		Mesh		  mesh;
 		bool		  dynamic;
+		ShaderID	  shaderID;
 		Pointer<void> pMeshHandle;
 		Pointer<void> pRenderContext;
 	};
