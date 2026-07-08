@@ -5,10 +5,7 @@ uniform vec4 uColor;
 
 out vec4 FragColor;
 
-in vec2 TexCoord;
-in vec4 VertexColor;
-
 void main()
 {
-	FragColor = VertexColor * uColor;
+	FragColor = uColor;
 }

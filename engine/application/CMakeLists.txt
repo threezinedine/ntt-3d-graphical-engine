@@ -83,6 +83,8 @@ if (NTT_PLATFORM_WEB)
         NTT_APPLICATION_SOURCES
         "systems/render/shaders/gles/mesh.vs::generated_gles_mesh_vs.cpp::mesh_vs_data"
         "systems/render/shaders/gles/mesh.fs::generated_gles_mesh_fs.cpp::mesh_fs_data"
+        "systems/render/shaders/gles/line.vs::generated_gles_line_vs.cpp::line_vs_data"
+        "systems/render/shaders/gles/line.fs::generated_gles_line_fs.cpp::line_fs_data"
     )
 else()
     ntt_embed_asset(
