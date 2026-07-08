@@ -18,12 +18,7 @@ protected:
 
 	virtual Result
 	AddMeshImpl(Mesh& mesh, Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext, bool dynamic) override;
-#if NTT_DEBUG
-	virtual Result
-	DrawMeshImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext, bool debug) override;
-#else  // NTT_DEBUG
 	virtual Result DrawMeshImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext) override;
-#endif // NTT_DEBUG
 	virtual Result RemoveMeshImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext) override;
 
 protected:

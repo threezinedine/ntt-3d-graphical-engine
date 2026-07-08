@@ -50,28 +50,10 @@ MeshID MeshStorage::AddMesh(Mesh&& mesh, RenderContextID renderContextID, bool d
 	pNode->pRenderContext =
 		SystemGlobals::pRenderSystem->m_pRenderContextStorage->Get(renderContextID)->pRenderContextHandle;
 
-#if NTT_DEBUG
-	pNode->debug = false;
-#endif // NTT_DEBUG
-
 	NTT_ASSERT(AddMeshImpl(pNode->mesh, pNode->pMeshHandle, pNode->pRenderContext, pNode->dynamic) == RESULT_SUCCESS);
 
 	return meshID;
 }
-
-#if NTT_DEBUG
-Result MeshStorage::SetDebug(MeshID meshID, bool debug) noexcept
-{
-	MeshNode* pNode = m_pMeshStorage->Get(meshID);
-	if (pNode == nullptr)
-	{
-		return RESULT_INDEX_OUT_OF_BOUNDS;
-	}
-
-	pNode->debug = debug;
-	return RESULT_SUCCESS;
-}
-#endif // NTT_DEBUG
 
 Result MeshStorage::DrawMesh(MeshID meshID)
 {
@@ -81,11 +63,7 @@ Result MeshStorage::DrawMesh(MeshID meshID)
 		return RESULT_INDEX_OUT_OF_BOUNDS;
 	}
 
-#if NTT_DEBUG
-	return DrawMeshImpl(pNode->pMeshHandle, pNode->pRenderContext, pNode->debug);
-#else  // NTT_DEBUG
 	return DrawMeshImpl(pNode->pMeshHandle, pNode->pRenderContext);
-#endif // NTT_DEBUG
 }
 
 Result MeshStorage::RemoveMesh(MeshID meshID)

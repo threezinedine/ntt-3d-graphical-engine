@@ -56,18 +56,9 @@ Result OpenGLMeshStorage::AddMeshImpl(Mesh&				   mesh,
 	return RESULT_SUCCESS;
 }
 
-#if NTT_DEBUG
-Result
-OpenGLMeshStorage::DrawMeshImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext, bool debug)
-#else  // NTT_DEBUG
 Result OpenGLMeshStorage::DrawMeshImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext)
-#endif // NTT_DEBUG
 {
 	NTT_UNUSED(pRenderContext);
-
-#if NTT_DEBUG
-	NTT_UNUSED(debug);
-#endif // NTT_DEBUG
 
 	MeshHandle* pHandle = CAST_MESH_HANDLE(pMeshHandle);
 

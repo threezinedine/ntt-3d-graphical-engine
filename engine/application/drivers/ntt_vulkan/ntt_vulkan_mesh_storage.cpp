@@ -138,17 +138,8 @@ static Result createStaticVertexBuffer(VulkanContextHandle* pVulkanContext, Mesh
 	return RESULT_SUCCESS;
 }
 
-#if NTT_DEBUG
-Result
-VulkanMeshStorage::DrawMeshImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext, bool debug)
-#else  // NTT_DEBUG
 Result VulkanMeshStorage::DrawMeshImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext)
-#endif // NTT_DEBUG
 {
-#if NTT_DEBUG
-	NTT_UNUSED(debug);
-#endif // NTT_DEBUG
-
 	VulkanContextHandle* pVulkanContext = VK_CONTEXT_CAST(pRenderContext);
 	MeshHandle*			 pHandle		= VK_MESH_CAST(pMeshHandle);
 
