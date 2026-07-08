@@ -180,8 +180,14 @@ static bool GLFWDisplayDriver_ShouldCloseWindow(Pointer<void> pWindowHandle)
 
 static Result GLFWDisplayDriver_OnBeginFrame(Pointer<void> pDriverHandle)
 {
-	NTT_UNUSED(pDriverHandle);
+	GLFWDriverHandle* pHandle = CAST_DRIVER_HANDLE(pDriverHandle);
 	glfwPollEvents();
+
+	if (glfwGetKey(pHandle->pWindow, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+	{
+		glfwSetWindowShouldClose(pHandle->pWindow, true);
+	}
+
 	return RESULT_SUCCESS;
 }
 
