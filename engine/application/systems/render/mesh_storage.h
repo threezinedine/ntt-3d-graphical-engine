@@ -19,6 +19,9 @@ public:
 	Result Shutdown();
 
 	MeshID AddMesh(Mesh&& mesh, RenderContextID renderContextID, bool dynamic = false) noexcept;
+#if NTT_DEBUG
+	Result SetDebug(MeshID meshID, bool debug) noexcept;
+#endif // NTT_DEBUG
 	Result DrawMesh(MeshID meshID);
 	Result RemoveMesh(MeshID meshID);
 
@@ -28,8 +31,12 @@ protected:
 
 	virtual Result
 	AddMeshImpl(Mesh& mesh, Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext, bool dynamic) = 0;
-	virtual Result DrawMeshImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext)	   = 0;
-	virtual Result RemoveMeshImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext)   = 0;
+#if NTT_DEBUG
+	virtual Result DrawMeshImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext, bool debug) = 0;
+#else  // NTT_DEBUG
+	virtual Result DrawMeshImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext) = 0;
+#endif // NTT_DEBUG
+	virtual Result RemoveMeshImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext) = 0;
 
 protected:
 	virtual u32 GetMeshHandleSize() const = 0;
@@ -41,6 +48,9 @@ private:
 		bool		  dynamic;
 		Pointer<void> pMeshHandle;
 		Pointer<void> pRenderContext;
+#if NTT_DEBUG
+		bool debug;
+#endif // NTT_DEBUG
 	};
 
 	IAllocator*				 m_pAllocator;
