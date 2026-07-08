@@ -29,7 +29,7 @@ public:
 	Result SetShader(MeshID meshID, ShaderID shaderID);
 #if NTT_DEBUG
 	Result SetDebugLineShader(MeshID meshID, ShaderID shaderID);
-	Result SetDebugLineColor(MeshID meshID, const Color& color);
+	Result SetDebugLineWidth(MeshID meshID, u32 lineWidth);
 #endif // NTT_DEBUG
 
 #define UNIFORM_TYPE_DEF(type, typeName, uppercase, glType)                                                            \
@@ -38,6 +38,14 @@ public:                                                                         
 #include "systems/render/uniform_type.def"
 #undef UNIFORM_TYPE_DEF
 
+#if NTT_DEBUG
+#define UNIFORM_TYPE_DEF(type, typeName, uppercase, glType)                                                            \
+public:                                                                                                                \
+	Result SetDebugLineUniform##typeName(MeshID meshID, const char* pUniformName, type value);
+#include "systems/render/uniform_type.def"
+#undef UNIFORM_TYPE_DEF
+#endif // NTT_DEBUG
+
 protected:
 	virtual Result InitializeImpl() = 0;
 	virtual Result ShutdownImpl()	= 0;
@@ -45,7 +53,8 @@ protected:
 	virtual Result
 	AddMeshImpl(Mesh& mesh, Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext, bool dynamic) = 0;
 #if NTT_DEBUG
-	virtual Result DrawDebugLineImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext) = 0;
+	virtual Result
+	DrawDebugLineImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext, u32 lineWidth) = 0;
 #endif // NTT_DEBUG
 	virtual Result DrawMeshImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext)	 = 0;
 	virtual Result RemoveMeshImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext) = 0;
@@ -61,7 +70,7 @@ private:
 		ShaderID shaderID;
 #if NTT_DEBUG
 		ShaderID debugLineShaderID;
-		Color	 debugLineColor;
+		u32		 lineWidth;
 #endif // NTT_DEBUG
 		Pointer<void> pMeshHandle;
 		Pointer<void> pRenderContext;

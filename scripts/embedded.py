@@ -39,7 +39,9 @@ def main():
             output_content += f"0x{byte:02x}, "
             if (index + 1) % 12 == 0:
                 output_content += "\n\t"
-        file.write(f"unsigned char {variable_name}[] = {{\n\t{output_content}\n}};\n")
+        # Add null terminator
+        output_content += "0x00,\n"
+        file.write(f"unsigned char {variable_name}[] = {{\n\t{output_content}}};\n")
 
 
 if __name__ == "__main__":

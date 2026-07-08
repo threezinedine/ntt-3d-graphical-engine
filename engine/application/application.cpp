@@ -62,6 +62,10 @@ Result Application::Initialize(i32 argc, char** argv)
 	g_MeshID =
 		g_RenderGlobals.pMeshStorage->AddMesh(static_cast<Mesh&&>(mesh), g_DefaultMeshShaderID, g_RenderContextID);
 
+#if NTT_DEBUG
+	g_RenderGlobals.pMeshStorage->SetDebugLineWidth(g_MeshID, 5);
+#endif // NTT_DEBUG
+
 	return InitializeImpl();
 }
 
@@ -71,19 +75,35 @@ Result Application::Update()
 
 	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pRenderSystem->BeginRender(g_RenderContextID));
 
+	Vec4f transform{0.2f, 0.0f, 0.0f, 0.0f};
+
 	if (g_RenderGlobals.pMeshStorage->SetUniformFloat4(g_MeshID, "uColor", Color{1.0f, 0.0f, 1.0f, 1.0f}) !=
 		RESULT_SUCCESS)
 	{
 		NTT_APPLICATION_WARN("Failed to set uniform 'uColor' for mesh ID: %u", g_MeshID);
 	}
 
-	if (g_RenderGlobals.pMeshStorage->SetUniformFloat4(g_MeshID, "uTransform", Vec4f{0.2f, 0.0f, 0.0f, 0.0f}) !=
-		RESULT_SUCCESS)
+	if (g_RenderGlobals.pMeshStorage->SetUniformFloat4(g_MeshID, "uTransform", transform) != RESULT_SUCCESS)
 	{
 		NTT_APPLICATION_WARN("Failed to set uniform 'uTransform' for mesh ID: %u", g_MeshID);
 	}
 
 	NTT_ASSERT_RESULT_SUCCESS(g_RenderGlobals.pMeshStorage->DrawMesh(g_MeshID));
+
+#if NTT_DEBUG
+	if (g_RenderGlobals.pMeshStorage->SetDebugLineUniformFloat4(g_MeshID, "uTransform", transform) != RESULT_SUCCESS)
+	{
+		NTT_APPLICATION_WARN("Failed to set uniform 'uTransform' for debug line of mesh ID: %u", g_MeshID);
+	}
+
+	if (g_RenderGlobals.pMeshStorage->SetDebugLineUniformFloat4(g_MeshID, "uColor", Color{0.0f, 0.0f, 1.0f, 1.0f}) !=
+		RESULT_SUCCESS)
+	{
+		NTT_APPLICATION_WARN("Failed to set uniform 'uColor' for debug line of mesh ID: %u", g_MeshID);
+	}
+
+	NTT_ASSERT_RESULT_SUCCESS(g_RenderGlobals.pMeshStorage->DrawDebugLine(g_MeshID));
+#endif // NTT_DEBUG
 
 	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pRenderSystem->EndRender(g_RenderContextID));
 	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pRenderSystem->Present(g_RenderContextID));

@@ -160,10 +160,13 @@ Result VulkanMeshStorage::DrawMeshImpl(const Pointer<void>& pMeshHandle, const P
 }
 
 #if NTT_DEBUG
-Result VulkanMeshStorage::DrawDebugLineImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext)
+Result VulkanMeshStorage::DrawDebugLineImpl(const Pointer<void>& pMeshHandle,
+											const Pointer<void>& pRenderContext,
+											u32					 lineWidth)
 {
 	NTT_UNUSED(pMeshHandle);
 	NTT_UNUSED(pRenderContext);
+	NTT_UNUSED(lineWidth);
 	return RESULT_SUCCESS;
 }
 #endif // NTT_DEBUG

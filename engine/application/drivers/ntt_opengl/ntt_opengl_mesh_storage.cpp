@@ -95,13 +95,16 @@ Result OpenGLMeshStorage::DrawMeshImpl(const Pointer<void>& pMeshHandle, const P
 }
 
 #if NTT_DEBUG
-Result OpenGLMeshStorage::DrawDebugLineImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext)
+Result OpenGLMeshStorage::DrawDebugLineImpl(const Pointer<void>& pMeshHandle,
+											const Pointer<void>& pRenderContext,
+											u32					 lineWidth)
 {
 	NTT_UNUSED(pRenderContext);
 
 	MeshHandle* pHandle = CAST_MESH_HANDLE(pMeshHandle);
 
 	GL_ASSERT(glBindVertexArray(pHandle->debugVAO));
+	GL_ASSERT(glLineWidth(lineWidth));
 	GL_ASSERT(glDrawArrays(GL_LINES, 0, pHandle->verticesCount * 2)); // Assuming the debug line is made of lines
 	GL_ASSERT(glBindVertexArray(0));
 

@@ -50,8 +50,8 @@ MeshID MeshStorage::AddMesh(Mesh&& mesh, RenderContextID renderContextID, bool d
 	pNode->shaderID	   = g_DefaultMeshShaderID;
 #if NTT_DEBUG
 	pNode->debugLineShaderID = g_DebugLineShaderID;
-	pNode->debugLineColor	 = Color{1.0f, 0.0f, 0.0f, 1.0f}; // Default debug line color (red)
-#endif														  // NTT_DEBUG
+	pNode->lineWidth		 = 1;
+#endif // NTT_DEBUG
 	pNode->dynamic = dynamic;
 	pNode->pRenderContext =
 		SystemGlobals::pRenderSystem->m_pRenderContextStorage->Get(renderContextID)->pRenderContextHandle;
@@ -83,12 +83,9 @@ Result MeshStorage::DrawDebugLine(MeshID meshID)
 		return RESULT_INDEX_OUT_OF_BOUNDS;
 	}
 
-	NTT_ASSERT_RESULT_SUCCESS(
-		g_RenderGlobals.pShaderStorage->SetUniformFloat4(pNode->debugLineShaderID, "uColor", pNode->debugLineColor));
-
 	NTT_ASSERT_RESULT_SUCCESS(g_RenderGlobals.pShaderStorage->UseShader(pNode->debugLineShaderID));
 
-	return DrawDebugLineImpl(pNode->pMeshHandle, pNode->pRenderContext);
+	return DrawDebugLineImpl(pNode->pMeshHandle, pNode->pRenderContext, pNode->lineWidth);
 }
 #endif // NTT_DEBUG
 
@@ -146,6 +143,35 @@ Result MeshStorage::SetDebugLineShader(MeshID meshID, ShaderID shaderID)
 	pNode->debugLineShaderID = shaderID;
 	return RESULT_SUCCESS;
 }
+
+Result MeshStorage::SetDebugLineWidth(MeshID meshID, u32 lineWidth)
+{
+	MeshNode* pNode = m_pMeshStorage->Get(meshID);
+	if (pNode == nullptr)
+	{
+		return RESULT_INDEX_OUT_OF_BOUNDS;
+	}
+
+	pNode->lineWidth = lineWidth;
+	return RESULT_SUCCESS;
+}
+
+#define UNIFORM_TYPE_DEF(type, typeName, uppercase, glType)                                                            \
+	Result MeshStorage::SetDebugLineUniform##typeName(MeshID meshID, const char* pUniformName, type value)             \
+	{                                                                                                                  \
+		MeshNode* pNode = m_pMeshStorage->Get(meshID);                                                                 \
+		if (pNode == nullptr)                                                                                          \
+		{                                                                                                              \
+			return RESULT_INDEX_OUT_OF_BOUNDS;                                                                         \
+		}                                                                                                              \
+		ShaderID shaderID = pNode->debugLineShaderID;                                                                  \
+		NTT_ASSERT_RESULT_SUCCESS(                                                                                     \
+			g_RenderGlobals.pShaderStorage->SetUniform##typeName(shaderID, pUniformName, value));                      \
+		return RESULT_SUCCESS;                                                                                         \
+	}
+#include "systems/render/uniform_type.def"
+#undef UNIFORM_TYPE_DEF
+
 #endif // NTT_DEBUG
 
 } // namespace ntt
