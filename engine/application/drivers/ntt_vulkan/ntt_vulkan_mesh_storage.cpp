@@ -185,7 +185,7 @@ Result VulkanMeshStorage::DrawMeshImpl(const Pointer<void>& pMeshHandle, const P
 #if NTT_DEBUG
 Result VulkanMeshStorage::DrawDebugLineImpl(const Pointer<void>& pMeshHandle,
 											const Pointer<void>& pRenderContext,
-											u32					 lineWidth)
+											f32					 lineWidth)
 {
 	VulkanContextHandle* pVulkanContext = VK_CONTEXT_CAST(pRenderContext);
 	MeshHandle*			 pHandle		= VK_MESH_CAST(pMeshHandle);
@@ -198,8 +198,7 @@ Result VulkanMeshStorage::DrawDebugLineImpl(const Pointer<void>& pMeshHandle,
 						   vertexBuffers,
 						   offsets);
 
-	vkCmdSetLineWidth(GET_SCOPE_ARRAY_INDEX(pVulkanContext->pCommandBuffers, pVulkanContext->currentFrame),
-					  (float)lineWidth);
+	vkCmdSetLineWidth(GET_SCOPE_ARRAY_INDEX(pVulkanContext->pCommandBuffers, pVulkanContext->currentFrame), lineWidth);
 
 	vkCmdDraw(GET_SCOPE_ARRAY_INDEX(pVulkanContext->pCommandBuffers, pVulkanContext->currentFrame),
 			  pHandle->vertexCount * 2,

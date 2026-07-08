@@ -97,7 +97,7 @@ Result OpenGLMeshStorage::DrawMeshImpl(const Pointer<void>& pMeshHandle, const P
 #if NTT_DEBUG
 Result OpenGLMeshStorage::DrawDebugLineImpl(const Pointer<void>& pMeshHandle,
 											const Pointer<void>& pRenderContext,
-											u32					 lineWidth)
+											f32					 lineWidth)
 {
 	NTT_UNUSED(pRenderContext);
 

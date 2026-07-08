@@ -29,7 +29,7 @@ public:
 	Result SetShader(MeshID meshID, ShaderID shaderID);
 #if NTT_DEBUG
 	Result SetDebugLineShader(MeshID meshID, ShaderID shaderID);
-	Result SetDebugLineWidth(MeshID meshID, u32 lineWidth);
+	Result SetDebugLineWidth(MeshID meshID, f32 lineWidth);
 #endif // NTT_DEBUG
 
 #define UNIFORM_TYPE_DEF(type, typeName, uppercase, glType)                                                            \
@@ -54,7 +54,7 @@ protected:
 	AddMeshImpl(Mesh& mesh, Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext, bool dynamic) = 0;
 #if NTT_DEBUG
 	virtual Result
-	DrawDebugLineImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext, u32 lineWidth) = 0;
+	DrawDebugLineImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext, f32 lineWidth) = 0;
 #endif // NTT_DEBUG
 	virtual Result DrawMeshImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext)	 = 0;
 	virtual Result RemoveMeshImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext) = 0;
@@ -70,7 +70,7 @@ private:
 		ShaderID shaderID;
 #if NTT_DEBUG
 		ShaderID debugLineShaderID;
-		u32		 lineWidth;
+		f32		 lineWidth;
 #endif // NTT_DEBUG
 		Pointer<void> pMeshHandle;
 		Pointer<void> pRenderContext;

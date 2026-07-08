@@ -21,7 +21,7 @@ protected:
 	virtual Result DrawMeshImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext) override;
 #if NTT_DEBUG
 	virtual Result
-	DrawDebugLineImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext, u32 lineWidth) override;
+	DrawDebugLineImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext, f32 lineWidth) override;
 #endif // NTT_DEBUG
 	virtual Result RemoveMeshImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext) override;
 

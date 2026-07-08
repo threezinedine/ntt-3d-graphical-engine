@@ -50,7 +50,7 @@ MeshID MeshStorage::AddMesh(Mesh&& mesh, RenderContextID renderContextID, bool d
 	pNode->shaderID	   = g_DefaultMeshShaderID;
 #if NTT_DEBUG
 	pNode->debugLineShaderID = g_DebugLineShaderID;
-	pNode->lineWidth		 = 1;
+	pNode->lineWidth		 = 1.0f;
 #endif // NTT_DEBUG
 	pNode->dynamic = dynamic;
 	pNode->pRenderContext =
@@ -144,7 +144,7 @@ Result MeshStorage::SetDebugLineShader(MeshID meshID, ShaderID shaderID)
 	return RESULT_SUCCESS;
 }
 
-Result MeshStorage::SetDebugLineWidth(MeshID meshID, u32 lineWidth)
+Result MeshStorage::SetDebugLineWidth(MeshID meshID, f32 lineWidth)
 {
 	MeshNode* pNode = m_pMeshStorage->Get(meshID);
 	if (pNode == nullptr)
