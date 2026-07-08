@@ -75,4 +75,19 @@ struct MeshHandle
 		}                                                                                                              \
 	} while (0)
 
+struct TextureHandle
+{
+	u32 textureID;
+};
+
+#define CAST_TEXTURE_HANDLE(handle)                                                                                    \
+	reinterpret_cast<TextureHandle*>(handle.Get());                                                                    \
+	do                                                                                                                 \
+	{                                                                                                                  \
+		if (handle == nullptr)                                                                                         \
+		{                                                                                                              \
+			return RESULT_NULL_POINTER;                                                                                \
+		}                                                                                                              \
+	} while (0)
+
 } // namespace ntt

@@ -26,7 +26,7 @@ class ShaderStorage
 {
 public:
 	ShaderStorage(IAllocator* pAllocator = nullptr);
-	~ShaderStorage();
+	virtual ~ShaderStorage();
 
 	Result Initialize();
 	Result Shutdown();

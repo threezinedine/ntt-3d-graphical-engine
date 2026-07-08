@@ -3,6 +3,7 @@
 #include "ntt_vulkan.h"
 #include "ntt_vulkan_mesh_storage.h"
 #include "ntt_vulkan_shader_storage.h"
+#include "ntt_vulkan_texture_storage.h"
 #include "systems/display/display_driver.h"
 #include "systems/render/render_globals.h"
 #include <cstring>
@@ -44,8 +45,9 @@ Result RegisterVulkanDriver()
 
 Result RegisterVulkanRenderer()
 {
-	g_RenderGlobals.pMeshStorage   = MakeScope<VulkanMeshStorage>(g_GlobalAllocators.pMalloc);
-	g_RenderGlobals.pShaderStorage = MakeScope<VulkanShaderStorage>(g_GlobalAllocators.pMalloc);
+	g_RenderGlobals.pMeshStorage	= MakeScope<VulkanMeshStorage>(g_GlobalAllocators.pMalloc);
+	g_RenderGlobals.pShaderStorage	= MakeScope<VulkanShaderStorage>(g_GlobalAllocators.pMalloc);
+	g_RenderGlobals.pTextureStorage = MakeScope<VulkanTextureStorage>(g_GlobalAllocators.pMalloc);
 
 	return RESULT_SUCCESS;
 }

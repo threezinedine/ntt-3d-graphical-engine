@@ -141,6 +141,24 @@ struct VulkanContextHandle
 		}                                                                                                              \
 	} while (0)
 
+struct TextureHandle
+{
+	VkImage		   image;
+	VkDeviceMemory imageMemory;
+	VkImageView	   imageView;
+	VkSampler	   sampler;
+};
+
+#define VK_TEXTURE_CAST(handle)                                                                                        \
+	reinterpret_cast<TextureHandle*>(handle.Get());                                                                    \
+	do                                                                                                                 \
+	{                                                                                                                  \
+		if (handle == nullptr)                                                                                         \
+		{                                                                                                              \
+			return RESULT_NULL_POINTER;                                                                                \
+		}                                                                                                              \
+	} while (0)
+
 Result createBuffer(VkBuffer&			  outBuffer,
 					VkDeviceMemory&		  outBufferMemory,
 					VulkanContextHandle*  pVulkanContext,

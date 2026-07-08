@@ -14,7 +14,7 @@ class MeshStorage
 {
 public:
 	MeshStorage(IAllocator* pAllocator = nullptr);
-	~MeshStorage();
+	virtual ~MeshStorage();
 
 	Result Initialize();
 	Result Shutdown();
