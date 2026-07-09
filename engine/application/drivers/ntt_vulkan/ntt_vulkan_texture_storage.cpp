@@ -1,3 +1,5 @@
+#if NTT_VULKAN
+
 #include "ntt_vulkan_texture_storage.h"
 #include "ntt_vulkan_inc.h"
 
@@ -46,3 +48,5 @@ u32 VulkanTextureStorage::GetTextureHandleSize() const
 }
 
 } // namespace ntt
+
+#endif // NTT_VULKAN

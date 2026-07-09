@@ -1,3 +1,5 @@
+#if NTT_VULKAN
+
 #include "systems/render/texture_storage.h"
 
 namespace ntt {
@@ -19,3 +21,5 @@ protected:
 };
 
 } // namespace ntt
+
+#endif // NTT_VULKAN
