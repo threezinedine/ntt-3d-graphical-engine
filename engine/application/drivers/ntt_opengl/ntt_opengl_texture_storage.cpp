@@ -33,7 +33,11 @@ static GLenum convertWrapMode(TextureWrapMode wrapMode)
 	case NTT_TEXTURE_WRAP_MIRRORED_REPEAT:
 		return GL_MIRRORED_REPEAT;
 	case NTT_TEXTURE_WRAP_CLAMP_TO_BORDER:
+#if NTT_PLATFORM_WEB
+		return GL_CLAMP_TO_EDGE;
+#else
 		return GL_CLAMP_TO_BORDER;
+#endif
 	default:
 		return GL_REPEAT; // Default to repeat if unknown
 	}

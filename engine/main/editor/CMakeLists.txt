@@ -24,10 +24,6 @@ if (NTT_EDITOR)
         ntt-application
     )
 
-    ntt_add_options(${NTT_EDITOR_EXECUTABLE_NAME})
-    ntt_add_link_flags(${NTT_EDITOR_EXECUTABLE_NAME})
-    ntt_add_compile_options(${NTT_EDITOR_EXECUTABLE_NAME})
-
     if (NTT_PLATFORM_WEB)
         add_custom_command(
             TARGET ${NTT_EDITOR_EXECUTABLE_NAME} POST_BUILD
@@ -38,5 +34,11 @@ if (NTT_EDITOR)
                 ${CMAKE_SOURCE_DIR}/engine/assets/icons/logo.ico
                 ${CMAKE_CURRENT_BINARY_DIR}/favicon.ico
         )
+
+        list(APPEND NTT_LINK_FLAGS "--preload-file=${CMAKE_SOURCE_DIR}/engine/assets@assets")
     endif()
+
+    ntt_add_options(${NTT_EDITOR_EXECUTABLE_NAME})
+    ntt_add_link_flags(${NTT_EDITOR_EXECUTABLE_NAME})
+    ntt_add_compile_options(${NTT_EDITOR_EXECUTABLE_NAME})
 endif()

@@ -24,10 +24,6 @@ if (NTT_ENGINE)
         ntt-application
     )
 
-    ntt_add_options(${NTT_ENGINE_EXECUTABLE_NAME})
-    ntt_add_link_flags(${NTT_ENGINE_EXECUTABLE_NAME})
-    ntt_add_compile_options(${NTT_ENGINE_EXECUTABLE_NAME})
-
     if (NTT_PLATFORM_WEB)
         add_custom_command(
             TARGET ${NTT_ENGINE_EXECUTABLE_NAME} POST_BUILD
@@ -38,5 +34,12 @@ if (NTT_ENGINE)
                 ${CMAKE_SOURCE_DIR}/engine/assets/icons/logo.ico
                 ${CMAKE_CURRENT_BINARY_DIR}/favicon.ico
         )
+
+        set_target_properties(${NTT_ENGINE_EXECUTABLE_NAME} PROPERTIES SUFFIX ".js")
+        list(APPEND NTT_LINK_FLAGS "--preload-file=${CMAKE_SOURCE_DIR}/engine/assets@assets")
     endif()
+
+    ntt_add_options(${NTT_ENGINE_EXECUTABLE_NAME})
+    ntt_add_link_flags(${NTT_ENGINE_EXECUTABLE_NAME})
+    ntt_add_compile_options(${NTT_ENGINE_EXECUTABLE_NAME})
 endif()

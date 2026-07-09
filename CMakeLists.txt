@@ -8,11 +8,11 @@ include(ntt-config)
 
 ntt_config()
 
+add_subdirectory(engine)
+
 ntt_print_options()
 ntt_print_link_flags()
 ntt_print_compile_options()
-
-add_subdirectory(engine)
 
 if (MSVC)
     if (NTT_ENGINE)

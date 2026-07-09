@@ -99,8 +99,14 @@ Result Application::Initialize(i32 argc, char** argv)
 	m_pEcs = MakeScope<ECS>(g_GlobalAllocators.pMalloc);
 	NTT_ASSERT_RESULT_SUCCESS(m_pEcs->Initialize());
 
-	g_pTextureResource = MakeScope<TextureResource>(
-		g_GlobalAllocators.pMalloc, g_RenderContextID, STRINGIFY(NTT_ENGINE_DIRECTORY) "/assets/images/logo.png");
+	g_pTextureResource = MakeScope<TextureResource>(g_GlobalAllocators.pMalloc,
+													g_RenderContextID,
+#if NTT_PLATFORM_WEB
+													"assets/images/logo.png"
+#else  // NTT_PLATFORM_WEB
+													STRINGIFY(NTT_ENGINE_DIRECTORY) "/assets/images/logo.png"
+#endif // NTT_PLATFORM_WEB
+	);
 	NTT_ASSERT_RESULT_SUCCESS(g_pTextureResource->Load());
 
 	return InitializeImpl();
