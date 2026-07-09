@@ -168,12 +168,14 @@ target_include_directories(
 )
 
 ntt_find_package(ntt-glfw REQUIRED "Dependencies")
+ntt_find_package(ntt-stb REQUIRED "Dependencies")
 
 target_link_libraries(
     ${NTT_APPLICATION_LIBRARY_NAME}
     PUBLIC
     ntt-services
     ntt-glfw
+    ntt-stb
 )
 
 if (NOT NTT_PLATFORM_WEB)

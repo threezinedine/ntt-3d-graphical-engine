@@ -13,6 +13,10 @@ Resource::Resource(ResourceType type)
 
 Resource::~Resource()
 {
+	if (IsLoaded())
+	{
+		Unload();
+	}
 }
 
 Result Resource::Load()
