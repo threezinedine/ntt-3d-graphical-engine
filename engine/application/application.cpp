@@ -108,7 +108,7 @@ Result Application::UpdateWindow(WindowID windowID, RenderContextID renderContex
 
 	Vec4f transform{0.2f, 0.0f, 0.0f, 0.0f};
 
-	if (NTT_MESH_STORAGE->SetUniformFloat4(meshID, "uColor", Color{1.0f, 0.0f, 1.0f, 1.0f}) != RESULT_SUCCESS)
+	if (NTT_MESH_STORAGE->SetUniformFloat4(meshID, "uColor", Color{1.0f, 1.0f, 1.0f, 1.0f}) != RESULT_SUCCESS)
 	{
 		NTT_APPLICATION_WARN("Failed to set uniform 'uColor' for mesh ID: %u", meshID);
 	}
