@@ -356,6 +356,7 @@ static Result createDescriptorSetLayout(VulkanContextHandle*		  pVulkanContext,
 	return RESULT_SUCCESS;
 }
 
+#undef UNIFORM_TYPE_SAMPLER_DEF
 #define UNIFORM_TYPE_DEF(_type, typeName, uppercase, glType)                                                             \
 	Result VulkanShaderStorage::SetUniform##typeName##Impl(                                                              \
 		const Uniform& uniform, const Pointer<void>& pShaderHandle, const Pointer<void>& pRenderContext)                 \
@@ -371,6 +372,19 @@ static Result createDescriptorSetLayout(VulkanContextHandle*		  pVulkanContext,
 	}
 #include "systems/render/uniform_type.def"
 #undef UNIFORM_TYPE_DEF
+#undef UNIFORM_TYPE_SAMPLER_DEF
+
+Result VulkanShaderStorage::SetUniformSamplerImpl(const Uniform&	   uniform,
+												  const Pointer<void>& pTextureHandle,
+												  const Pointer<void>& pRenderContext,
+												  const Pointer<void>& pShaderHandle)
+{
+	NTT_UNUSED(uniform);
+	NTT_UNUSED(pTextureHandle);
+	NTT_UNUSED(pRenderContext);
+	NTT_UNUSED(pShaderHandle);
+	return RESULT_SUCCESS;
+}
 
 static Pointer<u32> compileShaderToSPIRV_Vulkan(glslang_stage_t stage, const char* shaderSource)
 {

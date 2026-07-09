@@ -27,12 +27,20 @@ protected:
 protected:
 	u32 GetUniformInfoSize() const override;
 
+#undef UNIFORM_TYPE_SAMPLER_DEF
+#define UNIFORM_TYPE_SAMPLER_DEF(type, typeName, uppercase, glType)                                                    \
+protected:                                                                                                             \
+	virtual Result SetUniform##typeName##Impl(const Uniform&	   uniform,                                            \
+											  const Pointer<void>& pTextureHandle,                                     \
+											  const Pointer<void>& pShaderHandle,                                      \
+											  const Pointer<void>& pRenderContext) override;
 #define UNIFORM_TYPE_DEF(type, typeName, uppercase, glType)                                                            \
 protected:                                                                                                             \
 	virtual Result SetUniform##typeName##Impl(                                                                         \
 		const Uniform& uniform, const Pointer<void>& pShaderHandle, const Pointer<void>& pRenderContext) override;
 #include "systems/render/uniform_type.def"
 #undef UNIFORM_TYPE_DEF
+#undef UNIFORM_TYPE_SAMPLER_DEF
 
 protected:
 	virtual u32 GetShaderHandleSize() const override;

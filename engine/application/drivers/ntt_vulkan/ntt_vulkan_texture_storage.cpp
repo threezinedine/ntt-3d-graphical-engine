@@ -24,12 +24,24 @@ Result VulkanTextureStorage::ShutdownImpl()
 	return RESULT_SUCCESS;
 }
 
-Result VulkanTextureStorage::AddTextureImpl(u8* pData, u32 size, Pointer<void>& pTextureHandle)
+Result VulkanTextureStorage::AddTextureImpl(Vec3i				 textureShape,
+											u8*					 pData,
+											Pointer<void>&		 pTextureHandle,
+											const TextureSample& sample)
 {
 	TextureHandle* pHandle = VK_TEXTURE_CAST(pTextureHandle);
 	NTT_UNUSED(pHandle);
+	NTT_UNUSED(textureShape);
 	NTT_UNUSED(pData);
-	NTT_UNUSED(size);
+	NTT_UNUSED(sample);
+
+	return RESULT_SUCCESS;
+}
+
+Result VulkanTextureStorage::SetTextureSampleImpl(TextureID textureID, const TextureSample& sample)
+{
+	NTT_UNUSED(textureID);
+	NTT_UNUSED(sample);
 
 	return RESULT_SUCCESS;
 }

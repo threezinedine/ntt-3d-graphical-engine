@@ -99,8 +99,8 @@ Result Application::Initialize(i32 argc, char** argv)
 	m_pEcs = MakeScope<ECS>(g_GlobalAllocators.pMalloc);
 	NTT_ASSERT_RESULT_SUCCESS(m_pEcs->Initialize());
 
-	g_pTextureResource = MakeScope<TextureResource>(g_GlobalAllocators.pMalloc,
-													STRINGIFY(NTT_ENGINE_DIRECTORY) "/assets/images/logo.png");
+	g_pTextureResource = MakeScope<TextureResource>(
+		g_GlobalAllocators.pMalloc, g_RenderContextID, STRINGIFY(NTT_ENGINE_DIRECTORY) "/assets/images/logo.png");
 	NTT_ASSERT_RESULT_SUCCESS(g_pTextureResource->Load());
 
 	return InitializeImpl();
@@ -117,6 +117,11 @@ Result Application::UpdateWindow(WindowID windowID, RenderContextID renderContex
 	if (NTT_MESH_STORAGE->SetUniformFloat4(meshID, "uColor", Color{1.0f, 1.0f, 1.0f, 1.0f}) != RESULT_SUCCESS)
 	{
 		NTT_APPLICATION_WARN("Failed to set uniform 'uColor' for mesh ID: %u", meshID);
+	}
+
+	if (NTT_MESH_STORAGE->SetUniformSampler(meshID, "uTexture", g_pTextureResource->GetTextureID()) != RESULT_SUCCESS)
+	{
+		NTT_APPLICATION_WARN("Failed to set uniform 'uTexture' for mesh ID: %u", meshID);
 	}
 
 	if (NTT_MESH_STORAGE->SetUniformFloat4(meshID, "uTransform", transform) != RESULT_SUCCESS)

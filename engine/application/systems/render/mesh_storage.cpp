@@ -124,8 +124,11 @@ Result MeshStorage::RemoveMesh(MeshID meshID)
 			g_RenderGlobals.pShaderStorage->SetUniform##typeName(shaderID, pUniformName, value));                      \
 		return RESULT_SUCCESS;                                                                                         \
 	}
+#undef UNIFORM_TYPE_SAMPLER_DEF
+#define UNIFORM_TYPE_SAMPLER_DEF(type, typeName, uppercase, glType) UNIFORM_TYPE_DEF(type, typeName, uppercase, glType)
 #include "systems/render/uniform_type.def"
 #undef UNIFORM_TYPE_DEF
+#undef UNIFORM_TYPE_SAMPLER_DEF
 
 Result MeshStorage::SetShader(MeshID meshID, ShaderID shaderID)
 {

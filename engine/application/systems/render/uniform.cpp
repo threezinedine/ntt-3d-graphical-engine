@@ -6,11 +6,15 @@ const char* ToString(UniformType uniformType)
 {
 	switch (uniformType)
 	{
+#define UNIFORM_TYPE_SAMPLER_DEF(type, name, uppercase, glType)                                                        \
+	case UNIFORM_TYPE_##uppercase:                                                                                     \
+		return #name;
 #define UNIFORM_TYPE_DEF(type, name, uppercase, glType)                                                                \
 	case UNIFORM_TYPE_##uppercase:                                                                                     \
 		return #name;
 #include "uniform_type.def"
 #undef UNIFORM_TYPE_DEF
+#undef UNIFORM_TYPE_SAMPLER_DEF
 
 	default:
 		break;
@@ -23,11 +27,15 @@ u32 GetUniformTypeSize(UniformType uniformType)
 {
 	switch (uniformType)
 	{
+#define UNIFORM_TYPE_SAMPLER_DEF(type, name, uppercase, glType)                                                        \
+	case UNIFORM_TYPE_##uppercase:                                                                                     \
+		return sizeof(type);
 #define UNIFORM_TYPE_DEF(type, name, uppercase, glType)                                                                \
 	case UNIFORM_TYPE_##uppercase:                                                                                     \
 		return sizeof(type);
 #include "uniform_type.def"
 #undef UNIFORM_TYPE_DEF
+#undef UNIFORM_TYPE_SAMPLER_DEF
 	default:
 		break;
 	}

@@ -37,18 +37,37 @@ Result TextureStorage::Shutdown()
 	return ShutdownImpl();
 }
 
-TextureID TextureStorage::AddTexture(u8* pData, u32 size) noexcept
+TextureID TextureStorage::AddTexture(RenderContextID	  contextID,
+									 Vec3i				  textureShape,
+									 u8*				  pData,
+									 const TextureSample& sample) noexcept
 {
 	TextureID	 textureID = m_pTextureStorage->Add();
 	TextureNode* pNode	   = m_pTextureStorage->Get(textureID);
+	pNode->contextID	   = contextID;
+	pNode->sample		   = sample;
+	pNode->textureShape	   = textureShape;
 
 	NTT_ASSERT(pNode != nullptr);
 
 	pNode->pTextureHandle = ALLOCATOR_SAFE(m_pAllocator)->Allocate(GetTextureHandleSize());
 
-	NTT_ASSERT(AddTextureImpl(pData, size, pNode->pTextureHandle) == RESULT_SUCCESS);
+	NTT_ASSERT(AddTextureImpl(textureShape, pData, pNode->pTextureHandle, pNode->sample) == RESULT_SUCCESS);
 
 	return textureID;
+}
+
+Result TextureStorage::SetTextureSample(TextureID textureID, const TextureSample& sample)
+{
+	TextureNode* pNode = m_pTextureStorage->Get(textureID);
+	if (pNode == nullptr)
+	{
+		return RESULT_INDEX_OUT_OF_BOUNDS;
+	}
+
+	pNode->sample = sample;
+
+	return SetTextureSampleImpl(textureID, sample);
 }
 
 Result TextureStorage::RemoveTexture(TextureID textureID)
@@ -59,8 +78,8 @@ Result TextureStorage::RemoveTexture(TextureID textureID)
 		return RESULT_INDEX_OUT_OF_BOUNDS;
 	}
 
-	NTT_ASSERT_RESULT_SUCCESS(pNode->pTextureHandle.Free());
 	NTT_ASSERT(RemoveTextureImpl(pNode->pTextureHandle) == RESULT_SUCCESS);
+	NTT_ASSERT_RESULT_SUCCESS(pNode->pTextureHandle.Free());
 
 	NTT_ASSERT(m_pTextureStorage->Remove(textureID) == RESULT_SUCCESS);
 

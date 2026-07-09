@@ -124,6 +124,8 @@ static Result extractUniforms(u32 shaderProgram, Uniform* pUniforms, u32& unifor
 	i32 count = 0;
 	GL_ASSERT(glGetProgramiv(shaderProgram, GL_ACTIVE_UNIFORMS, &count));
 
+	u32 samplerUniformCount = 0;
+
 	for (i32 i = 0; i < count; ++i)
 	{
 		char	name[256];
@@ -135,6 +137,15 @@ static Result extractUniforms(u32 shaderProgram, Uniform* pUniforms, u32& unifor
 
 		Uniform& uniform = pUniforms[uniformCount++];
 		uniform.name	 = String(name, g_GlobalAllocators.pMalloc);
+
+#undef UNIFORM_TYPE_SAMPLER_DEF
+#define UNIFORM_TYPE_SAMPLER_DEF(typeName, name, uppercase, glType)                                                    \
+	if (type == glType)                                                                                                \
+	{                                                                                                                  \
+		uniform.type			  = UNIFORM_TYPE_##uppercase;                                                          \
+		UniformInfo* pUniformInfo = CAST_UNIFORM_INFO(uniform.pInternalData);                                          \
+		pUniformInfo->slot		  = samplerUniformCount++;                                                             \
+	}
 #define UNIFORM_TYPE_DEF(typeName, name, uppercase, glType)                                                            \
 	if (type == glType)                                                                                                \
 	{                                                                                                                  \
@@ -142,8 +153,8 @@ static Result extractUniforms(u32 shaderProgram, Uniform* pUniforms, u32& unifor
 	}
 #include "systems/render/uniform_type.def"
 #undef UNIFORM_TYPE_DEF
-		uniform.value		  = {};		 // Initialize the value based on the type
-		uniform.pInternalData = nullptr; // Set internal data if needed
+#undef UNIFORM_TYPE_SAMPLER_DEF
+		uniform.value = {}; // Initialize the value based on the type
 	}
 
 	return RESULT_SUCCESS;
@@ -174,6 +185,26 @@ static Result extractUniforms(u32 shaderProgram, Uniform* pUniforms, u32& unifor
 #include "systems/render/uniform_type.def"
 #undef UNIFORM_TYPE_DEF
 
+Result OpenGLShaderStorage::SetUniformSamplerImpl(const Uniform&	   uniform,
+												  const Pointer<void>& pTextureHandle,
+												  const Pointer<void>& pShaderHandle,
+												  const Pointer<void>& pRenderContext)
+{
+	TextureHandle*		 pTextureHandleCast = CAST_TEXTURE_HANDLE(pTextureHandle);
+	UniformInfo*		 pUniformInfo		= CAST_UNIFORM_INFO(uniform.pInternalData);
+	ShaderHandle*		 pShaderHandleCast	= CAST_SHADER_HANDLE(pShaderHandle);
+	OpenGLContextHandle* pRenderContextCast = CAST_CONTEXT_HANDLE(pRenderContext);
+
+	NTT_UNUSED(pRenderContextCast);
+
+	glActiveTexture(GL_TEXTURE0 + pUniformInfo->slot);
+	glBindTexture(GL_TEXTURE_2D, pTextureHandleCast->textureID);
+
+	glUniform1i(glGetUniformLocation(pShaderHandleCast->program, uniform.name.CStr()), pUniformInfo->slot);
+
+	return RESULT_SUCCESS;
+}
+
 Result OpenGLShaderStorage::UseShaderImpl(const Pointer<void>& pRenderContext, const Pointer<void>& pShaderHandle)
 {
 	NTT_UNUSED(pRenderContext);
@@ -197,6 +228,11 @@ Result OpenGLShaderStorage::RemoveShaderImpl(const Pointer<void>& pRenderContext
 u32 OpenGLShaderStorage::GetShaderHandleSize() const
 {
 	return (u32)sizeof(ShaderHandle);
+}
+
+u32 OpenGLShaderStorage::GetUniformInfoSize() const
+{
+	return (u32)sizeof(UniformInfo);
 }
 
 } // namespace ntt

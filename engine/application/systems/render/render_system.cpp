@@ -54,12 +54,14 @@ Result RenderSystem::InitializeImpl()
 
 	NTT_ASSERT_RESULT_SUCCESS(g_RenderGlobals.pMeshStorage->Initialize());
 	NTT_ASSERT_RESULT_SUCCESS(g_RenderGlobals.pShaderStorage->Initialize());
+	NTT_ASSERT_RESULT_SUCCESS(g_RenderGlobals.pTextureStorage->Initialize());
 
 	return RESULT_SUCCESS;
 }
 
 Result RenderSystem::ShutdownImpl()
 {
+	NTT_ASSERT_RESULT_SUCCESS(g_RenderGlobals.pTextureStorage->Shutdown());
 	NTT_ASSERT_RESULT_SUCCESS(g_RenderGlobals.pShaderStorage->Shutdown());
 	NTT_ASSERT_RESULT_SUCCESS(g_RenderGlobals.pMeshStorage->Shutdown());
 

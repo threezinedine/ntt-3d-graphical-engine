@@ -35,8 +35,10 @@ public:
 #define UNIFORM_TYPE_DEF(type, typeName, uppercase, glType)                                                            \
 public:                                                                                                                \
 	Result SetUniform##typeName(MeshID meshID, const char* pUniformName, type value);
+#define UNIFORM_TYPE_SAMPLER_DEF(type, typeName, uppercase, glType) UNIFORM_TYPE_DEF(type, typeName, uppercase, glType)
 #include "systems/render/uniform_type.def"
 #undef UNIFORM_TYPE_DEF
+#undef UNIFORM_TYPE_SAMPLER_DEF
 
 #if NTT_DEBUG
 #define UNIFORM_TYPE_DEF(type, typeName, uppercase, glType)                                                            \

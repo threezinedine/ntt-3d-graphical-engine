@@ -36,6 +36,15 @@ public:
 	Result	 UseShader(ShaderID shaderID);
 	Result	 RemoveShader(ShaderID shaderID);
 
+#define UNIFORM_TYPE_SAMPLER_DEF(type, typeName, uppercase, glType)                                                    \
+public:                                                                                                                \
+	Result SetUniform##typeName(ShaderID shaderID, const char* pUniformName, type value);                              \
+                                                                                                                       \
+protected:                                                                                                             \
+	virtual Result SetUniform##typeName##Impl(const Uniform&	   uniform,                                            \
+											  const Pointer<void>& pTextureHandle,                                     \
+											  const Pointer<void>& pShaderHandle,                                      \
+											  const Pointer<void>& pRenderContext) = 0;
 #define UNIFORM_TYPE_DEF(type, typeName, uppercase, glType)                                                            \
 public:                                                                                                                \
 	Result SetUniform##typeName(ShaderID shaderID, const char* pUniformName, type value);                              \
@@ -45,6 +54,7 @@ protected:                                                                      
 		const Uniform& uniform, const Pointer<void>& pShaderHandle, const Pointer<void>& pRenderContext) = 0;
 #include "uniform_type.def"
 #undef UNIFORM_TYPE_DEF
+#undef UNIFORM_TYPE_SAMPLER_DEF
 
 protected:
 	virtual u32 GetUniformInfoSize() const = 0;

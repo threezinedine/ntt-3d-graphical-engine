@@ -7,6 +7,18 @@
 #endif // NTT_PLATFORM_WEB
 #include "GLFW/glfw3.h"
 
+#if NTT_ENABLE_ASSERTION
+#define GL_ASSERT(exp)                                                                                                 \
+	do                                                                                                                 \
+	{                                                                                                                  \
+		while (glGetError() != GL_NO_ERROR)                                                                            \
+		{                                                                                                              \
+		}                                                                                                              \
+		(exp);                                                                                                         \
+		GLenum err = glGetError();                                                                                     \
+		NTT_ASSERT_MSG(err == GL_NO_ERROR, "OpenGL error: %d", err);                                                   \
+	} while (0)
+#else // NTT_ENABLE_ASSERTION
 #define GL_ASSERT(exp)                                                                                                 \
 	do                                                                                                                 \
 	{                                                                                                                  \
@@ -21,6 +33,7 @@
 			return RESULT_OPENGL_ERROR;                                                                                \
 		}                                                                                                              \
 	} while (0)
+#endif // NTT_ENABLE_ASSERTION
 
 namespace ntt {
 
@@ -82,6 +95,21 @@ struct TextureHandle
 
 #define CAST_TEXTURE_HANDLE(handle)                                                                                    \
 	reinterpret_cast<TextureHandle*>(handle.Get());                                                                    \
+	do                                                                                                                 \
+	{                                                                                                                  \
+		if (handle == nullptr)                                                                                         \
+		{                                                                                                              \
+			return RESULT_NULL_POINTER;                                                                                \
+		}                                                                                                              \
+	} while (0)
+
+struct UniformInfo
+{
+	u32 slot;
+};
+
+#define CAST_UNIFORM_INFO(handle)                                                                                      \
+	reinterpret_cast<UniformInfo*>(handle.Get());                                                                      \
 	do                                                                                                                 \
 	{                                                                                                                  \
 		if (handle == nullptr)                                                                                         \

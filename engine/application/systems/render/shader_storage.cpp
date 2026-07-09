@@ -1,6 +1,8 @@
 #include "shader_storage.h"
+#include "render_globals.h"
 #include "systems/render/render_system.h"
 #include "systems/system_globals.h"
+#include "texture_storage.h"
 
 extern unsigned char mesh_vs_data[];
 extern unsigned char mesh_fs_data[];
@@ -170,12 +172,12 @@ ShaderID ShaderStorage::AddShader(RenderContextID	  renderContextID,
 			   uniform.name.ToStringView().Data(),
 			   ToString(uniform.type),
 			   GetUniformTypeSize(uniform.type));
-		NTT_RENDER_INFO("Add shader: \n%s", uniformBufferName);
+		NTT_RENDER_DEBUG("Add shader: \n%s", uniformBufferName);
 	}
 
 	if (pShaderNode->uniformCount == 0)
 	{
-		NTT_RENDER_INFO("Add shader: No uniforms found.");
+		NTT_RENDER_DEBUG("Add shader: No uniforms found.");
 	}
 
 	if (result != RESULT_SUCCESS)
@@ -235,6 +237,19 @@ Result ShaderStorage::UseShader(ShaderID shaderID)
 		const Uniform& uniform = pShaderNode->uniforms[i];
 		switch (uniform.type)
 		{
+#undef UNIFORM_TYPE_SAMPLER_DEF
+#define UNIFORM_TYPE_SAMPLER_DEF(type, typeName, uppercase, glType)                                                    \
+	case UNIFORM_TYPE_##uppercase: {                                                                                   \
+		TextureStorage::TextureNode* pTextureNode =                                                                    \
+			NTT_TEXTURE_STORAGE->m_pTextureStorage->Get(uniform.value.typeName);                                       \
+		if (pTextureNode == nullptr)                                                                                   \
+		{                                                                                                              \
+			continue;                                                                                                  \
+		}                                                                                                              \
+		NTT_ASSERT_RESULT_SUCCESS(SetUniform##typeName##Impl(                                                          \
+			uniform, pTextureNode->pTextureHandle, pShaderNode->pShaderHandle, pRenderContext->pRenderContextHandle)); \
+		break;                                                                                                         \
+	}
 #define UNIFORM_TYPE_DEF(type, typeName, uppercase, glType)                                                            \
 	case UNIFORM_TYPE_##uppercase:                                                                                     \
 		NTT_ASSERT_RESULT_SUCCESS(                                                                                     \
@@ -242,6 +257,7 @@ Result ShaderStorage::UseShader(ShaderID shaderID)
 		break;
 #include "uniform_type.def"
 #undef UNIFORM_TYPE_DEF
+#undef UNIFORM_TYPE_SAMPLER_DEF
 		default:
 			NTT_RENDER_ERROR("Unsupported uniform type: %d", uniform.type);
 			return RESULT_UNSUPPORTED_UNIFORM_TYPE;
@@ -280,7 +296,9 @@ Result ShaderStorage::UseShader(ShaderID shaderID)
 		pShaderNode->uniforms[uniformIndex].value.typeName = value;                                                    \
 		return RESULT_SUCCESS;                                                                                         \
 	}
+#define UNIFORM_TYPE_SAMPLER_DEF(type, typeName, uppercase, glType) UNIFORM_TYPE_DEF(type, typeName, uppercase, glType)
 #include "uniform_type.def"
+#undef UNIFORM_TYPE_DEF
 #undef UNIFORM_TYPE_DEF
 
 const char* ShaderInputTopologyToString(ShaderInputTopology topology)
