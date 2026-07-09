@@ -9,11 +9,6 @@ namespace ntt {
 typedef u32		   ShaderID;
 constexpr ShaderID INVALID_SHADER_ID = static_cast<u32>(-1);
 
-extern ShaderID g_DefaultMeshShaderID;
-#if NTT_DEBUG
-extern ShaderID g_DebugLineShaderID;
-#endif // NTT_DEBUG
-
 enum ShaderInputTopology
 {
 #define SHADER_INPUT_TOPOLOGY_DEF(option, vkTopology, vkRasterizationMode) NTT_SHADER_INPUT_TOPOLOGY_##option,
@@ -32,7 +27,7 @@ public:
 	Result Shutdown();
 
 	Result SetupDefaultShaders(RenderContextID renderContextID);
-	Result RemoveDefaultShaders();
+	Result RemoveDefaultShaders(RenderContextID renderContextID);
 
 	ShaderID AddShader(RenderContextID	   renderContextID,
 					   ShaderInputTopology inputTopology,

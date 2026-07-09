@@ -5,6 +5,7 @@
 
 namespace ntt {
 
+typedef u32 ShaderID;
 typedef u32 RenderContextID;
 
 constexpr RenderContextID INVALID_RENDER_CONTEXT_ID = static_cast<u32>(-1);
@@ -34,6 +35,10 @@ public:
 	struct RenderContext
 	{
 		Pointer<void> pRenderContextHandle;
+		ShaderID	  defaultMeshShaderID;
+#if NTT_DEBUG
+		ShaderID defaultDebugLineShaderID;
+#endif // NTT_DEBUG
 	};
 
 	friend class ShaderStorage;

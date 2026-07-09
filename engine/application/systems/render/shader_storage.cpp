@@ -16,11 +16,6 @@ extern unsigned char vulkan_line_fs_data[];
 
 namespace ntt {
 
-ShaderID g_DefaultMeshShaderID = INVALID_SHADER_ID;
-#if NTT_DEBUG
-ShaderID g_DebugLineShaderID = INVALID_SHADER_ID;
-#endif // NTT_DEBUG
-
 ShaderStorage::ShaderStorage(IAllocator* pAllocator)
 	: m_pAllocator(pAllocator)
 {
@@ -53,53 +48,69 @@ Result ShaderStorage::Shutdown()
 
 Result ShaderStorage::SetupDefaultShaders(RenderContextID renderContextID)
 {
+	RenderSystem::RenderContext* pRenderContext =
+		SystemGlobals::pRenderSystem->m_pRenderContextStorage->Get(renderContextID);
+
+	if (pRenderContext == nullptr)
+	{
+		return RESULT_INDEX_OUT_OF_BOUNDS;
+	}
+
 #if NTT_VULKAN
 	if (NTT_ARG_BOOL(USE_VULKAN))
 	{
-		g_DefaultMeshShaderID = AddShader(renderContextID,
-										  NTT_SHADER_INPUT_TOPOLOGY_TRIANGLES,
-										  reinterpret_cast<const char*>(vulkan_mesh_vs_data),
-										  reinterpret_cast<const char*>(vulkan_mesh_fs_data));
+		pRenderContext->defaultMeshShaderID = AddShader(renderContextID,
+														NTT_SHADER_INPUT_TOPOLOGY_TRIANGLES,
+														reinterpret_cast<const char*>(vulkan_mesh_vs_data),
+														reinterpret_cast<const char*>(vulkan_mesh_fs_data));
 
-		g_DebugLineShaderID = AddShader(renderContextID,
-										NTT_SHADER_INPUT_TOPOLOGY_LINES,
-										reinterpret_cast<const char*>(vulkan_line_vs_data),
-										reinterpret_cast<const char*>(vulkan_line_fs_data));
+		pRenderContext->defaultDebugLineShaderID = AddShader(renderContextID,
+															 NTT_SHADER_INPUT_TOPOLOGY_LINES,
+															 reinterpret_cast<const char*>(vulkan_line_vs_data),
+															 reinterpret_cast<const char*>(vulkan_line_fs_data));
 	}
 	else
 #endif // NTT_VULKAN
 	{
-		g_DefaultMeshShaderID = AddShader(renderContextID,
-										  NTT_SHADER_INPUT_TOPOLOGY_TRIANGLES,
-										  reinterpret_cast<const char*>(mesh_vs_data),
-										  reinterpret_cast<const char*>(mesh_fs_data));
+		pRenderContext->defaultMeshShaderID = AddShader(renderContextID,
+														NTT_SHADER_INPUT_TOPOLOGY_TRIANGLES,
+														reinterpret_cast<const char*>(mesh_vs_data),
+														reinterpret_cast<const char*>(mesh_fs_data));
 
 #if NTT_DEBUG
-		g_DebugLineShaderID = AddShader(renderContextID,
-										NTT_SHADER_INPUT_TOPOLOGY_LINES,
-										reinterpret_cast<const char*>(line_vs_data),
-										reinterpret_cast<const char*>(line_fs_data));
+		pRenderContext->defaultDebugLineShaderID = AddShader(renderContextID,
+															 NTT_SHADER_INPUT_TOPOLOGY_LINES,
+															 reinterpret_cast<const char*>(line_vs_data),
+															 reinterpret_cast<const char*>(line_fs_data));
 #endif // NTT_DEBUG
 	}
 
 	return RESULT_SUCCESS;
 }
 
-Result ShaderStorage::RemoveDefaultShaders()
+Result ShaderStorage::RemoveDefaultShaders(RenderContextID renderContextID)
 {
-	if (g_DefaultMeshShaderID == INVALID_SHADER_ID)
+	RenderSystem::RenderContext* pRenderContext =
+		SystemGlobals::pRenderSystem->m_pRenderContextStorage->Get(renderContextID);
+
+	if (pRenderContext == nullptr)
+	{
+		return RESULT_INDEX_OUT_OF_BOUNDS;
+	}
+
+	if (pRenderContext->defaultMeshShaderID == INVALID_SHADER_ID)
 	{
 		return RESULT_UNKNOWN;
 	}
 
-	NTT_ASSERT_RESULT_SUCCESS(RemoveShader(g_DefaultMeshShaderID));
+	NTT_ASSERT_RESULT_SUCCESS(RemoveShader(pRenderContext->defaultMeshShaderID));
 
 #if NTT_DEBUG
-	if (g_DebugLineShaderID == INVALID_SHADER_ID)
+	if (pRenderContext->defaultDebugLineShaderID == INVALID_SHADER_ID)
 	{
 		return RESULT_UNKNOWN;
 	}
-	NTT_ASSERT_RESULT_SUCCESS(RemoveShader(g_DebugLineShaderID));
+	NTT_ASSERT_RESULT_SUCCESS(RemoveShader(pRenderContext->defaultDebugLineShaderID));
 #endif // NTT_DEBUG
 
 	return RESULT_SUCCESS;

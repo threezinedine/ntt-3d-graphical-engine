@@ -43,13 +43,21 @@ MeshStorage::~MeshStorage()
 
 MeshID MeshStorage::AddMesh(Mesh&& mesh, RenderContextID renderContextID, bool dynamic) noexcept
 {
+	RenderSystem::RenderContext* pRenderContext =
+		SystemGlobals::pRenderSystem->m_pRenderContextStorage->Get(renderContextID);
+
+	if (pRenderContext == nullptr)
+	{
+		return INVALID_MESH_ID;
+	}
+
 	MeshID	  meshID   = m_pMeshStorage->Add();
 	MeshNode* pNode	   = m_pMeshStorage->Get(meshID);
 	pNode->mesh		   = static_cast<Mesh&&>(mesh);
 	pNode->pMeshHandle = ALLOCATOR_SAFE(m_pAllocator)->Allocate(GetMeshHandleSize());
-	pNode->shaderID	   = g_DefaultMeshShaderID;
+	pNode->shaderID	   = pRenderContext->defaultMeshShaderID;
 #if NTT_DEBUG
-	pNode->debugLineShaderID = g_DebugLineShaderID;
+	pNode->debugLineShaderID = pRenderContext->defaultDebugLineShaderID;
 	pNode->lineWidth		 = 1.0f;
 #endif // NTT_DEBUG
 	pNode->dynamic = dynamic;

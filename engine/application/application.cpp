@@ -9,6 +9,13 @@ static WindowID		   g_WindowID		 = INVALID_WINDOW_ID;
 static MeshID		   g_MeshID			 = INVALID_MESH_ID;
 static RenderContextID g_RenderContextID = INVALID_RENDER_CONTEXT_ID;
 
+// #if !NTT_PLATFORM_WEB
+// static WindowID		   g_SecondWindowID			 = INVALID_WINDOW_ID;
+// static MeshID		   g_SecondMeshID			 = INVALID_MESH_ID;
+// static RenderContextID g_SecondRenderContextID	 = INVALID_RENDER_CONTEXT_ID;
+
+// #endif // !NTT_PLATFORM_WEB
+
 Application::Application()
 	: Object()
 {
@@ -59,11 +66,36 @@ Result Application::Initialize(i32 argc, char** argv)
 	mesh.vertices.Emplace(Vec3f{-0.5f, -0.5f, 0.0f}, Vec2f{0.5f, 1.0f}, Color{1.0f, 0.0f, 0.0f, 1.0f});
 	mesh.vertices.Emplace(Vec3f{0.5f, -0.5f, 0.0f}, Vec2f{1.0f, 0.0f}, Color{0.0f, 1.0f, 0.0f, 1.0f});
 	mesh.vertices.Emplace(Vec3f{0.0f, 0.5f, 0.0f}, Vec2f{0.0f, 0.0f}, Color{0.0f, 0.0f, 1.0f, 1.0f});
-	g_MeshID = NTT_MESH_STORAGE->AddMesh(static_cast<Mesh&&>(mesh), g_DefaultMeshShaderID, g_RenderContextID);
+	g_MeshID = NTT_MESH_STORAGE->AddMesh(static_cast<Mesh&&>(mesh), g_RenderContextID);
 
 #if NTT_DEBUG
 	NTT_MESH_STORAGE->SetDebugLineWidth(g_MeshID, 5);
 #endif // NTT_DEBUG
+
+	// #if !NTT_PLATFORM_WEB
+
+	// 	g_SecondWindowID = SystemGlobals::pDisplaySystem->CreateWindow(1920, 1080, "NTT Second Window");
+
+	// 	if (g_SecondWindowID == INVALID_WINDOW_ID)
+	// 	{
+	// 		NTT_APPLICATION_ERROR("Failed to create second window. Invalid window ID.");
+	// 		return RESULT_UNKNOWN;
+	// 	}
+
+	// 	g_SecondRenderContextID = SystemGlobals::pRenderSystem->CreateRenderContext(g_SecondWindowID);
+	// 	NTT_SHADER_STORAGE->SetupDefaultShaders(g_SecondRenderContextID);
+
+	// 	Mesh secondMesh;
+	// 	secondMesh.vertices.Emplace(Vec3f{-0.5f, -0.5f, 0.0f}, Vec2f{0.5f, 1.0f}, Color{1.0f, 0.0f, 0.0f, 1.0f});
+	// 	secondMesh.vertices.Emplace(Vec3f{0.5f, -0.5f, 0.0f}, Vec2f{1.0f, 0.0f}, Color{0.0f, 1.0f, 0.0f, 1.0f});
+	// 	secondMesh.vertices.Emplace(Vec3f{0.0f, 0.5f, 0.0f}, Vec2f{0.0f, 0.0f}, Color{0.0f, 0.0f, 1.0f, 1.0f});
+	// 	g_SecondMeshID = NTT_MESH_STORAGE->AddMesh(static_cast<Mesh&&>(secondMesh), g_SecondRenderContextID);
+
+	// #if NTT_DEBUG
+	// 	NTT_MESH_STORAGE->SetDebugLineWidth(g_SecondMeshID, 5);
+	// #endif // NTT_DEBUG
+
+	// #endif // !NTT_PLATFORM_WEB
 
 	return InitializeImpl();
 }
@@ -139,12 +171,19 @@ Result Application::Run()
 
 Result Application::Shutdown()
 {
+	// #if !NTT_PLATFORM_WEB
+	// 	NTT_ASSERT_RESULT_SUCCESS(NTT_MESH_STORAGE->RemoveMesh(g_SecondMeshID));
+	// 	NTT_ASSERT_RESULT_SUCCESS(NTT_SHADER_STORAGE->RemoveDefaultShaders(g_SecondRenderContextID));
+	// 	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pRenderSystem->DestroyRenderContext(g_SecondRenderContextID));
+	// 	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pDisplaySystem->DestroyWindow(g_SecondWindowID));
+	// #endif // !NTT_PLATFORM_WEB
+
 	NTT_ASSERT_RESULT_SUCCESS(m_pEcs->Shutdown());
 	m_pEcs.Reset();
 
-	NTT_ASSERT_RESULT_SUCCESS(NTT_SHADER_STORAGE->RemoveDefaultShaders());
+	NTT_ASSERT_RESULT_SUCCESS(NTT_SHADER_STORAGE->RemoveDefaultShaders(g_RenderContextID));
 
-	NTT_MESH_STORAGE->RemoveMesh(g_MeshID);
+	NTT_ASSERT_RESULT_SUCCESS(NTT_MESH_STORAGE->RemoveMesh(g_MeshID));
 
 	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pRenderSystem->DestroyRenderContext(g_RenderContextID));
 	NTT_ASSERT_RESULT_SUCCESS(SystemGlobals::pDisplaySystem->DestroyWindow(g_WindowID));
