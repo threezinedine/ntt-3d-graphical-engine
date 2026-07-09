@@ -125,9 +125,13 @@ Result Application::UpdateWindow(WindowID windowID, RenderContextID renderContex
 		NTT_APPLICATION_WARN("Failed to set uniform 'uColor' for mesh ID: %u", meshID);
 	}
 
-	if (NTT_MESH_STORAGE->SetUniformSampler(meshID, "uTexture", g_pTextureResource->GetTextureID()) != RESULT_SUCCESS)
+	if (!NTT_ARG_BOOL(USE_VULKAN))
 	{
-		NTT_APPLICATION_WARN("Failed to set uniform 'uTexture' for mesh ID: %u", meshID);
+		if (NTT_MESH_STORAGE->SetUniformSampler(meshID, "uTexture", g_pTextureResource->GetTextureID()) !=
+			RESULT_SUCCESS)
+		{
+			NTT_APPLICATION_WARN("Failed to set uniform 'uTexture' for mesh ID: %u", meshID);
+		}
 	}
 
 	if (NTT_MESH_STORAGE->SetUniformFloat4(meshID, "uTransform", transform) != RESULT_SUCCESS)
