@@ -71,7 +71,7 @@ Result Application::Initialize(i32 argc, char** argv)
 
 #if !NTT_PLATFORM_WEB
 
-	g_SecondWindowID = SystemGlobals::pDisplaySystem->CreateWindow(1920, 1080, "NTT Second Window");
+	g_SecondWindowID = SystemGlobals::pDisplaySystem->CreateWindow(300, 200, "NTT Second Window");
 
 	if (g_SecondWindowID == INVALID_WINDOW_ID)
 	{
@@ -83,9 +83,9 @@ Result Application::Initialize(i32 argc, char** argv)
 	NTT_SHADER_STORAGE->SetupDefaultShaders(g_SecondRenderContextID);
 
 	Mesh secondMesh;
-	secondMesh.vertices.Emplace(Vec3f{-0.5f, -0.5f, 0.0f}, Vec2f{0.5f, 1.0f}, Color{1.0f, 0.0f, 0.0f, 1.0f});
-	secondMesh.vertices.Emplace(Vec3f{0.5f, -0.5f, 0.0f}, Vec2f{1.0f, 0.0f}, Color{0.0f, 1.0f, 0.0f, 1.0f});
-	secondMesh.vertices.Emplace(Vec3f{0.0f, 0.5f, 0.0f}, Vec2f{0.0f, 0.0f}, Color{0.0f, 0.0f, 1.0f, 1.0f});
+	secondMesh.vertices.Emplace(Vec3f{-0.5f, -0.5f, 0.0f}, Vec2f{0.5f, 1.0f}, Color{1.0f, 1.0f, 1.0f, 1.0f});
+	secondMesh.vertices.Emplace(Vec3f{0.5f, -0.5f, 0.0f}, Vec2f{1.0f, 0.0f}, Color{1.0f, 1.0f, 1.0f, 1.0f});
+	secondMesh.vertices.Emplace(Vec3f{0.0f, 0.5f, 0.0f}, Vec2f{0.0f, 0.0f}, Color{1.0f, 1.0f, 1.0f, 1.0f});
 	g_SecondMeshID = NTT_MESH_STORAGE->AddMesh(static_cast<Mesh&&>(secondMesh), g_SecondRenderContextID);
 
 #if NTT_DEBUG
@@ -100,7 +100,7 @@ Result Application::Initialize(i32 argc, char** argv)
 	return InitializeImpl();
 }
 
-Result Application::UpdateWindow(WindowID windowID, RenderContextID renderContextID)
+Result Application::UpdateWindow(WindowID windowID, RenderContextID renderContextID, MeshID meshID)
 {
 	NTT_ASSERT_RESULT_SUCCESS(NTT_DISPLAY_SYSTEM->OnBeginFrame(windowID));
 
@@ -108,31 +108,30 @@ Result Application::UpdateWindow(WindowID windowID, RenderContextID renderContex
 
 	Vec4f transform{0.2f, 0.0f, 0.0f, 0.0f};
 
-	if (NTT_MESH_STORAGE->SetUniformFloat4(g_MeshID, "uColor", Color{1.0f, 0.0f, 1.0f, 1.0f}) != RESULT_SUCCESS)
+	if (NTT_MESH_STORAGE->SetUniformFloat4(meshID, "uColor", Color{1.0f, 0.0f, 1.0f, 1.0f}) != RESULT_SUCCESS)
 	{
-		NTT_APPLICATION_WARN("Failed to set uniform 'uColor' for mesh ID: %u", g_MeshID);
+		NTT_APPLICATION_WARN("Failed to set uniform 'uColor' for mesh ID: %u", meshID);
 	}
 
-	if (NTT_MESH_STORAGE->SetUniformFloat4(g_MeshID, "uTransform", transform) != RESULT_SUCCESS)
+	if (NTT_MESH_STORAGE->SetUniformFloat4(meshID, "uTransform", transform) != RESULT_SUCCESS)
 	{
-		NTT_APPLICATION_WARN("Failed to set uniform 'uTransform' for mesh ID: %u", g_MeshID);
+		NTT_APPLICATION_WARN("Failed to set uniform 'uTransform' for mesh ID: %u", meshID);
 	}
 
-	NTT_ASSERT_RESULT_SUCCESS(NTT_MESH_STORAGE->DrawMesh(g_MeshID));
+	NTT_ASSERT_RESULT_SUCCESS(NTT_MESH_STORAGE->DrawMesh(meshID));
 
 #if NTT_DEBUG
-	if (NTT_MESH_STORAGE->SetDebugLineUniformFloat4(g_MeshID, "uTransform", transform) != RESULT_SUCCESS)
+	if (NTT_MESH_STORAGE->SetDebugLineUniformFloat4(meshID, "uTransform", transform) != RESULT_SUCCESS)
 	{
-		NTT_APPLICATION_WARN("Failed to set uniform 'uTransform' for debug line of mesh ID: %u", g_MeshID);
+		NTT_APPLICATION_WARN("Failed to set uniform 'uTransform' for debug line of mesh ID: %u", meshID);
 	}
 
-	if (NTT_MESH_STORAGE->SetDebugLineUniformFloat4(g_MeshID, "uColor", Color{0.0f, 0.0f, 1.0f, 1.0f}) !=
-		RESULT_SUCCESS)
+	if (NTT_MESH_STORAGE->SetDebugLineUniformFloat4(meshID, "uColor", Color{0.0f, 0.0f, 1.0f, 1.0f}) != RESULT_SUCCESS)
 	{
-		NTT_APPLICATION_WARN("Failed to set uniform 'uColor' for debug line of mesh ID: %u", g_MeshID);
+		NTT_APPLICATION_WARN("Failed to set uniform 'uColor' for debug line of mesh ID: %u", meshID);
 	}
 
-	NTT_ASSERT_RESULT_SUCCESS(NTT_MESH_STORAGE->DrawDebugLine(g_MeshID));
+	NTT_ASSERT_RESULT_SUCCESS(NTT_MESH_STORAGE->DrawDebugLine(meshID));
 #endif // NTT_DEBUG
 
 	NTT_ASSERT_RESULT_SUCCESS(NTT_RENDER_SYSTEM->EndRender(renderContextID));
@@ -147,7 +146,7 @@ Result Application::Update()
 {
 	if (NTT_DISPLAY_SYSTEM->IsWindowActive(g_WindowID))
 	{
-		NTT_ASSERT_RESULT_SUCCESS(UpdateWindow(g_WindowID, g_RenderContextID));
+		NTT_ASSERT_RESULT_SUCCESS(UpdateWindow(g_WindowID, g_RenderContextID, g_MeshID));
 
 		if (NTT_DISPLAY_SYSTEM->ShouldCloseWindow(g_WindowID))
 		{
@@ -158,7 +157,7 @@ Result Application::Update()
 #if !NTT_PLATFORM_WEB
 	if (NTT_DISPLAY_SYSTEM->IsWindowActive(g_SecondWindowID))
 	{
-		NTT_ASSERT_RESULT_SUCCESS(UpdateWindow(g_SecondWindowID, g_SecondRenderContextID));
+		NTT_ASSERT_RESULT_SUCCESS(UpdateWindow(g_SecondWindowID, g_SecondRenderContextID, g_SecondMeshID));
 
 		if (NTT_DISPLAY_SYSTEM->ShouldCloseWindow(g_SecondWindowID))
 		{

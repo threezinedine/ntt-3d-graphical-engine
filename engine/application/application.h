@@ -9,6 +9,7 @@ namespace ntt {
 
 typedef u32 RenderContextID;
 typedef u32 WindowID;
+typedef u32 MeshID;
 
 class Application : public Object
 {
@@ -38,7 +39,7 @@ protected:
 	}
 
 	Result Update();
-	Result UpdateWindow(WindowID windowID, RenderContextID renderContextID);
+	Result UpdateWindow(WindowID windowID, RenderContextID renderContextID, MeshID meshID);
 
 private:
 	Scope<ECS> m_pEcs;
