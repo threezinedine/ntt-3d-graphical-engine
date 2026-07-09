@@ -7,6 +7,9 @@
 
 namespace ntt {
 
+typedef u32 RenderContextID;
+typedef u32 WindowID;
+
 class Application : public Object
 {
 public:
@@ -35,6 +38,7 @@ protected:
 	}
 
 	Result Update();
+	Result UpdateWindow(WindowID windowID, RenderContextID renderContextID);
 
 private:
 	Scope<ECS> m_pEcs;

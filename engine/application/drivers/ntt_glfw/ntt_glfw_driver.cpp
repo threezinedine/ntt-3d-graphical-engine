@@ -181,6 +181,7 @@ static bool GLFWDisplayDriver_ShouldCloseWindow(Pointer<void> pWindowHandle)
 static Result GLFWDisplayDriver_OnBeginFrame(Pointer<void> pDriverHandle)
 {
 	GLFWDriverHandle* pHandle = CAST_DRIVER_HANDLE(pDriverHandle);
+	glfwMakeContextCurrent(pHandle->pWindow);
 	glfwPollEvents();
 
 #if !NTT_PLATFORM_WEB

@@ -26,13 +26,17 @@ protected:
 public:
 	WindowID CreateWindow(u32 width, u32 height, const char* title);
 	Result	 DestroyWindow(WindowID windowID);
-	bool	 ShouldCloseWindow(WindowID windowID);
+	bool	 ShouldCloseWindow(WindowID windowID) const;
+	bool	 IsWindowActive(WindowID windowID) const;
 
 	Result SetOnWindowResizeCallback(WindowID windowID, OnWindowResizeCallback callback, void* pUserData);
 
 public:
 	Result OnBeginFrame(WindowID windowID);
 	Result OnEndFrame(WindowID windowID);
+
+public:
+	bool ShouldApplicationClose() const;
 
 public:
 	struct WindowInfo

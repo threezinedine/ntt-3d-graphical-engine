@@ -10,6 +10,76 @@ template <typename DataType>
 class Storage
 {
 public:
+	struct Iterator
+	{
+		u32		 index;
+		Storage* pStorage;
+
+		friend class Storage<DataType>;
+
+		Iterator(u32 index, Storage* pStorage)
+			: index(index)
+			, pStorage(pStorage)
+		{
+		}
+
+		Iterator(const Iterator& other)
+			: index(other.index)
+			, pStorage(other.pStorage)
+		{
+		}
+
+		Iterator(Iterator&& other) noexcept
+		{
+			index		   = other.index;
+			pStorage	   = other.pStorage;
+			other.index	   = 0;
+			other.pStorage = nullptr;
+		}
+
+		void operator=(const Iterator& other)
+		{
+			index	 = other.index;
+			pStorage = other.pStorage;
+		}
+
+		void operator=(Iterator&& other) noexcept
+		{
+			index		   = other.index;
+			pStorage	   = other.pStorage;
+			other.index	   = 0;
+			other.pStorage = nullptr;
+		}
+
+		inline DataType& operator*() const
+		{
+			return pStorage->m_Nodes[index].data;
+		}
+
+		inline Iterator& operator++()
+		{
+			do
+			{
+				++index;
+			} while (index < pStorage->m_CurrentIndex && !pStorage->m_Nodes[index].active);
+
+			return *this;
+		}
+
+		bool operator!=(const Iterator& other) const
+		{
+			return index != other.index || pStorage != other.pStorage;
+		}
+
+		bool operator==(const Iterator& other) const
+		{
+			return index == other.index && pStorage == other.pStorage;
+		}
+	};
+
+	friend class Iterator;
+
+public:
 	Storage(u32 capacity = NTT_ARRAY_DEFAULT_CAPACITY, IAllocator* pAllocator = nullptr)
 		: m_Nodes(capacity, pAllocator)
 		, m_CurrentIndex(0)
@@ -47,6 +117,21 @@ public:
 		}
 
 		return &m_Nodes[index].data;
+	}
+
+	Iterator begin()
+	{
+		u32 firstActiveIndex = 0;
+		while (firstActiveIndex < m_CurrentIndex && !m_Nodes[firstActiveIndex].active)
+		{
+			++firstActiveIndex;
+		}
+		return Iterator(firstActiveIndex, this);
+	}
+
+	Iterator end()
+	{
+		return Iterator(m_CurrentIndex, this);
 	}
 
 public:

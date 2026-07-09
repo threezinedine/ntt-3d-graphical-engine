@@ -85,7 +85,7 @@ Result DisplaySystem::DestroyWindow(WindowID windowID)
 	return RESULT_SUCCESS;
 }
 
-bool DisplaySystem::ShouldCloseWindow(WindowID windowID)
+bool DisplaySystem::ShouldCloseWindow(WindowID windowID) const
 {
 	WindowInfo* pWindowInfo = m_pWindowIDStorage->Get(windowID);
 
@@ -96,6 +96,11 @@ bool DisplaySystem::ShouldCloseWindow(WindowID windowID)
 	}
 
 	return g_DisplayDriver.ShouldCloseWindow(pWindowInfo->pWindowHandle);
+}
+
+bool DisplaySystem::IsWindowActive(WindowID windowID) const
+{
+	return m_pWindowIDStorage->Get(windowID) != nullptr;
 }
 
 Result DisplaySystem::OnBeginFrame(WindowID windowID)
@@ -136,6 +141,19 @@ Result DisplaySystem::SetOnWindowResizeCallback(WindowID windowID, OnWindowResiz
 	}
 
 	return g_DisplayDriver.SetOnWindowResizeCallback(pWindowInfo->pWindowHandle, callback, pUserData);
+}
+
+bool DisplaySystem::ShouldApplicationClose() const
+{
+	for (auto windowInfo = m_pWindowIDStorage->begin(); windowInfo != m_pWindowIDStorage->end(); ++windowInfo)
+	{
+		if (!ShouldCloseWindow(windowInfo.index))
+		{
+			return false; // If any window is still open, the application should not close
+		}
+	}
+
+	return true; // All windows are closed, the application should close
 }
 
 } // namespace ntt

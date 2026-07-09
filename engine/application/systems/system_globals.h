@@ -18,4 +18,7 @@ public:
 	static Result Shutdown();
 };
 
+#define NTT_DISPLAY_SYSTEM (SystemGlobals::pDisplaySystem)
+#define NTT_RENDER_SYSTEM  (SystemGlobals::pRenderSystem)
+
 } // namespace ntt
