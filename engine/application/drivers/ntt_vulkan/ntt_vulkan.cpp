@@ -752,7 +752,7 @@ static Result createLogicalDevice(VulkanContextHandle* pContextHandle)
 	NTT_UNUSED(pContextHandle);
 	float queuePriority = 1.0f;
 
-	Array<VkDeviceQueueCreateInfo> queueCreateInfos(4, g_GlobalAllocators.pStack);
+	Array<VkDeviceQueueCreateInfo> queueCreateInfos(4, g_GlobalAllocators.pMalloc);
 	u32							   queueCreateInfoCount = 0;
 
 	VkDeviceQueueCreateInfo& currentInfo = queueCreateInfos[queueCreateInfoCount++];

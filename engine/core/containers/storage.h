@@ -77,7 +77,7 @@ public:
 		}
 	};
 
-	friend class Iterator;
+	friend struct Iterator;
 
 public:
 	Storage(u32 capacity = NTT_ARRAY_DEFAULT_CAPACITY, IAllocator* pAllocator = nullptr)
