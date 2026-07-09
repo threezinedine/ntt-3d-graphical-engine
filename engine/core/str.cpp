@@ -239,6 +239,28 @@ String String::operator+(const String& other) const
 	}
 }
 
+void String::operator=(const StringView& str)
+{
+	NTT_ASSERT(Clear() == RESULT_SUCCESS); // Ensure the string is cleared before assignment
+
+	if (str.Length() <= NTT_SHORT_STRING_OPTIMIZATION_SIZE)
+	{
+		m_IsShortString = true;
+		m_pHeapBuffer	= nullptr;
+		memcpy(m_pShortBuffer, str.Data(), str.Length());
+		m_pShortBuffer[str.Length()] = '\0'; // Ensure null-termination
+	}
+	else
+	{
+		m_IsShortString = false;
+		m_pHeapBuffer	= ALLOCATOR_SAFE(m_pAllocator)->Allocate(str.Length() + 1).Cast<char>();
+		NTT_ASSERT_MSG(m_pHeapBuffer != nullptr, "Failed to allocate memory for heap string.");
+		memcpy(m_pHeapBuffer.Get(), str.Data(), str.Length());
+		m_pHeapBuffer.Get()[str.Length()] = '\0'; // Ensure null-termination
+		m_ReservedCapacity				  = str.Length();
+	}
+}
+
 bool String::EndsWith(const String& suffix) const
 {
 	u32 strLength	 = Length();

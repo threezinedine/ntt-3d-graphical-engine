@@ -303,3 +303,26 @@ TEST_CASE(StringTest, MoveStringWithSameAllocators)
 
 	TEST_EQUAL(allocatorSize2, allocatorSize1);
 }
+
+TEST_CASE(StringTest, AssignStringViewToString)
+{
+	String	   str;
+	StringView view("Hello World");
+	StringView longView("This is a long string that exceeds the short string optimization size.");
+
+	u32 allocatorSize1 = ((MallocAllocator*)(g_GlobalAllocators.pMalloc))->GetAllocatedMemorySize();
+	str				   = view;
+	u32 allocatorSize2 = ((MallocAllocator*)(g_GlobalAllocators.pMalloc))->GetAllocatedMemorySize();
+
+	TEST_EQUAL(str.Length(), 11);
+	TEST_EQUAL(strcmp(str.CStr(), "Hello World"), 0);
+	TEST_EQUAL(allocatorSize1, allocatorSize2); // No additional allocation should occur
+
+	str				   = longView;
+	u32 allocatorSize3 = ((MallocAllocator*)(g_GlobalAllocators.pMalloc))->GetAllocatedMemorySize();
+
+	u32 longViewLength = longView.Length();
+	TEST_EQUAL(str.Length(), longViewLength);
+	TEST_EQUAL(strcmp(str.CStr(), longView.Data()), 0);
+	TEST_EQUAL(allocatorSize3, allocatorSize2 + longViewLength + 1);
+}

@@ -82,6 +82,7 @@ ntt_set_source_group("src/systems/render/defs"
     NTT_APPLICATION_SOURCES
     "systems/render/uniform_type.def"
     "systems/render/shader_input_topology.def"
+    "resources/resource_type.def"
 )
 
 if (NTT_PLATFORM_WEB)
@@ -114,6 +115,17 @@ else()
         )
     endif()
 endif()
+
+ntt_set_source_group("src/resources"
+    NTT_APPLICATION_SOURCES
+    "resources/resource.h"
+    "resources/resource.cpp"
+    "resources/resource_type.h"
+    "resources/resource_type.cpp"
+    "resources/resources.h"
+    "resources/texture_resource.h"
+    "resources/texture_resource.cpp"
+)
 
 ntt_set_source_group("src/systems/render/components"
     NTT_APPLICATION_SOURCES

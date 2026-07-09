@@ -89,3 +89,6 @@
 #endif // NTT_ENABLE_ASSERTION
 
 #define NTT_UNUSED(x) (void)(x)
+
+#define _STRINGIFY(x) #x
+#define STRINGIFY(x)  _STRINGIFY(x)

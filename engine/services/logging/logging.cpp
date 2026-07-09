@@ -12,7 +12,7 @@ Result Logging::Initialize()
 	s_pHandlers = MakeScope<Array<Scope<Handler>>>(g_GlobalAllocators.pMalloc);
 
 #if !NTT_UNITTEST
-	s_pHandlers->Append(MakeScope<ConsoleHandler>(g_GlobalAllocators.pMalloc, "[%(type):-7!] %(message)"));
+	s_pHandlers->Append(MakeScope<ConsoleHandler>(g_GlobalAllocators.pMalloc, "[%(type):-8!] %(message)"));
 #endif // !NTT_UNITTEST
 
 	return RESULT_SUCCESS;

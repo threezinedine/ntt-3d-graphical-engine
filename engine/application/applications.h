@@ -6,6 +6,8 @@
 #include "application.h"
 #include "systems/systems.h"
 
+#include "resources/resources.h"
+
 namespace ntt {
 
 Result RegisterApplicationType();

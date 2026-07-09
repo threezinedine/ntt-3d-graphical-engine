@@ -11,7 +11,8 @@
 				"NTT_DEBUG=1",
 				"NTT_VULKAN=1",
 				"NTT_GLFW=1",
-				"NTT_OPENGL=1"
+				"NTT_OPENGL=1",
+				"NTT_ENGINE_DIRECTORY=/home/threezinedine/Projects/ntt-3d-graphical-engine/engine"
 			],
 			"compilerPath": "/usr/bin/clang",
 			"cStandard": "c17",

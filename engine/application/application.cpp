@@ -5,6 +5,8 @@
 #endif // NTT_PLATFORM_WEB
 namespace ntt {
 
+static Scope<TextureResource> g_pTextureResource;
+
 static WindowID		   g_WindowID		 = INVALID_WINDOW_ID;
 static MeshID		   g_MeshID			 = INVALID_MESH_ID;
 static RenderContextID g_RenderContextID = INVALID_RENDER_CONTEXT_ID;
@@ -96,6 +98,10 @@ Result Application::Initialize(i32 argc, char** argv)
 
 	m_pEcs = MakeScope<ECS>(g_GlobalAllocators.pMalloc);
 	NTT_ASSERT_RESULT_SUCCESS(m_pEcs->Initialize());
+
+	g_pTextureResource = MakeScope<TextureResource>(g_GlobalAllocators.pMalloc,
+													STRINGIFY(NTT_ENGINE_DIRECTORY) "/assets/images/logo.png");
+	NTT_ASSERT_RESULT_SUCCESS(g_pTextureResource->Load());
 
 	return InitializeImpl();
 }
@@ -197,6 +203,9 @@ Result Application::Run()
 
 Result Application::Shutdown()
 {
+	NTT_ASSERT_RESULT_SUCCESS(g_pTextureResource->Unload());
+	g_pTextureResource.Reset();
+
 	NTT_ASSERT_RESULT_SUCCESS(m_pEcs->Shutdown());
 	m_pEcs.Reset();
 

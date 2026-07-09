@@ -42,6 +42,9 @@ macro(ntt_config)
         ntt_option(NTT_OPENGL ON)
         ntt_option(NTT_VULKAN ON)
 
+        set(NTT_ENGINE_DIRECTORY "${CMAKE_SOURCE_DIR}/engine")
+        list(APPEND NTT_OPTIONS NTT_ENGINE_DIRECTORY)
+
         if (CMAKE_BUILD_TYPE STREQUAL "Debug")
             set(NTT_DEBUG ON)
             list(APPEND NTT_OPTIONS NTT_DEBUG)

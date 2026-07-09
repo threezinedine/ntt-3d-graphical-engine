@@ -1,0 +1,5 @@
+#ifndef RESOURCE_TYPE_DEF
+#define RESOURCE_TYPE_DEF(name, type, extension)
+#endif // RESOURCE_TYPE_DEF
+
+RESOURCE_TYPE_DEF(TEXTURE, Texture, ".png")

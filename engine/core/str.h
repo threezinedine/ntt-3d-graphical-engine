@@ -27,6 +27,7 @@ public:
 	Result			  Reserve(u32 newCapacity);
 	void			  operator=(const String& other) = delete;
 	void			  operator=(String&& other) noexcept;
+	void			  operator=(const StringView& str);
 	void			  operator=(const char* str);
 	bool			  operator==(const String& other) const;
 	bool			  operator!=(const String& other) const;
