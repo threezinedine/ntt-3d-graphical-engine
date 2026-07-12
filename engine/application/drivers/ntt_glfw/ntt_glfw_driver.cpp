@@ -31,7 +31,8 @@ struct GLFWDriverHandle
 
 static Result GLFWDisplayDriver_Initialize();
 static Result GLFWDisplayDriver_Shutdown();
-static Result GLFWDisplayDriver_CreateWindow(u32 width, u32 height, const char* title, Pointer<void>& pWindowHandle);
+static Result GLFWDisplayDriver_CreateWindow(
+	u32 width, u32 height, const char* title, Pointer<void>& pWindowHandle, bool shareContext);
 static bool	  GLFWDisplayDriver_ShouldCloseWindow(Pointer<void> pWindowHandle);
 static Result GLFWDisplayDriver_DestroyWindow(Pointer<void> pWindowHandle);
 static Result GLFWDisplayDriver_OnBeginFrame(Pointer<void> pDriverHandle);
@@ -112,7 +113,8 @@ static Result GLFWDisplayDriver_Shutdown()
 	return RESULT_SUCCESS;
 }
 
-static Result GLFWDisplayDriver_CreateWindow(u32 width, u32 height, const char* title, Pointer<void>& pWindowHandle)
+static Result GLFWDisplayDriver_CreateWindow(
+	u32 width, u32 height, const char* title, Pointer<void>& pWindowHandle, bool shareContext)
 {
 	GLFWDriverHandle* pHandle = CAST_DRIVER_HANDLE(pWindowHandle);
 
@@ -131,7 +133,8 @@ static Result GLFWDisplayDriver_CreateWindow(u32 width, u32 height, const char* 
 		return RESULT_NULL_POINTER;
 	}
 
-	GLFWwindow* pWindow = glfwCreateWindow(static_cast<i32>(width), static_cast<i32>(height), title, nullptr, nullptr);
+	GLFWwindow* pWindow = glfwCreateWindow(
+		static_cast<i32>(width), static_cast<i32>(height), title, nullptr, shareContext ? g_pDefaultWindow : nullptr);
 	if (pWindow == nullptr)
 	{
 		NTT_DISPLAY_ERROR("Failed to create GLFW window.");

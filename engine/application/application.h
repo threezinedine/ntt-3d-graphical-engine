@@ -4,12 +4,11 @@
 #include "ecs.h"
 #include "object.h"
 #include "services.h"
+#include "systems/render/render.h"
 
 namespace ntt {
 
-typedef u32 RenderContextID;
 typedef u32 WindowID;
-typedef u32 MeshID;
 
 class Application : public Object
 {
@@ -39,7 +38,7 @@ protected:
 	}
 
 	Result Update();
-	Result UpdateWindow(WindowID windowID, RenderContextID renderContextID, MeshID meshID);
+	Result UpdateWindow(WindowID windowID, RenderContextID renderContextID, MeshViewID meshViewID);
 
 private:
 	Scope<ECS> m_pEcs;

@@ -24,31 +24,27 @@ Result VulkanMeshStorage::ShutdownImpl()
 	return RESULT_SUCCESS;
 }
 
-static Result createDynamicVertexBuffer(VulkanContextHandle* pVulkanContext, MeshHandle* pMeshHandle, Mesh& mesh);
-static Result destroyDynamicVertexBuffer(VulkanContextHandle* pVulkanContext, MeshHandle* pMeshHandle);
+static Result createDynamicVertexBuffer(MeshHandle* pMeshHandle, Mesh& mesh);
+static Result destroyDynamicVertexBuffer(MeshHandle* pMeshHandle);
 
-static Result createStaticVertexBuffer(VulkanContextHandle* pVulkanContext, MeshHandle* pMeshHandle, Mesh& mesh);
-static Result destroyStaticVertexBuffer(VulkanContextHandle* pVulkanContext, MeshHandle* pMeshHandle);
+static Result createStaticVertexBuffer(MeshHandle* pMeshHandle, Mesh& mesh);
+static Result destroyStaticVertexBuffer(MeshHandle* pMeshHandle);
 
-Result VulkanMeshStorage::AddMeshImpl(Mesh&				   mesh,
-									  Pointer<void>&	   pMeshHandle,
-									  const Pointer<void>& pRenderContext,
-									  bool				   dynamic)
+Result VulkanMeshStorage::AddMeshImpl(Mesh& mesh, Pointer<void>& pMeshHandle, bool dynamic)
 {
 	NTT_UNUSED(dynamic);
 
-	MeshHandle*			 pHandle		= VK_MESH_CAST(pMeshHandle);
-	VulkanContextHandle* pVulkanContext = VK_CONTEXT_CAST(pRenderContext);
+	MeshHandle* pHandle = VK_MESH_CAST(pMeshHandle);
 
 	pHandle->isDynamic = dynamic;
 
 	if (dynamic)
 	{
-		NTT_ASSERT_RESULT_SUCCESS(createDynamicVertexBuffer(pVulkanContext, pHandle, mesh));
+		NTT_ASSERT_RESULT_SUCCESS(createDynamicVertexBuffer(pHandle, mesh));
 	}
 	else
 	{
-		NTT_ASSERT_RESULT_SUCCESS(createStaticVertexBuffer(pVulkanContext, pHandle, mesh));
+		NTT_ASSERT_RESULT_SUCCESS(createStaticVertexBuffer(pHandle, mesh));
 	}
 
 	pHandle->vertexCount = mesh.vertices.GetCount();
@@ -66,38 +62,36 @@ Result VulkanMeshStorage::AddMeshImpl(Mesh&				   mesh,
 
 	NTT_ASSERT_RESULT_SUCCESS(createBuffer(pHandle->debugVertexBuffer,
 										   pHandle->debugVertexBufferMemory,
-										   pVulkanContext,
 										   debugSizeInBytes,
 										   VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
 										   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
 	void* pDebugData;
-	vkMapMemory(pVulkanContext->logicalDevice, pHandle->debugVertexBufferMemory, 0, debugSizeInBytes, 0, &pDebugData);
+	vkMapMemory(g_VulkanGlobals.logicalDevice, pHandle->debugVertexBufferMemory, 0, debugSizeInBytes, 0, &pDebugData);
 	MemCopy(pDebugData, pDebugVertices.Get(), debugSizeInBytes);
-	vkUnmapMemory(pVulkanContext->logicalDevice, pHandle->debugVertexBufferMemory);
+	vkUnmapMemory(g_VulkanGlobals.logicalDevice, pHandle->debugVertexBufferMemory);
 #endif
 
 	return RESULT_SUCCESS;
 }
 
-static Result createDynamicVertexBuffer(VulkanContextHandle* pVulkanContext, MeshHandle* pMeshHandle, Mesh& mesh)
+static Result createDynamicVertexBuffer(MeshHandle* pMeshHandle, Mesh& mesh)
 {
 	u32 sizeInBytes = sizeof(Vertex) * mesh.vertices.GetCount();
 
 	NTT_ASSERT_RESULT_SUCCESS(createBuffer(pMeshHandle->vertexBuffer,
 										   pMeshHandle->vertexBufferMemory,
-										   pVulkanContext,
 										   sizeInBytes,
 										   VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
 										   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
 	void* pData;
-	vkMapMemory(pVulkanContext->logicalDevice, pMeshHandle->vertexBufferMemory, 0, sizeInBytes, 0, &pData);
+	vkMapMemory(g_VulkanGlobals.logicalDevice, pMeshHandle->vertexBufferMemory, 0, sizeInBytes, 0, &pData);
 	MemCopy(pData, &mesh.vertices[0], sizeInBytes);
-	vkUnmapMemory(pVulkanContext->logicalDevice, pMeshHandle->vertexBufferMemory);
+	vkUnmapMemory(g_VulkanGlobals.logicalDevice, pMeshHandle->vertexBufferMemory);
 
 	return RESULT_SUCCESS;
 }
 
-static Result createStaticVertexBuffer(VulkanContextHandle* pVulkanContext, MeshHandle* pMeshHandle, Mesh& mesh)
+static Result createStaticVertexBuffer(MeshHandle* pMeshHandle, Mesh& mesh)
 {
 	u32 sizeInBytes = sizeof(Vertex) * mesh.vertices.GetCount();
 
@@ -106,19 +100,17 @@ static Result createStaticVertexBuffer(VulkanContextHandle* pVulkanContext, Mesh
 
 	createBuffer(stagingBuffer,
 				 stagingBufferMemory,
-				 pVulkanContext,
 				 sizeInBytes,
 				 VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 				 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
 	void* pData;
-	vkMapMemory(pVulkanContext->logicalDevice, stagingBufferMemory, 0, sizeInBytes, 0, &pData);
+	vkMapMemory(g_VulkanGlobals.logicalDevice, stagingBufferMemory, 0, sizeInBytes, 0, &pData);
 	MemCopy(pData, &mesh.vertices[0], sizeInBytes);
-	vkUnmapMemory(pVulkanContext->logicalDevice, stagingBufferMemory);
+	vkUnmapMemory(g_VulkanGlobals.logicalDevice, stagingBufferMemory);
 
 	createBuffer(pMeshHandle->vertexBuffer,
 				 pMeshHandle->vertexBufferMemory,
-				 pVulkanContext,
 				 sizeInBytes,
 				 VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
 				 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
@@ -126,11 +118,11 @@ static Result createStaticVertexBuffer(VulkanContextHandle* pVulkanContext, Mesh
 	VkCommandBufferAllocateInfo allocInfo{};
 	allocInfo.sType				 = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	allocInfo.level				 = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandPool		 = pVulkanContext->transferCommandPool;
+	allocInfo.commandPool		 = g_VulkanGlobals.transferCommandPool;
 	allocInfo.commandBufferCount = 1;
 
 	VkCommandBuffer commandBuffer;
-	VK_ASSERT(vkAllocateCommandBuffers(pVulkanContext->logicalDevice, &allocInfo, &commandBuffer));
+	VK_ASSERT(vkAllocateCommandBuffers(g_VulkanGlobals.logicalDevice, &allocInfo, &commandBuffer));
 
 	VkCommandBufferBeginInfo beginInfo{};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -150,99 +142,98 @@ static Result createStaticVertexBuffer(VulkanContextHandle* pVulkanContext, Mesh
 
 	VK_ASSERT(vkEndCommandBuffer(commandBuffer));
 
-	VK_ASSERT(vkQueueSubmit(pVulkanContext->transferQueue, 1, &submitInfo, VK_NULL_HANDLE));
-	VK_ASSERT(vkQueueWaitIdle(pVulkanContext->transferQueue));
+	VK_ASSERT(vkQueueSubmit(g_VulkanGlobals.transferQueue, 1, &submitInfo, VK_NULL_HANDLE));
+	VK_ASSERT(vkQueueWaitIdle(g_VulkanGlobals.transferQueue));
 
-	vkFreeCommandBuffers(pVulkanContext->logicalDevice, pVulkanContext->transferCommandPool, 1, &commandBuffer);
+	vkFreeCommandBuffers(g_VulkanGlobals.logicalDevice, g_VulkanGlobals.transferCommandPool, 1, &commandBuffer);
 
-	vkDestroyBuffer(pVulkanContext->logicalDevice, stagingBuffer, nullptr);
-	vkFreeMemory(pVulkanContext->logicalDevice, stagingBufferMemory, nullptr);
+	vkDestroyBuffer(g_VulkanGlobals.logicalDevice, stagingBuffer, nullptr);
+	vkFreeMemory(g_VulkanGlobals.logicalDevice, stagingBufferMemory, nullptr);
 
 	return RESULT_SUCCESS;
 }
 
-Result VulkanMeshStorage::DrawMeshImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext)
+// Result VulkanMeshStorage::DrawMeshImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext)
+// {
+// 	VulkanContextHandle* pVulkanContext = VK_CONTEXT_CAST(pRenderContext);
+// 	MeshHandle*			 pHandle		= VK_MESH_CAST(pMeshHandle);
+
+// 	VkBuffer	 vertexBuffers[] = {pHandle->vertexBuffer};
+// 	VkDeviceSize offsets[]		 = {0};
+// 	vkCmdBindVertexBuffers(GET_SCOPE_ARRAY_INDEX(pVulkanContext->pCommandBuffers, pVulkanContext->currentFrame),
+// 						   0,
+// 						   1,
+// 						   vertexBuffers,
+// 						   offsets);
+
+// 	vkCmdDraw(GET_SCOPE_ARRAY_INDEX(pVulkanContext->pCommandBuffers, pVulkanContext->currentFrame),
+// 			  pHandle->vertexCount,
+// 			  1,
+// 			  0,
+// 			  0);
+// 	return RESULT_SUCCESS;
+// }
+
+// #if NTT_DEBUG
+// Result VulkanMeshStorage::DrawDebugLineImpl(const Pointer<void>& pMeshHandle,
+// 											const Pointer<void>& pRenderContext,
+// 											f32					 lineWidth)
+// {
+// 	VulkanContextHandle* pVulkanContext = VK_CONTEXT_CAST(pRenderContext);
+// 	MeshHandle*			 pHandle		= VK_MESH_CAST(pMeshHandle);
+
+// 	VkBuffer	 vertexBuffers[] = {pHandle->debugVertexBuffer};
+// 	VkDeviceSize offsets[]		 = {0};
+// 	vkCmdBindVertexBuffers(GET_SCOPE_ARRAY_INDEX(pVulkanContext->pCommandBuffers, pVulkanContext->currentFrame),
+// 						   0,
+// 						   1,
+// 						   vertexBuffers,
+// 						   offsets);
+
+// 	vkCmdSetLineWidth(GET_SCOPE_ARRAY_INDEX(pVulkanContext->pCommandBuffers, pVulkanContext->currentFrame), lineWidth);
+
+// 	vkCmdDraw(GET_SCOPE_ARRAY_INDEX(pVulkanContext->pCommandBuffers, pVulkanContext->currentFrame),
+// 			  pHandle->vertexCount * 2,
+// 			  1,
+// 			  0,
+// 			  0);
+// 	return RESULT_SUCCESS;
+// }
+// #endif // NTT_DEBUG
+
+Result VulkanMeshStorage::RemoveMeshImpl(const Pointer<void>& pMeshHandle)
 {
-	VulkanContextHandle* pVulkanContext = VK_CONTEXT_CAST(pRenderContext);
-	MeshHandle*			 pHandle		= VK_MESH_CAST(pMeshHandle);
-
-	VkBuffer	 vertexBuffers[] = {pHandle->vertexBuffer};
-	VkDeviceSize offsets[]		 = {0};
-	vkCmdBindVertexBuffers(GET_SCOPE_ARRAY_INDEX(pVulkanContext->pCommandBuffers, pVulkanContext->currentFrame),
-						   0,
-						   1,
-						   vertexBuffers,
-						   offsets);
-
-	vkCmdDraw(GET_SCOPE_ARRAY_INDEX(pVulkanContext->pCommandBuffers, pVulkanContext->currentFrame),
-			  pHandle->vertexCount,
-			  1,
-			  0,
-			  0);
-	return RESULT_SUCCESS;
-}
-
-#if NTT_DEBUG
-Result VulkanMeshStorage::DrawDebugLineImpl(const Pointer<void>& pMeshHandle,
-											const Pointer<void>& pRenderContext,
-											f32					 lineWidth)
-{
-	VulkanContextHandle* pVulkanContext = VK_CONTEXT_CAST(pRenderContext);
-	MeshHandle*			 pHandle		= VK_MESH_CAST(pMeshHandle);
-
-	VkBuffer	 vertexBuffers[] = {pHandle->debugVertexBuffer};
-	VkDeviceSize offsets[]		 = {0};
-	vkCmdBindVertexBuffers(GET_SCOPE_ARRAY_INDEX(pVulkanContext->pCommandBuffers, pVulkanContext->currentFrame),
-						   0,
-						   1,
-						   vertexBuffers,
-						   offsets);
-
-	vkCmdSetLineWidth(GET_SCOPE_ARRAY_INDEX(pVulkanContext->pCommandBuffers, pVulkanContext->currentFrame), lineWidth);
-
-	vkCmdDraw(GET_SCOPE_ARRAY_INDEX(pVulkanContext->pCommandBuffers, pVulkanContext->currentFrame),
-			  pHandle->vertexCount * 2,
-			  1,
-			  0,
-			  0);
-	return RESULT_SUCCESS;
-}
-#endif // NTT_DEBUG
-
-Result VulkanMeshStorage::RemoveMeshImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext)
-{
-	MeshHandle*			 pHandle		= VK_MESH_CAST(pMeshHandle);
-	VulkanContextHandle* pVulkanContext = VK_CONTEXT_CAST(pRenderContext);
+	MeshHandle* pHandle = VK_MESH_CAST(pMeshHandle);
 
 	if (pHandle->isDynamic)
 	{
-		NTT_ASSERT_RESULT_SUCCESS(destroyDynamicVertexBuffer(pVulkanContext, pHandle));
+		NTT_ASSERT_RESULT_SUCCESS(destroyDynamicVertexBuffer(pHandle));
 	}
 	else
 	{
-		NTT_ASSERT_RESULT_SUCCESS(destroyStaticVertexBuffer(pVulkanContext, pHandle));
+		NTT_ASSERT_RESULT_SUCCESS(destroyStaticVertexBuffer(pHandle));
 	}
 
 #if NTT_DEBUG
-	vkDestroyBuffer(pVulkanContext->logicalDevice, pHandle->debugVertexBuffer, nullptr);
-	vkFreeMemory(pVulkanContext->logicalDevice, pHandle->debugVertexBufferMemory, nullptr);
+	vkDestroyBuffer(g_VulkanGlobals.logicalDevice, pHandle->debugVertexBuffer, nullptr);
+	vkFreeMemory(g_VulkanGlobals.logicalDevice, pHandle->debugVertexBufferMemory, nullptr);
 #endif
 
 	return RESULT_SUCCESS;
 }
 
-static Result destroyDynamicVertexBuffer(VulkanContextHandle* pVulkanContext, MeshHandle* pMeshHandle)
+static Result destroyDynamicVertexBuffer(MeshHandle* pMeshHandle)
 {
-	vkDestroyBuffer(pVulkanContext->logicalDevice, pMeshHandle->vertexBuffer, nullptr);
-	vkFreeMemory(pVulkanContext->logicalDevice, pMeshHandle->vertexBufferMemory, nullptr);
+	vkDestroyBuffer(g_VulkanGlobals.logicalDevice, pMeshHandle->vertexBuffer, nullptr);
+	vkFreeMemory(g_VulkanGlobals.logicalDevice, pMeshHandle->vertexBufferMemory, nullptr);
 
 	return RESULT_SUCCESS;
 }
 
-static Result destroyStaticVertexBuffer(VulkanContextHandle* pVulkanContext, MeshHandle* pMeshHandle)
+static Result destroyStaticVertexBuffer(MeshHandle* pMeshHandle)
 {
-	vkDestroyBuffer(pVulkanContext->logicalDevice, pMeshHandle->vertexBuffer, nullptr);
-	vkFreeMemory(pVulkanContext->logicalDevice, pMeshHandle->vertexBufferMemory, nullptr);
+	vkDestroyBuffer(g_VulkanGlobals.logicalDevice, pMeshHandle->vertexBuffer, nullptr);
+	vkFreeMemory(g_VulkanGlobals.logicalDevice, pMeshHandle->vertexBufferMemory, nullptr);
 
 	return RESULT_SUCCESS;
 }

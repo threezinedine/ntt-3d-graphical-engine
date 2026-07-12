@@ -2,6 +2,7 @@
 
 #include "ntt_vulkan.h"
 #include "ntt_vulkan_mesh_storage.h"
+#include "ntt_vulkan_mesh_view_storage.h"
 #include "ntt_vulkan_shader_storage.h"
 #include "ntt_vulkan_texture_storage.h"
 #include "systems/display/display_driver.h"
@@ -45,9 +46,10 @@ Result RegisterVulkanDriver()
 
 Result RegisterVulkanRenderer()
 {
-	g_RenderGlobals.pMeshStorage	= MakeScope<VulkanMeshStorage>(g_GlobalAllocators.pMalloc);
-	g_RenderGlobals.pShaderStorage	= MakeScope<VulkanShaderStorage>(g_GlobalAllocators.pMalloc);
-	g_RenderGlobals.pTextureStorage = MakeScope<VulkanTextureStorage>(g_GlobalAllocators.pMalloc);
+	g_RenderGlobals.pMeshStorage	 = MakeScope<VulkanMeshStorage>(g_GlobalAllocators.pMalloc);
+	g_RenderGlobals.pShaderStorage	 = MakeScope<VulkanShaderStorage>(g_GlobalAllocators.pMalloc);
+	g_RenderGlobals.pTextureStorage	 = MakeScope<VulkanTextureStorage>(g_GlobalAllocators.pMalloc);
+	g_RenderGlobals.pMeshViewStorage = MakeScope<VulkanMeshViewStorage>(g_GlobalAllocators.pMalloc);
 
 	return RESULT_SUCCESS;
 }
@@ -80,9 +82,8 @@ static bool	  checkInstanceAllExtensionsSupport();
 static bool	  checkInstanceAllLayersSupport();
 static Result loadVulkanInstanceMethods();
 
-static VkInstance g_Instance = VK_NULL_HANDLE;
-static Result	  createInstance();
-static Result	  destroyInstance();
+static Result createInstance();
+static Result destroyInstance();
 
 #if NTT_DEBUG
 static Result					setupDebugMessenger();
@@ -98,7 +99,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityF
 static u32										 s_PhysicalDeviceCount = 0;
 static Scope<Array<VkPhysicalDevice>>			 s_pPhysicalDevices;
 static Scope<Array<VkPhysicalDeviceProperties*>> s_pPhysicalDeviceProperties;
-static VkPhysicalDevice							 g_PhysicalDevice = VK_NULL_HANDLE;
+VulkanGlobals									 g_VulkanGlobals = {};
 
 static Result enumeratePhysicalDevices();
 static Result destroyPhysicalDevices();
@@ -129,15 +130,34 @@ static Result VulkanDriver_Initialize()
 
 	NTT_ASSERT_RESULT_SUCCESS(enumeratePhysicalDevices());
 	NTT_ASSERT_RESULT_SUCCESS(choosePhysicalDevice());
-	NTT_ASSERT_RESULT_SUCCESS(verifyDeviceExtensionsSupport(g_PhysicalDevice));
+	NTT_ASSERT_RESULT_SUCCESS(verifyDeviceExtensionsSupport(g_VulkanGlobals.physicalDevice));
 
 	NTT_VULKAN_INFO("Vulkan driver initialized.");
 
 	return RESULT_SUCCESS;
 }
 
+static Result chooseQueueFamilies(VkSurfaceKHR surface);
+static Result createLogicalDevice();
+static Result destroyLogicalDevice();
+static Result createSwapchain(VulkanContextHandle* pContextHandle, Vec2u& pWindowSize);
+static Result destroySwapchain(VulkanContextHandle* pContextHandle);
+static Result createRenderPass();
+static Result destroyRenderPass();
+static Result createSwapchainFramebuffers(VulkanContextHandle* pContextHandle);
+static Result destroySwapchainFramebuffers(VulkanContextHandle* pContextHandle);
+static Result createCommandPools();
+static Result destroyCommandPools();
+static Result createCommandBuffers(VulkanContextHandle* pContextHandle);
+static Result destroyCommandBuffers(VulkanContextHandle* pContextHandle);
+static Result createSyncObjects(VulkanContextHandle* pContextHandle);
+static Result destroySyncObjects(VulkanContextHandle* pContextHandle);
+
 static Result VulkanDriver_Shutdown()
 {
+	NTT_ASSERT_RESULT_SUCCESS(destroyRenderPass());
+	NTT_ASSERT_RESULT_SUCCESS(destroyCommandPools());
+	NTT_ASSERT_RESULT_SUCCESS(destroyLogicalDevice());
 	NTT_ASSERT_RESULT_SUCCESS(destroyPhysicalDevices());
 
 #if NTT_DEBUG
@@ -151,22 +171,6 @@ static Result VulkanDriver_Shutdown()
 	return RESULT_SUCCESS;
 }
 
-static Result chooseQueueFamilies(VulkanContextHandle* pContextHandle, VkSurfaceKHR surface);
-static Result createLogicalDevice(VulkanContextHandle* pContextHandle);
-static Result destroyLogicalDevice(VulkanContextHandle* pContextHandle);
-static Result createSwapchain(VulkanContextHandle* pContextHandle, Vec2u& pWindowSize);
-static Result destroySwapchain(VulkanContextHandle* pContextHandle);
-static Result createRenderPass(VulkanContextHandle* pContextHandle);
-static Result destroyRenderPass(VulkanContextHandle* pContextHandle);
-static Result createSwapchainFramebuffers(VulkanContextHandle* pContextHandle);
-static Result destroySwapchainFramebuffers(VulkanContextHandle* pContextHandle);
-static Result createCommandPools(VulkanContextHandle* pContextHandle);
-static Result destroyCommandPools(VulkanContextHandle* pContextHandle);
-static Result createCommandBuffers(VulkanContextHandle* pContextHandle);
-static Result destroyCommandBuffers(VulkanContextHandle* pContextHandle);
-static Result createSyncObjects(VulkanContextHandle* pContextHandle);
-static Result destroySyncObjects(VulkanContextHandle* pContextHandle);
-
 static Result VulkanDriver_CreateRenderContext(Pointer<void> pWindowHandle, Pointer<void>& pRenderContextHandle)
 {
 #if NTT_GLFW
@@ -174,21 +178,13 @@ static Result VulkanDriver_CreateRenderContext(Pointer<void> pWindowHandle, Poin
 	VulkanContextHandle* pContextHandle = VK_CONTEXT_CAST(pRenderContextHandle);
 	Vec2u				 windowSize		= g_DisplayDriver.GetWindowSize(pWindowHandle);
 
-	pContextHandle->pWindowHandle			 = pWindowHandle;
-	pContextHandle->physicalDevice			 = g_PhysicalDevice;
-	pContextHandle->surface					 = VK_NULL_HANDLE;
-	pContextHandle->graphicsQueueFamilyIndex = INVALID_QUEUE_FAMILY_INDEX;
-	pContextHandle->presentQueueFamilyIndex	 = INVALID_QUEUE_FAMILY_INDEX;
-	pContextHandle->transferQueueFamilyIndex = INVALID_QUEUE_FAMILY_INDEX;
-	pContextHandle->computeQueueFamilyIndex	 = INVALID_QUEUE_FAMILY_INDEX;
-	pContextHandle->logicalDevice			 = VK_NULL_HANDLE;
-	pContextHandle->swapchain				 = VK_NULL_HANDLE;
-	pContextHandle->pSwapchainImages		 = MakeScope<Array<VkImage>>(g_GlobalAllocators.pMalloc, 1);
-	pContextHandle->swapchainImageCount		 = 0;
-	pContextHandle->pSwapchainImageViews	 = MakeScope<Array<VkImageView>>(g_GlobalAllocators.pMalloc, 1);
-	pContextHandle->pSwapchainFramebuffers	 = MakeScope<Array<VkFramebuffer>>(g_GlobalAllocators.pMalloc, 1);
-	pContextHandle->graphicsCommandPool		 = VK_NULL_HANDLE;
-	pContextHandle->presentCommandPool		 = VK_NULL_HANDLE;
+	pContextHandle->pWindowHandle		   = pWindowHandle;
+	pContextHandle->surface				   = VK_NULL_HANDLE;
+	pContextHandle->swapchain			   = VK_NULL_HANDLE;
+	pContextHandle->pSwapchainImages	   = MakeScope<Array<VkImage>>(g_GlobalAllocators.pMalloc, 1);
+	pContextHandle->swapchainImageCount	   = 0;
+	pContextHandle->pSwapchainImageViews   = MakeScope<Array<VkImageView>>(g_GlobalAllocators.pMalloc, 1);
+	pContextHandle->pSwapchainFramebuffers = MakeScope<Array<VkFramebuffer>>(g_GlobalAllocators.pMalloc, 1);
 	pContextHandle->pCommandBuffers =
 		MakeScope<Array<VkCommandBuffer>>(g_GlobalAllocators.pMalloc, MAX_FRAMES_IN_FLIGHT);
 	pContextHandle->pImageAvailableSemaphores =
@@ -197,13 +193,30 @@ static Result VulkanDriver_CreateRenderContext(Pointer<void> pWindowHandle, Poin
 		MakeScope<Array<VkSemaphore>>(g_GlobalAllocators.pMalloc, MAX_FRAMES_IN_FLIGHT);
 	pContextHandle->pInFlightFences = MakeScope<Array<VkFence>>(g_GlobalAllocators.pMalloc, MAX_FRAMES_IN_FLIGHT);
 
-	VK_ASSERT(glfwCreateWindowSurface(g_Instance, pWindow, nullptr, &pContextHandle->surface));
-	NTT_ASSERT_RESULT_SUCCESS(chooseQueueFamilies(pContextHandle, pContextHandle->surface));
-	NTT_ASSERT_RESULT_SUCCESS(createLogicalDevice(pContextHandle));
+	bool deviceCreated = g_VulkanGlobals.logicalDevice != VK_NULL_HANDLE;
+
+	VK_ASSERT(glfwCreateWindowSurface(g_VulkanGlobals.instance, pWindow, nullptr, &pContextHandle->surface));
+
+	if (!deviceCreated)
+	{
+		NTT_ASSERT_RESULT_SUCCESS(chooseQueueFamilies(pContextHandle->surface));
+		NTT_ASSERT_RESULT_SUCCESS(createLogicalDevice());
+	}
+
 	NTT_ASSERT_RESULT_SUCCESS(createSwapchain(pContextHandle, windowSize));
-	NTT_ASSERT_RESULT_SUCCESS(createRenderPass(pContextHandle));
+
+	if (!deviceCreated)
+	{
+		NTT_ASSERT_RESULT_SUCCESS(createRenderPass());
+	}
+
 	NTT_ASSERT_RESULT_SUCCESS(createSwapchainFramebuffers(pContextHandle));
-	NTT_ASSERT_RESULT_SUCCESS(createCommandPools(pContextHandle));
+
+	if (!deviceCreated)
+	{
+		NTT_ASSERT_RESULT_SUCCESS(createCommandPools());
+	}
+
 	NTT_ASSERT_RESULT_SUCCESS(createCommandBuffers(pContextHandle));
 	NTT_ASSERT_RESULT_SUCCESS(createSyncObjects(pContextHandle));
 
@@ -222,12 +235,9 @@ static Result VulkanDriver_DestroyRenderContext(Pointer<void>& pRenderContextHan
 
 	NTT_ASSERT_RESULT_SUCCESS(destroySyncObjects(pContextHandle));
 	NTT_ASSERT_RESULT_SUCCESS(destroyCommandBuffers(pContextHandle));
-	NTT_ASSERT_RESULT_SUCCESS(destroyCommandPools(pContextHandle));
 	NTT_ASSERT_RESULT_SUCCESS(destroySwapchainFramebuffers(pContextHandle));
-	NTT_ASSERT_RESULT_SUCCESS(destroyRenderPass(pContextHandle));
 	NTT_ASSERT_RESULT_SUCCESS(destroySwapchain(pContextHandle));
-	NTT_ASSERT_RESULT_SUCCESS(destroyLogicalDevice(pContextHandle));
-	vkDestroySurfaceKHR(g_Instance, pContextHandle->surface, nullptr);
+	vkDestroySurfaceKHR(g_VulkanGlobals.instance, pContextHandle->surface, nullptr);
 
 	return RESULT_SUCCESS;
 }
@@ -239,18 +249,18 @@ static Result VulkanDriver_StartRender(Pointer<void> pDriverHandle)
 {
 	VulkanContextHandle* pContextHandle = VK_CONTEXT_CAST(pDriverHandle);
 
-	VK_ASSERT(vkWaitForFences(pContextHandle->logicalDevice,
+	VK_ASSERT(vkWaitForFences(g_VulkanGlobals.logicalDevice,
 							  1,
 							  &GET_SCOPE_ARRAY_INDEX(pContextHandle->pInFlightFences, pContextHandle->currentFrame),
 							  VK_TRUE,
 							  UINT64_MAX));
-	VK_ASSERT(vkResetFences(pContextHandle->logicalDevice,
+	VK_ASSERT(vkResetFences(g_VulkanGlobals.logicalDevice,
 							1,
 							&GET_SCOPE_ARRAY_INDEX(pContextHandle->pInFlightFences, pContextHandle->currentFrame)));
 
 	u32		 imageIndex;
 	VkResult result = vkAcquireNextImageKHR(
-		pContextHandle->logicalDevice,
+		g_VulkanGlobals.logicalDevice,
 		pContextHandle->swapchain,
 		UINT64_MAX,
 		GET_SCOPE_ARRAY_INDEX(pContextHandle->pImageAvailableSemaphores, pContextHandle->currentFrame),
@@ -300,7 +310,7 @@ static Result VulkanDriver_EndRender(Pointer<void> pDriverHandle)
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores	= signalSemaphores;
 
-	VK_ASSERT(vkQueueSubmit(pContextHandle->graphicsQueue,
+	VK_ASSERT(vkQueueSubmit(g_VulkanGlobals.graphicsQueue,
 							1,
 							&submitInfo,
 							GET_SCOPE_ARRAY_INDEX(pContextHandle->pInFlightFences, pContextHandle->currentFrame)));
@@ -314,7 +324,7 @@ static Result VulkanDriver_EndRender(Pointer<void> pDriverHandle)
 	presentInfo.pSwapchains		   = swapchains;
 	presentInfo.pImageIndices	   = &pContextHandle->currentImageIndex;
 
-	VkResult result = vkQueuePresentKHR(pContextHandle->presentQueue, &presentInfo);
+	VkResult result = vkQueuePresentKHR(g_VulkanGlobals.presentQueue, &presentInfo);
 
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
 	{
@@ -328,7 +338,7 @@ static Result VulkanDriver_EndRender(Pointer<void> pDriverHandle)
 
 	pContextHandle->currentFrame = (pContextHandle->currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 
-	vkDeviceWaitIdle(pContextHandle->logicalDevice);
+	vkDeviceWaitIdle(g_VulkanGlobals.logicalDevice);
 
 	return RESULT_SUCCESS;
 }
@@ -347,7 +357,7 @@ static u32 VulkanDriver_GetRenderContextHandleSize()
 static Result loadVulkanInstanceMethods()
 {
 #define LOAD_INSTANCE_METHOD(name)                                                                                     \
-	s_pfn##name = reinterpret_cast<PFN_vk##name>(vkGetInstanceProcAddr(g_Instance, "vk" #name));                       \
+	s_pfn##name = reinterpret_cast<PFN_vk##name>(vkGetInstanceProcAddr(g_VulkanGlobals.instance, "vk" #name));         \
 	if (s_pfn##name == nullptr)                                                                                        \
 	{                                                                                                                  \
 		NTT_VULKAN_ERROR("Failed to load Vulkan instance method: %s", "vk" #name);                                     \
@@ -474,7 +484,7 @@ static Result createInstance()
 	createInfo.enabledLayerCount   = layerCount;
 	createInfo.ppEnabledLayerNames = s_InstanceLayers;
 
-	VK_ASSERT(vkCreateInstance(&createInfo, nullptr, &g_Instance));
+	VK_ASSERT(vkCreateInstance(&createInfo, nullptr, &g_VulkanGlobals.instance));
 
 	NTT_VULKAN_DEBUG("Vulkan instance created.");
 
@@ -483,10 +493,10 @@ static Result createInstance()
 
 static Result destroyInstance()
 {
-	if (g_Instance != VK_NULL_HANDLE)
+	if (g_VulkanGlobals.instance != VK_NULL_HANDLE)
 	{
-		vkDestroyInstance(g_Instance, nullptr);
-		g_Instance = VK_NULL_HANDLE;
+		vkDestroyInstance(g_VulkanGlobals.instance, nullptr);
+		g_VulkanGlobals.instance = VK_NULL_HANDLE;
 		NTT_VULKAN_DEBUG("Vulkan instance destroyed.");
 	}
 
@@ -507,7 +517,7 @@ static Result setupDebugMessenger()
 	createInfo.pfnUserCallback = DebugCallback;
 	createInfo.pUserData	   = nullptr;
 
-	VK_ASSERT(s_pfnCreateDebugUtilsMessengerEXT(g_Instance, &createInfo, nullptr, &g_DebugMessenger));
+	VK_ASSERT(s_pfnCreateDebugUtilsMessengerEXT(g_VulkanGlobals.instance, &createInfo, nullptr, &g_DebugMessenger));
 
 	NTT_VULKAN_DEBUG("Vulkan debug messenger created.");
 
@@ -516,7 +526,7 @@ static Result setupDebugMessenger()
 
 static Result destroyDebugMessenger()
 {
-	s_pfnDestroyDebugUtilsMessengerEXT(g_Instance, g_DebugMessenger, nullptr);
+	s_pfnDestroyDebugUtilsMessengerEXT(g_VulkanGlobals.instance, g_DebugMessenger, nullptr);
 
 	NTT_VULKAN_DEBUG("Vulkan debug messenger destroyed.");
 
@@ -554,11 +564,11 @@ static Result enumeratePhysicalDevices()
 	s_pPhysicalDeviceProperties = MakeScope<Array<VkPhysicalDeviceProperties*>>(g_GlobalAllocators.pMalloc);
 
 	u32 deviceCount = 0;
-	VK_ASSERT(vkEnumeratePhysicalDevices(g_Instance, &deviceCount, nullptr));
+	VK_ASSERT(vkEnumeratePhysicalDevices(g_VulkanGlobals.instance, &deviceCount, nullptr));
 
 	s_pPhysicalDevices->Resize(deviceCount);
 	s_pPhysicalDeviceProperties->Resize(deviceCount);
-	VK_ASSERT(vkEnumeratePhysicalDevices(g_Instance, &deviceCount, &(*s_pPhysicalDevices.Get())[0]));
+	VK_ASSERT(vkEnumeratePhysicalDevices(g_VulkanGlobals.instance, &deviceCount, &(*s_pPhysicalDevices.Get())[0]));
 	s_PhysicalDeviceCount = deviceCount;
 
 	NTT_VULKAN_INFO("Found %u Vulkan physical devices:", deviceCount);
@@ -606,7 +616,7 @@ static Result choosePhysicalDevice()
 		}
 	}
 
-	g_PhysicalDevice = (*s_pPhysicalDevices.Get())[bestIndex];
+	g_VulkanGlobals.physicalDevice = (*s_pPhysicalDevices.Get())[bestIndex];
 
 	NTT_VULKAN_INFO("Chosen Vulkan physical device: %s", (*s_pPhysicalDeviceProperties.Get())[bestIndex]->deviceName);
 
@@ -661,10 +671,10 @@ static u32 ratePhysicalDeviceScore(u32 index)
 	}
 }
 
-static Result chooseQueueFamilies(VulkanContextHandle* pContextHandle, VkSurfaceKHR surface)
+static Result chooseQueueFamilies(VkSurfaceKHR surface)
 {
 	u32 queueFamilyCount = 0;
-	vkGetPhysicalDeviceQueueFamilyProperties(g_PhysicalDevice, &queueFamilyCount, nullptr);
+	vkGetPhysicalDeviceQueueFamilyProperties(g_VulkanGlobals.physicalDevice, &queueFamilyCount, nullptr);
 
 	if (queueFamilyCount == 0)
 	{
@@ -673,7 +683,7 @@ static Result chooseQueueFamilies(VulkanContextHandle* pContextHandle, VkSurface
 	}
 
 	Array<VkQueueFamilyProperties> queueFamilies(queueFamilyCount, g_GlobalAllocators.pStack);
-	vkGetPhysicalDeviceQueueFamilyProperties(g_PhysicalDevice, &queueFamilyCount, &queueFamilies[0]);
+	vkGetPhysicalDeviceQueueFamilyProperties(g_VulkanGlobals.physicalDevice, &queueFamilyCount, &queueFamilies[0]);
 
 	bool graphicsQueueFound = false;
 	bool presentQueueFound	= false;
@@ -682,74 +692,73 @@ static Result chooseQueueFamilies(VulkanContextHandle* pContextHandle, VkSurface
 	{
 		if (queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT && !graphicsQueueFound)
 		{
-			pContextHandle->graphicsQueueFamilyIndex = i;
+			g_VulkanGlobals.graphicsQueueFamilyIndex = i;
 			graphicsQueueFound						 = true;
 		}
 
 		VkBool32 presentSupport = VK_FALSE;
-		vkGetPhysicalDeviceSurfaceSupportKHR(g_PhysicalDevice, i, surface, &presentSupport);
+		vkGetPhysicalDeviceSurfaceSupportKHR(g_VulkanGlobals.physicalDevice, i, surface, &presentSupport);
 		if (presentSupport && !presentQueueFound)
 		{
-			pContextHandle->presentQueueFamilyIndex = i;
+			g_VulkanGlobals.presentQueueFamilyIndex = i;
 			presentQueueFound						= true;
 		}
 
 		if (queueFamilies[i].queueFlags & VK_QUEUE_TRANSFER_BIT)
 		{
-			pContextHandle->transferQueueFamilyIndex = i;
+			g_VulkanGlobals.transferQueueFamilyIndex = i;
 		}
 
 		if (queueFamilies[i].queueFlags & VK_QUEUE_COMPUTE_BIT)
 		{
-			pContextHandle->computeQueueFamilyIndex = i;
+			g_VulkanGlobals.computeQueueFamilyIndex = i;
 		}
 	}
 
-	if (pContextHandle->graphicsQueueFamilyIndex == INVALID_QUEUE_FAMILY_INDEX)
+	if (g_VulkanGlobals.graphicsQueueFamilyIndex == INVALID_QUEUE_FAMILY_INDEX)
 	{
 		NTT_VULKAN_ERROR("No graphics queue family found for the chosen physical device.");
 		return RESULT_VULKAN_ERROR;
 	}
 	else
 	{
-		NTT_VULKAN_DEBUG("Graphics queue family index: %u", pContextHandle->graphicsQueueFamilyIndex);
+		NTT_VULKAN_DEBUG("Graphics queue family index: %u", g_VulkanGlobals.graphicsQueueFamilyIndex);
 	}
 
-	if (pContextHandle->presentQueueFamilyIndex == INVALID_QUEUE_FAMILY_INDEX)
+	if (g_VulkanGlobals.presentQueueFamilyIndex == INVALID_QUEUE_FAMILY_INDEX)
 	{
 		NTT_VULKAN_ERROR("No present queue family found for the chosen physical device.");
 		return RESULT_VULKAN_ERROR;
 	}
 	else
 	{
-		NTT_VULKAN_DEBUG("Present queue family index: %u", pContextHandle->presentQueueFamilyIndex);
+		NTT_VULKAN_DEBUG("Present queue family index: %u", g_VulkanGlobals.presentQueueFamilyIndex);
 	}
 
-	if (pContextHandle->transferQueueFamilyIndex == INVALID_QUEUE_FAMILY_INDEX)
+	if (g_VulkanGlobals.transferQueueFamilyIndex == INVALID_QUEUE_FAMILY_INDEX)
 	{
 		NTT_VULKAN_WARN("No transfer queue family found for the chosen physical device.");
 	}
 	else
 	{
-		NTT_VULKAN_DEBUG("Transfer queue family index: %u", pContextHandle->transferQueueFamilyIndex);
+		NTT_VULKAN_DEBUG("Transfer queue family index: %u", g_VulkanGlobals.transferQueueFamilyIndex);
 	}
 
-	if (pContextHandle->computeQueueFamilyIndex == INVALID_QUEUE_FAMILY_INDEX)
+	if (g_VulkanGlobals.computeQueueFamilyIndex == INVALID_QUEUE_FAMILY_INDEX)
 	{
 		NTT_VULKAN_WARN("No compute queue family found for the chosen physical device.");
 	}
 	else
 	{
-		NTT_VULKAN_DEBUG("Compute queue family index: %u", pContextHandle->computeQueueFamilyIndex);
+		NTT_VULKAN_DEBUG("Compute queue family index: %u", g_VulkanGlobals.computeQueueFamilyIndex);
 	}
 
 	return RESULT_SUCCESS;
 }
 
-static Result createLogicalDevice(VulkanContextHandle* pContextHandle)
+static Result createLogicalDevice()
 {
 	NTT_VULKAN_DEBUG("Creating logical device for the chosen physical device.");
-	NTT_UNUSED(pContextHandle);
 	float queuePriority = 1.0f;
 
 	Array<VkDeviceQueueCreateInfo> queueCreateInfos(4, g_GlobalAllocators.pMalloc);
@@ -757,38 +766,38 @@ static Result createLogicalDevice(VulkanContextHandle* pContextHandle)
 
 	VkDeviceQueueCreateInfo& currentInfo = queueCreateInfos[queueCreateInfoCount++];
 	currentInfo.sType					 = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-	currentInfo.queueFamilyIndex		 = pContextHandle->graphicsQueueFamilyIndex;
+	currentInfo.queueFamilyIndex		 = g_VulkanGlobals.graphicsQueueFamilyIndex;
 	currentInfo.queueCount				 = 1;
 	currentInfo.pQueuePriorities		 = &queuePriority;
 
-	if (pContextHandle->presentQueueFamilyIndex != pContextHandle->graphicsQueueFamilyIndex)
+	if (g_VulkanGlobals.presentQueueFamilyIndex != g_VulkanGlobals.graphicsQueueFamilyIndex)
 	{
 		VkDeviceQueueCreateInfo& presentInfo = queueCreateInfos[queueCreateInfoCount++];
 		presentInfo.sType					 = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-		presentInfo.queueFamilyIndex		 = pContextHandle->presentQueueFamilyIndex;
+		presentInfo.queueFamilyIndex		 = g_VulkanGlobals.presentQueueFamilyIndex;
 		presentInfo.queueCount				 = 1;
 		presentInfo.pQueuePriorities		 = &queuePriority;
 	}
 
-	if (pContextHandle->transferQueueFamilyIndex != INVALID_QUEUE_FAMILY_INDEX &&
-		pContextHandle->transferQueueFamilyIndex != pContextHandle->graphicsQueueFamilyIndex &&
-		pContextHandle->transferQueueFamilyIndex != pContextHandle->presentQueueFamilyIndex)
+	if (g_VulkanGlobals.transferQueueFamilyIndex != INVALID_QUEUE_FAMILY_INDEX &&
+		g_VulkanGlobals.transferQueueFamilyIndex != g_VulkanGlobals.graphicsQueueFamilyIndex &&
+		g_VulkanGlobals.transferQueueFamilyIndex != g_VulkanGlobals.presentQueueFamilyIndex)
 	{
 		VkDeviceQueueCreateInfo& transferInfo = queueCreateInfos[queueCreateInfoCount++];
 		transferInfo.sType					  = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-		transferInfo.queueFamilyIndex		  = pContextHandle->transferQueueFamilyIndex;
+		transferInfo.queueFamilyIndex		  = g_VulkanGlobals.transferQueueFamilyIndex;
 		transferInfo.queueCount				  = 1;
 		transferInfo.pQueuePriorities		  = &queuePriority;
 	}
 
-	if (pContextHandle->computeQueueFamilyIndex != INVALID_QUEUE_FAMILY_INDEX &&
-		pContextHandle->computeQueueFamilyIndex != pContextHandle->graphicsQueueFamilyIndex &&
-		pContextHandle->computeQueueFamilyIndex != pContextHandle->presentQueueFamilyIndex &&
-		pContextHandle->computeQueueFamilyIndex != pContextHandle->transferQueueFamilyIndex)
+	if (g_VulkanGlobals.computeQueueFamilyIndex != INVALID_QUEUE_FAMILY_INDEX &&
+		g_VulkanGlobals.computeQueueFamilyIndex != g_VulkanGlobals.graphicsQueueFamilyIndex &&
+		g_VulkanGlobals.computeQueueFamilyIndex != g_VulkanGlobals.presentQueueFamilyIndex &&
+		g_VulkanGlobals.computeQueueFamilyIndex != g_VulkanGlobals.transferQueueFamilyIndex)
 	{
 		VkDeviceQueueCreateInfo& computeInfo = queueCreateInfos[queueCreateInfoCount++];
 		computeInfo.sType					 = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-		computeInfo.queueFamilyIndex		 = pContextHandle->computeQueueFamilyIndex;
+		computeInfo.queueFamilyIndex		 = g_VulkanGlobals.computeQueueFamilyIndex;
 		computeInfo.queueCount				 = 1;
 		computeInfo.pQueuePriorities		 = &queuePriority;
 	}
@@ -809,21 +818,22 @@ static Result createLogicalDevice(VulkanContextHandle* pContextHandle)
 	deviceCreateInfo.ppEnabledExtensionNames = s_DeviceExtensions;
 	deviceCreateInfo.pEnabledFeatures		 = &enabledFeatures;
 
-	VK_ASSERT(vkCreateDevice(g_PhysicalDevice, &deviceCreateInfo, nullptr, &pContextHandle->logicalDevice));
+	VK_ASSERT(
+		vkCreateDevice(g_VulkanGlobals.physicalDevice, &deviceCreateInfo, nullptr, &g_VulkanGlobals.logicalDevice));
 
 	vkGetDeviceQueue(
-		pContextHandle->logicalDevice, pContextHandle->graphicsQueueFamilyIndex, 0, &pContextHandle->graphicsQueue);
+		g_VulkanGlobals.logicalDevice, g_VulkanGlobals.graphicsQueueFamilyIndex, 0, &g_VulkanGlobals.graphicsQueue);
 	vkGetDeviceQueue(
-		pContextHandle->logicalDevice, pContextHandle->presentQueueFamilyIndex, 0, &pContextHandle->presentQueue);
+		g_VulkanGlobals.logicalDevice, g_VulkanGlobals.presentQueueFamilyIndex, 0, &g_VulkanGlobals.presentQueue);
 	vkGetDeviceQueue(
-		pContextHandle->logicalDevice, pContextHandle->transferQueueFamilyIndex, 0, &pContextHandle->transferQueue);
+		g_VulkanGlobals.logicalDevice, g_VulkanGlobals.transferQueueFamilyIndex, 0, &g_VulkanGlobals.transferQueue);
 
 	return RESULT_SUCCESS;
 }
 
-static Result destroyLogicalDevice(VulkanContextHandle* pContextHandle)
+static Result destroyLogicalDevice()
 {
-	vkDestroyDevice(pContextHandle->logicalDevice, nullptr);
+	vkDestroyDevice(g_VulkanGlobals.logicalDevice, nullptr);
 
 	NTT_VULKAN_DEBUG("Logical device is destroyed.");
 	return RESULT_SUCCESS;
@@ -879,8 +889,8 @@ static Result createSwapchain(VulkanContextHandle* pContextHandle, Vec2u& pWindo
 	createInfo.clipped			= VK_TRUE;
 	createInfo.oldSwapchain		= VK_NULL_HANDLE;
 
-	u32 queueFamilyIndices[] = {pContextHandle->graphicsQueueFamilyIndex, pContextHandle->presentQueueFamilyIndex};
-	if (pContextHandle->graphicsQueueFamilyIndex != pContextHandle->presentQueueFamilyIndex)
+	u32 queueFamilyIndices[] = {g_VulkanGlobals.graphicsQueueFamilyIndex, g_VulkanGlobals.presentQueueFamilyIndex};
+	if (g_VulkanGlobals.graphicsQueueFamilyIndex != g_VulkanGlobals.presentQueueFamilyIndex)
 	{
 		createInfo.imageSharingMode		 = VK_SHARING_MODE_CONCURRENT;
 		createInfo.queueFamilyIndexCount = 2;
@@ -893,20 +903,20 @@ static Result createSwapchain(VulkanContextHandle* pContextHandle, Vec2u& pWindo
 		createInfo.pQueueFamilyIndices	 = nullptr;
 	}
 
-	VK_ASSERT(vkCreateSwapchainKHR(pContextHandle->logicalDevice, &createInfo, nullptr, &pContextHandle->swapchain));
+	VK_ASSERT(vkCreateSwapchainKHR(g_VulkanGlobals.logicalDevice, &createInfo, nullptr, &pContextHandle->swapchain));
 
 	vkGetSwapchainImagesKHR(
-		pContextHandle->logicalDevice, pContextHandle->swapchain, &pContextHandle->swapchainImageCount, nullptr);
+		g_VulkanGlobals.logicalDevice, pContextHandle->swapchain, &pContextHandle->swapchainImageCount, nullptr);
 	pContextHandle->pSwapchainImages->Resize(pContextHandle->swapchainImageCount);
-	vkGetSwapchainImagesKHR(pContextHandle->logicalDevice,
+	vkGetSwapchainImagesKHR(g_VulkanGlobals.logicalDevice,
 							pContextHandle->swapchain,
 							&pContextHandle->swapchainImageCount,
 							&GET_SCOPE_ARRAY_INDEX(pContextHandle->pSwapchainImages, 0));
 	pContextHandle->pSwapchainImageViews->Resize(pContextHandle->swapchainImageCount);
 	pContextHandle->pSwapchainFramebuffers->Resize(pContextHandle->swapchainImageCount);
 
-	pContextHandle->swapchainImageFormat = surfaceFormat.format;
-	pContextHandle->swapchainExtent		 = extent;
+	g_VulkanGlobals.swapchainImageFormat = surfaceFormat.format;
+	g_VulkanGlobals.swapchainExtent		 = extent;
 	NTT_ASSERT_RESULT_SUCCESS(createSwapchainImageViews(pContextHandle));
 
 	NTT_VULKAN_DEBUG("Created swapchain.");
@@ -915,17 +925,20 @@ static Result createSwapchain(VulkanContextHandle* pContextHandle, Vec2u& pWindo
 
 static void querySwapchainSupport(VulkanContextHandle* pContextHandle, SwapchainSupportDetails& out)
 {
-	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(g_PhysicalDevice, pContextHandle->surface, &out.capabilities);
+	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+		g_VulkanGlobals.physicalDevice, pContextHandle->surface, &out.capabilities);
 
-	vkGetPhysicalDeviceSurfaceFormatsKHR(g_PhysicalDevice, pContextHandle->surface, &out.formatCount, nullptr);
+	vkGetPhysicalDeviceSurfaceFormatsKHR(
+		g_VulkanGlobals.physicalDevice, pContextHandle->surface, &out.formatCount, nullptr);
 	out.formats.Resize(out.formatCount);
-	vkGetPhysicalDeviceSurfaceFormatsKHR(g_PhysicalDevice, pContextHandle->surface, &out.formatCount, &out.formats[0]);
+	vkGetPhysicalDeviceSurfaceFormatsKHR(
+		g_VulkanGlobals.physicalDevice, pContextHandle->surface, &out.formatCount, &out.formats[0]);
 
 	vkGetPhysicalDeviceSurfacePresentModesKHR(
-		g_PhysicalDevice, pContextHandle->surface, &out.presentModeCount, nullptr);
+		g_VulkanGlobals.physicalDevice, pContextHandle->surface, &out.presentModeCount, nullptr);
 	out.presentModes.Resize(out.presentModeCount);
 	vkGetPhysicalDeviceSurfacePresentModesKHR(
-		g_PhysicalDevice, pContextHandle->surface, &out.presentModeCount, &out.presentModes[0]);
+		g_VulkanGlobals.physicalDevice, pContextHandle->surface, &out.presentModeCount, &out.presentModes[0]);
 }
 
 static VkSurfaceFormatKHR chooseSwapSurfaceFormat(const Array<VkSurfaceFormatKHR>& availableFormats)
@@ -992,7 +1005,7 @@ static Result createSwapchainImageViews(VulkanContextHandle* pContextHandle)
 		createInfo.sType						   = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 		createInfo.image						   = (*(pContextHandle->pSwapchainImages.Get()))[i];
 		createInfo.viewType						   = VK_IMAGE_VIEW_TYPE_2D;
-		createInfo.format						   = pContextHandle->swapchainImageFormat;
+		createInfo.format						   = g_VulkanGlobals.swapchainImageFormat;
 		createInfo.components.r					   = VK_COMPONENT_SWIZZLE_IDENTITY;
 		createInfo.components.g					   = VK_COMPONENT_SWIZZLE_IDENTITY;
 		createInfo.components.b					   = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -1003,7 +1016,7 @@ static Result createSwapchainImageViews(VulkanContextHandle* pContextHandle)
 		createInfo.subresourceRange.baseArrayLayer = 0;
 		createInfo.subresourceRange.layerCount	   = 1;
 
-		VK_ASSERT(vkCreateImageView(pContextHandle->logicalDevice,
+		VK_ASSERT(vkCreateImageView(g_VulkanGlobals.logicalDevice,
 									&createInfo,
 									nullptr,
 									&GET_SCOPE_ARRAY_INDEX(pContextHandle->pSwapchainImageViews, i)));
@@ -1019,10 +1032,10 @@ static Result destroySwapchain(VulkanContextHandle* pContextHandle)
 	for (u32 i = 0; i < pContextHandle->swapchainImageCount; ++i)
 	{
 		vkDestroyImageView(
-			pContextHandle->logicalDevice, GET_SCOPE_ARRAY_INDEX(pContextHandle->pSwapchainImageViews, i), nullptr);
+			g_VulkanGlobals.logicalDevice, GET_SCOPE_ARRAY_INDEX(pContextHandle->pSwapchainImageViews, i), nullptr);
 	}
 
-	vkDestroySwapchainKHR(pContextHandle->logicalDevice, pContextHandle->swapchain, nullptr);
+	vkDestroySwapchainKHR(g_VulkanGlobals.logicalDevice, pContextHandle->swapchain, nullptr);
 
 	pContextHandle->pSwapchainImages.Reset();
 	pContextHandle->pSwapchainImageViews.Reset();
@@ -1030,10 +1043,10 @@ static Result destroySwapchain(VulkanContextHandle* pContextHandle)
 	return RESULT_SUCCESS;
 }
 
-static Result createRenderPass(VulkanContextHandle* pContextHandle)
+static Result createRenderPass()
 {
 	VkAttachmentDescription colorAttachment{};
-	colorAttachment.format		   = pContextHandle->swapchainImageFormat;
+	colorAttachment.format		   = g_VulkanGlobals.swapchainImageFormat;
 	colorAttachment.samples		   = VK_SAMPLE_COUNT_1_BIT;
 	colorAttachment.loadOp		   = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	colorAttachment.storeOp		   = VK_ATTACHMENT_STORE_OP_STORE;
@@ -1058,16 +1071,16 @@ static Result createRenderPass(VulkanContextHandle* pContextHandle)
 	renderPassInfo.subpassCount	   = 1;
 	renderPassInfo.pSubpasses	   = &subpass;
 
-	VK_ASSERT(vkCreateRenderPass(pContextHandle->logicalDevice, &renderPassInfo, nullptr, &pContextHandle->renderPass));
+	VK_ASSERT(vkCreateRenderPass(g_VulkanGlobals.logicalDevice, &renderPassInfo, nullptr, &g_VulkanGlobals.renderPass));
 
 	NTT_VULKAN_DEBUG("Created render pass.");
 
 	return RESULT_SUCCESS;
 }
 
-static Result destroyRenderPass(VulkanContextHandle* pContextHandle)
+static Result destroyRenderPass()
 {
-	vkDestroyRenderPass(pContextHandle->logicalDevice, pContextHandle->renderPass, nullptr);
+	vkDestroyRenderPass(g_VulkanGlobals.logicalDevice, g_VulkanGlobals.renderPass, nullptr);
 	NTT_VULKAN_DEBUG("Render pass is destroyed.");
 	return RESULT_SUCCESS;
 }
@@ -1080,14 +1093,14 @@ static Result createSwapchainFramebuffers(VulkanContextHandle* pContextHandle)
 
 		VkFramebufferCreateInfo framebufferInfo{};
 		framebufferInfo.sType			= VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		framebufferInfo.renderPass		= pContextHandle->renderPass;
+		framebufferInfo.renderPass		= g_VulkanGlobals.renderPass;
 		framebufferInfo.attachmentCount = 1;
 		framebufferInfo.pAttachments	= attachments;
-		framebufferInfo.width			= pContextHandle->swapchainExtent.width;
-		framebufferInfo.height			= pContextHandle->swapchainExtent.height;
+		framebufferInfo.width			= g_VulkanGlobals.swapchainExtent.width;
+		framebufferInfo.height			= g_VulkanGlobals.swapchainExtent.height;
 		framebufferInfo.layers			= 1;
 
-		VK_ASSERT(vkCreateFramebuffer(pContextHandle->logicalDevice,
+		VK_ASSERT(vkCreateFramebuffer(g_VulkanGlobals.logicalDevice,
 									  &framebufferInfo,
 									  nullptr,
 									  &GET_SCOPE_ARRAY_INDEX(pContextHandle->pSwapchainFramebuffers, i)));
@@ -1101,7 +1114,7 @@ static Result destroySwapchainFramebuffers(VulkanContextHandle* pContextHandle)
 	for (u32 i = 0; i < pContextHandle->swapchainImageCount; ++i)
 	{
 		vkDestroyFramebuffer(
-			pContextHandle->logicalDevice, GET_SCOPE_ARRAY_INDEX(pContextHandle->pSwapchainFramebuffers, i), nullptr);
+			g_VulkanGlobals.logicalDevice, GET_SCOPE_ARRAY_INDEX(pContextHandle->pSwapchainFramebuffers, i), nullptr);
 	}
 
 	pContextHandle->pSwapchainFramebuffers.Reset();
@@ -1109,47 +1122,47 @@ static Result destroySwapchainFramebuffers(VulkanContextHandle* pContextHandle)
 	return RESULT_SUCCESS;
 }
 
-static Result createCommandPools(VulkanContextHandle* pContextHandle)
+static Result createCommandPools()
 {
 	VkCommandPoolCreateInfo poolInfo{};
 	poolInfo.sType			  = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-	poolInfo.queueFamilyIndex = pContextHandle->graphicsQueueFamilyIndex;
+	poolInfo.queueFamilyIndex = g_VulkanGlobals.graphicsQueueFamilyIndex;
 	poolInfo.flags			  = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 	VK_ASSERT(
-		vkCreateCommandPool(pContextHandle->logicalDevice, &poolInfo, nullptr, &pContextHandle->graphicsCommandPool));
+		vkCreateCommandPool(g_VulkanGlobals.logicalDevice, &poolInfo, nullptr, &g_VulkanGlobals.graphicsCommandPool));
 
-	if (pContextHandle->presentQueueFamilyIndex != pContextHandle->graphicsQueueFamilyIndex)
+	if (g_VulkanGlobals.presentQueueFamilyIndex != g_VulkanGlobals.graphicsQueueFamilyIndex)
 	{
 		VkCommandPoolCreateInfo presentPoolInfo{};
 		presentPoolInfo.sType			 = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-		presentPoolInfo.queueFamilyIndex = pContextHandle->presentQueueFamilyIndex;
+		presentPoolInfo.queueFamilyIndex = g_VulkanGlobals.presentQueueFamilyIndex;
 		presentPoolInfo.flags			 = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 		VK_ASSERT(vkCreateCommandPool(
-			pContextHandle->logicalDevice, &presentPoolInfo, nullptr, &pContextHandle->presentCommandPool));
+			g_VulkanGlobals.logicalDevice, &presentPoolInfo, nullptr, &g_VulkanGlobals.presentCommandPool));
 	}
 	else
 	{
-		pContextHandle->presentCommandPool = pContextHandle->graphicsCommandPool;
+		g_VulkanGlobals.presentCommandPool = g_VulkanGlobals.graphicsCommandPool;
 	}
 
-	if (pContextHandle->transferQueueFamilyIndex != INVALID_QUEUE_FAMILY_INDEX)
+	if (g_VulkanGlobals.transferQueueFamilyIndex != INVALID_QUEUE_FAMILY_INDEX)
 	{
-		if (pContextHandle->transferQueueFamilyIndex == pContextHandle->graphicsQueueFamilyIndex)
+		if (g_VulkanGlobals.transferQueueFamilyIndex == g_VulkanGlobals.graphicsQueueFamilyIndex)
 		{
-			pContextHandle->transferCommandPool = pContextHandle->graphicsCommandPool;
+			g_VulkanGlobals.transferCommandPool = g_VulkanGlobals.graphicsCommandPool;
 		}
-		else if (pContextHandle->transferQueueFamilyIndex == pContextHandle->presentQueueFamilyIndex)
+		else if (g_VulkanGlobals.transferQueueFamilyIndex == g_VulkanGlobals.presentQueueFamilyIndex)
 		{
-			pContextHandle->transferCommandPool = pContextHandle->presentCommandPool;
+			g_VulkanGlobals.transferCommandPool = g_VulkanGlobals.presentCommandPool;
 		}
 		else
 		{
 			VkCommandPoolCreateInfo transferPoolInfo{};
 			transferPoolInfo.sType			  = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-			transferPoolInfo.queueFamilyIndex = pContextHandle->transferQueueFamilyIndex;
+			transferPoolInfo.queueFamilyIndex = g_VulkanGlobals.transferQueueFamilyIndex;
 			transferPoolInfo.flags			  = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 			VK_ASSERT(vkCreateCommandPool(
-				pContextHandle->logicalDevice, &transferPoolInfo, nullptr, &pContextHandle->transferCommandPool));
+				g_VulkanGlobals.logicalDevice, &transferPoolInfo, nullptr, &g_VulkanGlobals.transferCommandPool));
 		}
 	}
 
@@ -1158,18 +1171,18 @@ static Result createCommandPools(VulkanContextHandle* pContextHandle)
 	return RESULT_SUCCESS;
 }
 
-static Result destroyCommandPools(VulkanContextHandle* pContextHandle)
+static Result destroyCommandPools()
 {
-	vkDestroyCommandPool(pContextHandle->logicalDevice, pContextHandle->graphicsCommandPool, nullptr);
-	if (pContextHandle->presentCommandPool != pContextHandle->graphicsCommandPool)
+	vkDestroyCommandPool(g_VulkanGlobals.logicalDevice, g_VulkanGlobals.graphicsCommandPool, nullptr);
+	if (g_VulkanGlobals.presentCommandPool != g_VulkanGlobals.graphicsCommandPool)
 	{
-		vkDestroyCommandPool(pContextHandle->logicalDevice, pContextHandle->presentCommandPool, nullptr);
+		vkDestroyCommandPool(g_VulkanGlobals.logicalDevice, g_VulkanGlobals.presentCommandPool, nullptr);
 	}
 
-	if (pContextHandle->transferCommandPool != pContextHandle->graphicsCommandPool &&
-		pContextHandle->transferCommandPool != pContextHandle->presentCommandPool)
+	if (g_VulkanGlobals.transferCommandPool != g_VulkanGlobals.graphicsCommandPool &&
+		g_VulkanGlobals.transferCommandPool != g_VulkanGlobals.presentCommandPool)
 	{
-		vkDestroyCommandPool(pContextHandle->logicalDevice, pContextHandle->transferCommandPool, nullptr);
+		vkDestroyCommandPool(g_VulkanGlobals.logicalDevice, g_VulkanGlobals.transferCommandPool, nullptr);
 	}
 
 	NTT_VULKAN_DEBUG("Destroyed command pools.");
@@ -1180,11 +1193,11 @@ static Result createCommandBuffers(VulkanContextHandle* pContextHandle)
 {
 	VkCommandBufferAllocateInfo allocInfo{};
 	allocInfo.sType				 = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.commandPool		 = pContextHandle->graphicsCommandPool;
+	allocInfo.commandPool		 = g_VulkanGlobals.graphicsCommandPool;
 	allocInfo.level				 = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	allocInfo.commandBufferCount = MAX_FRAMES_IN_FLIGHT;
 	VK_ASSERT(vkAllocateCommandBuffers(
-		pContextHandle->logicalDevice, &allocInfo, &GET_SCOPE_ARRAY_INDEX(pContextHandle->pCommandBuffers, 0)));
+		g_VulkanGlobals.logicalDevice, &allocInfo, &GET_SCOPE_ARRAY_INDEX(pContextHandle->pCommandBuffers, 0)));
 
 	NTT_VULKAN_DEBUG("Creating command buffers.");
 	return RESULT_SUCCESS;
@@ -1192,8 +1205,8 @@ static Result createCommandBuffers(VulkanContextHandle* pContextHandle)
 
 static Result destroyCommandBuffers(VulkanContextHandle* pContextHandle)
 {
-	vkFreeCommandBuffers(pContextHandle->logicalDevice,
-						 pContextHandle->graphicsCommandPool,
+	vkFreeCommandBuffers(g_VulkanGlobals.logicalDevice,
+						 g_VulkanGlobals.graphicsCommandPool,
 						 MAX_FRAMES_IN_FLIGHT,
 						 &GET_SCOPE_ARRAY_INDEX(pContextHandle->pCommandBuffers, 0));
 	pContextHandle->pCommandBuffers.Reset();
@@ -1207,14 +1220,14 @@ static Result createSyncObjects(VulkanContextHandle* pContextHandle)
 	{
 		VkSemaphoreCreateInfo imageAvailableSemaphoreInfo{};
 		imageAvailableSemaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-		VK_ASSERT(vkCreateSemaphore(pContextHandle->logicalDevice,
+		VK_ASSERT(vkCreateSemaphore(g_VulkanGlobals.logicalDevice,
 									&imageAvailableSemaphoreInfo,
 									nullptr,
 									&GET_SCOPE_ARRAY_INDEX(pContextHandle->pImageAvailableSemaphores, i)));
 
 		VkSemaphoreCreateInfo renderFinishedSemaphoreInfo{};
 		renderFinishedSemaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-		VK_ASSERT(vkCreateSemaphore(pContextHandle->logicalDevice,
+		VK_ASSERT(vkCreateSemaphore(g_VulkanGlobals.logicalDevice,
 									&renderFinishedSemaphoreInfo,
 									nullptr,
 									&GET_SCOPE_ARRAY_INDEX(pContextHandle->pRenderFinishedSemaphores, i)));
@@ -1222,7 +1235,7 @@ static Result createSyncObjects(VulkanContextHandle* pContextHandle)
 		VkFenceCreateInfo fenceInfo{};
 		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-		VK_ASSERT(vkCreateFence(pContextHandle->logicalDevice,
+		VK_ASSERT(vkCreateFence(g_VulkanGlobals.logicalDevice,
 								&fenceInfo,
 								nullptr,
 								&GET_SCOPE_ARRAY_INDEX(pContextHandle->pInFlightFences, i)));
@@ -1236,11 +1249,11 @@ static Result destroySyncObjects(VulkanContextHandle* pContextHandle)
 	for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
 	{
 		vkDestroyFence(
-			pContextHandle->logicalDevice, GET_SCOPE_ARRAY_INDEX(pContextHandle->pInFlightFences, i), nullptr);
-		vkDestroySemaphore(pContextHandle->logicalDevice,
+			g_VulkanGlobals.logicalDevice, GET_SCOPE_ARRAY_INDEX(pContextHandle->pInFlightFences, i), nullptr);
+		vkDestroySemaphore(g_VulkanGlobals.logicalDevice,
 						   GET_SCOPE_ARRAY_INDEX(pContextHandle->pImageAvailableSemaphores, i),
 						   nullptr);
-		vkDestroySemaphore(pContextHandle->logicalDevice,
+		vkDestroySemaphore(g_VulkanGlobals.logicalDevice,
 						   GET_SCOPE_ARRAY_INDEX(pContextHandle->pRenderFinishedSemaphores, i),
 						   nullptr);
 	}
@@ -1265,10 +1278,10 @@ static Result recordCommandBuffer(VulkanContextHandle* pContextHandle, u32 image
 
 	VkRenderPassBeginInfo renderPassInfo{};
 	renderPassInfo.sType			 = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	renderPassInfo.renderPass		 = pContextHandle->renderPass;
+	renderPassInfo.renderPass		 = g_VulkanGlobals.renderPass;
 	renderPassInfo.framebuffer		 = (*pContextHandle->pSwapchainFramebuffers.Get())[imageIndex];
 	renderPassInfo.renderArea.offset = {0, 0};
-	renderPassInfo.renderArea.extent = pContextHandle->swapchainExtent;
+	renderPassInfo.renderArea.extent = g_VulkanGlobals.swapchainExtent;
 
 	VkClearValue clearColor{};
 	clearColor.color = {
@@ -1284,8 +1297,8 @@ static Result recordCommandBuffer(VulkanContextHandle* pContextHandle, u32 image
 	VkViewport viewport{};
 	viewport.x		  = 0.0f;
 	viewport.y		  = 0.0f;
-	viewport.width	  = static_cast<float>(pContextHandle->swapchainExtent.width);
-	viewport.height	  = static_cast<float>(pContextHandle->swapchainExtent.height);
+	viewport.width	  = static_cast<float>(g_VulkanGlobals.swapchainExtent.width);
+	viewport.height	  = static_cast<float>(g_VulkanGlobals.swapchainExtent.height);
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 	vkCmdSetViewport(
@@ -1293,7 +1306,7 @@ static Result recordCommandBuffer(VulkanContextHandle* pContextHandle, u32 image
 
 	VkRect2D scissor{};
 	scissor.offset = {0, 0};
-	scissor.extent = pContextHandle->swapchainExtent;
+	scissor.extent = g_VulkanGlobals.swapchainExtent;
 	vkCmdSetScissor(
 		GET_SCOPE_ARRAY_INDEX(pContextHandle->pCommandBuffers, pContextHandle->currentFrame), 0, 1, &scissor);
 
@@ -1312,7 +1325,7 @@ static Result cleanupSwapchain(VulkanContextHandle* pContextHandle);
 
 static Result recreateSwapchain(VulkanContextHandle* pContextHandle)
 {
-	vkDeviceWaitIdle(pContextHandle->logicalDevice);
+	vkDeviceWaitIdle(g_VulkanGlobals.logicalDevice);
 
 	Vec2u newWindowSize = g_DisplayDriver.GetWindowSize(pContextHandle->pWindowHandle);
 
@@ -1337,16 +1350,16 @@ static Result cleanupSwapchain(VulkanContextHandle* pContextHandle)
 	for (u32 i = 0; i < pContextHandle->swapchainImageCount; ++i)
 	{
 		vkDestroyFramebuffer(
-			pContextHandle->logicalDevice, GET_SCOPE_ARRAY_INDEX(pContextHandle->pSwapchainFramebuffers, i), nullptr);
+			g_VulkanGlobals.logicalDevice, GET_SCOPE_ARRAY_INDEX(pContextHandle->pSwapchainFramebuffers, i), nullptr);
 	}
 
 	for (u32 i = 0; i < pContextHandle->swapchainImageCount; ++i)
 	{
 		vkDestroyImageView(
-			pContextHandle->logicalDevice, GET_SCOPE_ARRAY_INDEX(pContextHandle->pSwapchainImageViews, i), nullptr);
+			g_VulkanGlobals.logicalDevice, GET_SCOPE_ARRAY_INDEX(pContextHandle->pSwapchainImageViews, i), nullptr);
 	}
 
-	vkDestroySwapchainKHR(pContextHandle->logicalDevice, pContextHandle->swapchain, nullptr);
+	vkDestroySwapchainKHR(g_VulkanGlobals.logicalDevice, pContextHandle->swapchain, nullptr);
 
 	return RESULT_SUCCESS;
 }

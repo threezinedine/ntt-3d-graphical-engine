@@ -10,11 +10,12 @@ static Scope<TextureResource> g_pTextureResource;
 static WindowID		   g_WindowID		 = INVALID_WINDOW_ID;
 static MeshID		   g_MeshID			 = INVALID_MESH_ID;
 static RenderContextID g_RenderContextID = INVALID_RENDER_CONTEXT_ID;
+static MeshViewID	   g_MeshViewID		 = INVALID_MESH_VIEW_ID;
 
 #if !NTT_PLATFORM_WEB
 static WindowID		   g_SecondWindowID		   = INVALID_WINDOW_ID;
-static MeshID		   g_SecondMeshID		   = INVALID_MESH_ID;
 static RenderContextID g_SecondRenderContextID = INVALID_RENDER_CONTEXT_ID;
+static MeshViewID	   g_SecondMeshViewID	   = INVALID_MESH_VIEW_ID;
 
 #endif // !NTT_PLATFORM_WEB
 
@@ -49,7 +50,14 @@ Result Application::Initialize(i32 argc, char** argv)
 
 	NTT_APPLICATION_INFO("Application initialized successfully.");
 
-	g_WindowID = SystemGlobals::pDisplaySystem->CreateWindow(800, 600, "NTT Application");
+	bool shareContext = true;
+
+	if (NTT_ARG_BOOL(USE_VULKAN))
+	{
+		shareContext = false;
+	}
+
+	g_WindowID = SystemGlobals::pDisplaySystem->CreateWindow(800, 600, "NTT Application", shareContext);
 
 	if (g_WindowID == INVALID_WINDOW_ID)
 	{
@@ -59,21 +67,22 @@ Result Application::Initialize(i32 argc, char** argv)
 
 	g_RenderContextID = SystemGlobals::pRenderSystem->CreateRenderContext(g_WindowID);
 
-	NTT_SHADER_STORAGE->SetupDefaultShaders(g_RenderContextID);
+	NTT_SHADER_STORAGE->SetupDefaultShaders();
 
 	Mesh mesh;
 	mesh.vertices.Emplace(Vec3f{-0.5f, -0.5f, 0.0f}, Vec2f{0.5f, 1.0f}, Color{1.0f, 0.0f, 0.0f, 1.0f});
 	mesh.vertices.Emplace(Vec3f{0.5f, -0.5f, 0.0f}, Vec2f{1.0f, 0.0f}, Color{0.0f, 1.0f, 0.0f, 1.0f});
 	mesh.vertices.Emplace(Vec3f{0.0f, 0.5f, 0.0f}, Vec2f{0.0f, 0.0f}, Color{0.0f, 0.0f, 1.0f, 1.0f});
-	g_MeshID = NTT_MESH_STORAGE->AddMesh(static_cast<Mesh&&>(mesh), g_RenderContextID);
+	g_MeshID	 = NTT_MESH_STORAGE->AddMesh(static_cast<Mesh&&>(mesh), g_RenderContextID);
+	g_MeshViewID = NTT_MESH_VIEW_STORAGE->AddMeshView(g_MeshID, g_RenderContextID);
 
 #if NTT_DEBUG
-	NTT_MESH_STORAGE->SetDebugLineWidth(g_MeshID, 5);
+	NTT_MESH_VIEW_STORAGE->SetDebugLineWidth(g_MeshViewID, 5);
 #endif // NTT_DEBUG
 
 #if !NTT_PLATFORM_WEB
 
-	g_SecondWindowID = SystemGlobals::pDisplaySystem->CreateWindow(300, 200, "NTT Second Window");
+	g_SecondWindowID = SystemGlobals::pDisplaySystem->CreateWindow(300, 200, "NTT Second Window", shareContext);
 
 	if (g_SecondWindowID == INVALID_WINDOW_ID)
 	{
@@ -82,16 +91,11 @@ Result Application::Initialize(i32 argc, char** argv)
 	}
 
 	g_SecondRenderContextID = SystemGlobals::pRenderSystem->CreateRenderContext(g_SecondWindowID);
-	NTT_SHADER_STORAGE->SetupDefaultShaders(g_SecondRenderContextID);
 
-	Mesh secondMesh;
-	secondMesh.vertices.Emplace(Vec3f{-0.5f, -0.5f, 0.0f}, Vec2f{0.5f, 1.0f}, Color{1.0f, 1.0f, 1.0f, 1.0f});
-	secondMesh.vertices.Emplace(Vec3f{0.5f, -0.5f, 0.0f}, Vec2f{1.0f, 0.0f}, Color{1.0f, 1.0f, 1.0f, 1.0f});
-	secondMesh.vertices.Emplace(Vec3f{0.0f, 0.5f, 0.0f}, Vec2f{0.0f, 0.0f}, Color{1.0f, 1.0f, 1.0f, 1.0f});
-	g_SecondMeshID = NTT_MESH_STORAGE->AddMesh(static_cast<Mesh&&>(secondMesh), g_SecondRenderContextID);
+	g_SecondMeshViewID = NTT_MESH_VIEW_STORAGE->AddMeshView(g_MeshID, g_SecondRenderContextID);
 
 #if NTT_DEBUG
-	NTT_MESH_STORAGE->SetDebugLineWidth(g_SecondMeshID, 5);
+	NTT_MESH_VIEW_STORAGE->SetDebugLineWidth(g_SecondMeshViewID, 2);
 #endif // NTT_DEBUG
 
 #endif // !NTT_PLATFORM_WEB
@@ -100,7 +104,6 @@ Result Application::Initialize(i32 argc, char** argv)
 	NTT_ASSERT_RESULT_SUCCESS(m_pEcs->Initialize());
 
 	g_pTextureResource = MakeScope<TextureResource>(g_GlobalAllocators.pMalloc,
-													g_RenderContextID,
 #if NTT_PLATFORM_WEB
 													"assets/images/logo.png"
 #else  // NTT_PLATFORM_WEB
@@ -112,7 +115,7 @@ Result Application::Initialize(i32 argc, char** argv)
 	return InitializeImpl();
 }
 
-Result Application::UpdateWindow(WindowID windowID, RenderContextID renderContextID, MeshID meshID)
+Result Application::UpdateWindow(WindowID windowID, RenderContextID renderContextID, MeshViewID meshViewID)
 {
 	NTT_ASSERT_RESULT_SUCCESS(NTT_DISPLAY_SYSTEM->OnBeginFrame(windowID));
 
@@ -120,39 +123,40 @@ Result Application::UpdateWindow(WindowID windowID, RenderContextID renderContex
 
 	Vec4f transform{0.2f, 0.0f, 0.0f, 0.0f};
 
-	if (NTT_MESH_STORAGE->SetUniformFloat4(meshID, "uColor", Color{1.0f, 1.0f, 1.0f, 1.0f}) != RESULT_SUCCESS)
+	if (NTT_MESH_VIEW_STORAGE->SetUniformFloat4(meshViewID, "uColor", Color{1.0f, 1.0f, 1.0f, 1.0f}) != RESULT_SUCCESS)
 	{
-		NTT_APPLICATION_WARN("Failed to set uniform 'uColor' for mesh ID: %u", meshID);
+		NTT_APPLICATION_WARN("Failed to set uniform 'uColor' for mesh ID: %u", g_MeshID);
 	}
 
 	if (!NTT_ARG_BOOL(USE_VULKAN))
 	{
-		if (NTT_MESH_STORAGE->SetUniformSampler(meshID, "uTexture", g_pTextureResource->GetTextureID()) !=
+		if (NTT_MESH_VIEW_STORAGE->SetUniformSampler(meshViewID, "uTexture", g_pTextureResource->GetTextureID()) !=
 			RESULT_SUCCESS)
 		{
-			NTT_APPLICATION_WARN("Failed to set uniform 'uTexture' for mesh ID: %u", meshID);
+			NTT_APPLICATION_WARN("Failed to set uniform 'uTexture' for mesh ID: %u", g_MeshID);
 		}
 	}
 
-	if (NTT_MESH_STORAGE->SetUniformFloat4(meshID, "uTransform", transform) != RESULT_SUCCESS)
+	if (NTT_MESH_VIEW_STORAGE->SetUniformFloat4(meshViewID, "uTransform", transform) != RESULT_SUCCESS)
 	{
-		NTT_APPLICATION_WARN("Failed to set uniform 'uTransform' for mesh ID: %u", meshID);
+		NTT_APPLICATION_WARN("Failed to set uniform 'uTransform' for mesh ID: %u", g_MeshID);
 	}
 
-	NTT_ASSERT_RESULT_SUCCESS(NTT_MESH_STORAGE->DrawMesh(meshID));
+	NTT_ASSERT_RESULT_SUCCESS(NTT_MESH_VIEW_STORAGE->DrawMeshView(meshViewID));
 
 #if NTT_DEBUG
-	if (NTT_MESH_STORAGE->SetDebugLineUniformFloat4(meshID, "uTransform", transform) != RESULT_SUCCESS)
+	if (NTT_MESH_VIEW_STORAGE->SetDebugLineUniformFloat4(meshViewID, "uTransform", transform) != RESULT_SUCCESS)
 	{
-		NTT_APPLICATION_WARN("Failed to set uniform 'uTransform' for debug line of mesh ID: %u", meshID);
+		NTT_APPLICATION_WARN("Failed to set uniform 'uTransform' for debug line of mesh ID: %u", g_MeshID);
 	}
 
-	if (NTT_MESH_STORAGE->SetDebugLineUniformFloat4(meshID, "uColor", Color{0.0f, 0.0f, 1.0f, 1.0f}) != RESULT_SUCCESS)
+	if (NTT_MESH_VIEW_STORAGE->SetDebugLineUniformFloat4(meshViewID, "uColor", Color{0.0f, 0.0f, 1.0f, 1.0f}) !=
+		RESULT_SUCCESS)
 	{
-		NTT_APPLICATION_WARN("Failed to set uniform 'uColor' for debug line of mesh ID: %u", meshID);
+		NTT_APPLICATION_WARN("Failed to set uniform 'uColor' for debug line of mesh ID: %u", g_MeshID);
 	}
 
-	NTT_ASSERT_RESULT_SUCCESS(NTT_MESH_STORAGE->DrawDebugLine(meshID));
+	NTT_ASSERT_RESULT_SUCCESS(NTT_MESH_VIEW_STORAGE->DrawDebugLine(meshViewID));
 #endif // NTT_DEBUG
 
 	NTT_ASSERT_RESULT_SUCCESS(NTT_RENDER_SYSTEM->EndRender(renderContextID));
@@ -167,7 +171,7 @@ Result Application::Update()
 {
 	if (NTT_DISPLAY_SYSTEM->IsWindowActive(g_WindowID))
 	{
-		NTT_ASSERT_RESULT_SUCCESS(UpdateWindow(g_WindowID, g_RenderContextID, g_MeshID));
+		NTT_ASSERT_RESULT_SUCCESS(UpdateWindow(g_WindowID, g_RenderContextID, g_MeshViewID));
 
 		if (NTT_DISPLAY_SYSTEM->ShouldCloseWindow(g_WindowID))
 		{
@@ -178,7 +182,7 @@ Result Application::Update()
 #if !NTT_PLATFORM_WEB
 	if (NTT_DISPLAY_SYSTEM->IsWindowActive(g_SecondWindowID))
 	{
-		NTT_ASSERT_RESULT_SUCCESS(UpdateWindow(g_SecondWindowID, g_SecondRenderContextID, g_SecondMeshID));
+		NTT_ASSERT_RESULT_SUCCESS(UpdateWindow(g_SecondWindowID, g_SecondRenderContextID, g_SecondMeshViewID));
 
 		if (NTT_DISPLAY_SYSTEM->ShouldCloseWindow(g_SecondWindowID))
 		{
@@ -225,17 +229,17 @@ Result Application::Shutdown()
 	m_pEcs.Reset();
 
 #if !NTT_PLATFORM_WEB
-	NTT_ASSERT_RESULT_SUCCESS(NTT_MESH_STORAGE->RemoveMesh(g_SecondMeshID));
-	NTT_ASSERT_RESULT_SUCCESS(NTT_SHADER_STORAGE->RemoveDefaultShaders(g_SecondRenderContextID));
 	NTT_ASSERT_RESULT_SUCCESS(NTT_RENDER_SYSTEM->DestroyRenderContext(g_SecondRenderContextID));
 	if (NTT_DISPLAY_SYSTEM->IsWindowActive(g_SecondWindowID))
 	{
 		NTT_ASSERT_RESULT_SUCCESS(NTT_DISPLAY_SYSTEM->DestroyWindow(g_SecondWindowID));
 	}
+	NTT_ASSERT_RESULT_SUCCESS(NTT_MESH_VIEW_STORAGE->RemoveMeshView(g_SecondMeshViewID));
 #endif // !NTT_PLATFORM_WEB
 
+	NTT_ASSERT_RESULT_SUCCESS(NTT_MESH_VIEW_STORAGE->RemoveMeshView(g_MeshViewID));
 	NTT_ASSERT_RESULT_SUCCESS(NTT_MESH_STORAGE->RemoveMesh(g_MeshID));
-	NTT_ASSERT_RESULT_SUCCESS(NTT_SHADER_STORAGE->RemoveDefaultShaders(g_RenderContextID));
+	NTT_ASSERT_RESULT_SUCCESS(NTT_SHADER_STORAGE->RemoveDefaultShaders());
 	NTT_ASSERT_RESULT_SUCCESS(NTT_RENDER_SYSTEM->DestroyRenderContext(g_RenderContextID));
 	if (NTT_DISPLAY_SYSTEM->IsWindowActive(g_WindowID))
 	{

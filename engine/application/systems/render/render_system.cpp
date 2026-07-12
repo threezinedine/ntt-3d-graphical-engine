@@ -52,15 +52,17 @@ Result RenderSystem::InitializeImpl()
 		return RESULT_REGISTER_OPENGL_RENDERER_FAILED;
 	}
 
-	NTT_ASSERT_RESULT_SUCCESS(g_RenderGlobals.pMeshStorage->Initialize());
 	NTT_ASSERT_RESULT_SUCCESS(g_RenderGlobals.pShaderStorage->Initialize());
+	NTT_ASSERT_RESULT_SUCCESS(g_RenderGlobals.pMeshStorage->Initialize());
 	NTT_ASSERT_RESULT_SUCCESS(g_RenderGlobals.pTextureStorage->Initialize());
+	NTT_ASSERT_RESULT_SUCCESS(g_RenderGlobals.pMeshViewStorage->Initialize());
 
 	return RESULT_SUCCESS;
 }
 
 Result RenderSystem::ShutdownImpl()
 {
+	NTT_ASSERT_RESULT_SUCCESS(g_RenderGlobals.pMeshViewStorage->Shutdown());
 	NTT_ASSERT_RESULT_SUCCESS(g_RenderGlobals.pTextureStorage->Shutdown());
 	NTT_ASSERT_RESULT_SUCCESS(g_RenderGlobals.pShaderStorage->Shutdown());
 	NTT_ASSERT_RESULT_SUCCESS(g_RenderGlobals.pMeshStorage->Shutdown());

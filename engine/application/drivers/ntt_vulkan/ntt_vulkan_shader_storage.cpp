@@ -45,25 +45,20 @@ static Result		reflectShaderUniforms(const Pointer<u32>&			spirvCode,
 										  Uniform*						pUniforms,
 										  u32&							uniformCount);
 
-static Result createDescriptorSetLayout(VulkanContextHandle*		  pVulkanContext,
-										ShaderHandle*				  pShaderHandle,
+static Result createDescriptorSetLayout(ShaderHandle*				  pShaderHandle,
 										VkDescriptorSetLayoutBinding* pSetLayoutBindings,
 										u32							  setLayoutBindingCount);
-static Result destroyDescriptorSetLayout(VulkanContextHandle* pVulkanContext, ShaderHandle* pShaderHandle);
+static Result destroyDescriptorSetLayout(ShaderHandle* pShaderHandle);
 
-static Result createUniformBuffers(VulkanContextHandle* pVulkanContext,
-								   ShaderHandle*		pShaderHandle,
-								   u32*					pSetLayoutBindingSizes,
-								   u32					setLayoutBindingCount);
-static Result destroyUniformBuffers(VulkanContextHandle* pVulkanContext, ShaderHandle* pShaderHandle);
+static Result createUniformBuffers(ShaderHandle* pShaderHandle, u32* pSetLayoutBindingSizes, u32 setLayoutBindingCount);
+static Result destroyUniformBuffers(ShaderHandle* pShaderHandle);
 
-static Result createDescriptorPool(VulkanContextHandle* pVulkanContext, ShaderHandle* pShaderHandle);
-static Result destroyDescriptorPool(VulkanContextHandle* pVulkanContext, ShaderHandle* pShaderHandle);
+static Result createDescriptorPool(ShaderHandle* pShaderHandle);
+static Result destroyDescriptorPool(ShaderHandle* pShaderHandle);
 
-static Result updateDescriptorSets(VulkanContextHandle* pVulkanContext, ShaderHandle* pShaderHandle, u32 currentFrame);
+static Result updateDescriptorSets(ShaderHandle* pShaderHandle, u32 currentFrame);
 
-Result VulkanShaderStorage::AddShaderImpl(const Pointer<void>&		pRenderContext,
-										  const ShaderInputTopology inputTopology,
+Result VulkanShaderStorage::AddShaderImpl(const ShaderInputTopology inputTopology,
 										  const char*				pVertexShaderSource,
 										  const char*				pFragmentShaderSource,
 										  Pointer<void>&			pShaderHandle,
@@ -73,22 +68,21 @@ Result VulkanShaderStorage::AddShaderImpl(const Pointer<void>&		pRenderContext,
 	Pointer<u32> vertexShaderSPIRV	 = compileShaderToSPIRV_Vulkan(GLSLANG_STAGE_VERTEX, pVertexShaderSource);
 	Pointer<u32> fragmentShaderSPIRV = compileShaderToSPIRV_Vulkan(GLSLANG_STAGE_FRAGMENT, pFragmentShaderSource);
 
-	ShaderHandle*		 pHandle		= VK_SHADER_CAST(pShaderHandle);
-	VulkanContextHandle* pVulkanContext = VK_CONTEXT_CAST(pRenderContext);
+	ShaderHandle* pHandle = VK_SHADER_CAST(pShaderHandle);
 
 	VkShaderModuleCreateInfo vertexModuleCreateInfo{};
 	vertexModuleCreateInfo.sType	= VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 	vertexModuleCreateInfo.codeSize = vertexShaderSPIRV.size;
 	vertexModuleCreateInfo.pCode	= vertexShaderSPIRV.Get();
 	VK_ASSERT(
-		vkCreateShaderModule(pVulkanContext->logicalDevice, &vertexModuleCreateInfo, nullptr, &pHandle->vertexModule));
+		vkCreateShaderModule(g_VulkanGlobals.logicalDevice, &vertexModuleCreateInfo, nullptr, &pHandle->vertexModule));
 
 	VkShaderModuleCreateInfo fragmentModuleCreateInfo{};
 	fragmentModuleCreateInfo.sType	  = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 	fragmentModuleCreateInfo.codeSize = fragmentShaderSPIRV.size;
 	fragmentModuleCreateInfo.pCode	  = fragmentShaderSPIRV.Get();
 	VK_ASSERT(vkCreateShaderModule(
-		pVulkanContext->logicalDevice, &fragmentModuleCreateInfo, nullptr, &pHandle->fragmentModule));
+		g_VulkanGlobals.logicalDevice, &fragmentModuleCreateInfo, nullptr, &pHandle->fragmentModule));
 
 	VkPipelineShaderStageCreateInfo vertexShaderStageInfo{};
 	vertexShaderStageInfo.sType	 = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -169,14 +163,14 @@ Result VulkanShaderStorage::AddShaderImpl(const Pointer<void>&		pRenderContext,
 	VkViewport viewport{};
 	viewport.x		  = 0.0f;
 	viewport.y		  = 0.0f;
-	viewport.width	  = static_cast<float>(pVulkanContext->swapchainExtent.width);
-	viewport.height	  = static_cast<float>(pVulkanContext->swapchainExtent.height);
+	viewport.width	  = 800.0f; // This should be set to the actual swapchain width
+	viewport.height	  = 600.0f; // This should be set to the actual swapchain height
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 
 	VkRect2D scissor{};
 	scissor.offset = {0, 0};
-	scissor.extent = pVulkanContext->swapchainExtent;
+	scissor.extent = {800, 600}; // This should be set to the actual swapchain extent
 
 	VkPipelineViewportStateCreateInfo viewportState{};
 	viewportState.sType			= VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -220,8 +214,8 @@ Result VulkanShaderStorage::AddShaderImpl(const Pointer<void>&		pRenderContext,
 	colorBlending.pAttachments	  = &colorBlendAttachment;
 
 	// Descriptor set layout must be created before the pipeline layout
-	NTT_ASSERT_RESULT_SUCCESS(createDescriptorSetLayout(
-		pVulkanContext, pHandle, descriptorSetLayoutBindings, descriptorSetLayoutBindingCount));
+	NTT_ASSERT_RESULT_SUCCESS(
+		createDescriptorSetLayout(pHandle, descriptorSetLayoutBindings, descriptorSetLayoutBindingCount));
 	pHandle->descriptorSetLayoutBindingCount = descriptorSetLayoutBindingCount;
 
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
@@ -233,7 +227,7 @@ Result VulkanShaderStorage::AddShaderImpl(const Pointer<void>&		pRenderContext,
 	pipelineLayoutInfo.pPushConstantRanges	  = nullptr;
 
 	VK_ASSERT(
-		vkCreatePipelineLayout(pVulkanContext->logicalDevice, &pipelineLayoutInfo, nullptr, &pHandle->pipelineLayout));
+		vkCreatePipelineLayout(g_VulkanGlobals.logicalDevice, &pipelineLayoutInfo, nullptr, &pHandle->pipelineLayout));
 
 	VkGraphicsPipelineCreateInfo pipelineInfo{};
 	pipelineInfo.sType							   = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -249,26 +243,25 @@ Result VulkanShaderStorage::AddShaderImpl(const Pointer<void>&		pRenderContext,
 	pipelineInfo.pColorBlendState				   = &colorBlending;
 	pipelineInfo.pDynamicState					   = &dynamicStateCreateInfo;
 	pipelineInfo.layout							   = pHandle->pipelineLayout;
-	pipelineInfo.renderPass						   = pVulkanContext->renderPass;
+	pipelineInfo.renderPass						   = g_VulkanGlobals.renderPass;
 	pipelineInfo.subpass						   = 0;
 
 	VK_ASSERT(vkCreateGraphicsPipelines(
-		pVulkanContext->logicalDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pHandle->pipeline));
+		g_VulkanGlobals.logicalDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pHandle->pipeline));
 
-	NTT_ASSERT_RESULT_SUCCESS(
-		createUniformBuffers(pVulkanContext, pHandle, descriptorSetLayoutSizes, descriptorSetLayoutBindingCount));
+	NTT_ASSERT_RESULT_SUCCESS(createUniformBuffers(pHandle, descriptorSetLayoutSizes, descriptorSetLayoutBindingCount));
 
-	NTT_ASSERT_RESULT_SUCCESS(createDescriptorPool(pVulkanContext, pHandle));
+	NTT_ASSERT_RESULT_SUCCESS(createDescriptorPool(pHandle));
 
 	for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
 	{
-		NTT_ASSERT_RESULT_SUCCESS(updateDescriptorSets(pVulkanContext, pHandle, i));
+		NTT_ASSERT_RESULT_SUCCESS(updateDescriptorSets(pHandle, i));
 	}
 
 	return RESULT_SUCCESS;
 }
 
-static Result createDescriptorPool(VulkanContextHandle* pVulkanContext, ShaderHandle* pShaderHandle)
+static Result createDescriptorPool(ShaderHandle* pShaderHandle)
 {
 	VkDescriptorPoolSize poolSize{};
 	poolSize.type			 = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -280,7 +273,7 @@ static Result createDescriptorPool(VulkanContextHandle* pVulkanContext, ShaderHa
 	poolInfo.pPoolSizes	   = &poolSize;
 	poolInfo.maxSets	   = MAX_FRAMES_IN_FLIGHT;
 	VK_ASSERT(
-		vkCreateDescriptorPool(pVulkanContext->logicalDevice, &poolInfo, nullptr, &pShaderHandle->descriptorPool));
+		vkCreateDescriptorPool(g_VulkanGlobals.logicalDevice, &poolInfo, nullptr, &pShaderHandle->descriptorPool));
 
 	pShaderHandle->pDescriptorSets =
 		MakeScope<Array<VkDescriptorSet>>(g_GlobalAllocators.pMalloc, MAX_FRAMES_IN_FLIGHT);
@@ -299,15 +292,12 @@ static Result createDescriptorPool(VulkanContextHandle* pVulkanContext, ShaderHa
 	allocInfo.pSetLayouts		 = &layouts[0];
 
 	VK_ASSERT(vkAllocateDescriptorSets(
-		pVulkanContext->logicalDevice, &allocInfo, &GET_SCOPE_ARRAY_INDEX(pShaderHandle->pDescriptorSets, 0)));
+		g_VulkanGlobals.logicalDevice, &allocInfo, &GET_SCOPE_ARRAY_INDEX(pShaderHandle->pDescriptorSets, 0)));
 
 	return RESULT_SUCCESS;
 }
 
-static Result createUniformBuffers(VulkanContextHandle* pVulkanContext,
-								   ShaderHandle*		pShaderHandle,
-								   u32*					pSetLayoutBindingSizes,
-								   u32					setLayoutBindingCount)
+static Result createUniformBuffers(ShaderHandle* pShaderHandle, u32* pSetLayoutBindingSizes, u32 setLayoutBindingCount)
 {
 	pShaderHandle->pBuffers =
 		MakeScope<Array<VkBuffer>>(g_GlobalAllocators.pMalloc, setLayoutBindingCount * MAX_FRAMES_IN_FLIGHT);
@@ -324,12 +314,11 @@ static Result createUniformBuffers(VulkanContextHandle* pVulkanContext,
 			u32 bufferIndex = i * MAX_FRAMES_IN_FLIGHT + j;
 			createBuffer(GET_SCOPE_ARRAY_INDEX(pShaderHandle->pBuffers, bufferIndex),
 						 GET_SCOPE_ARRAY_INDEX(pShaderHandle->pMemories, bufferIndex),
-						 pVulkanContext,
 						 bufferSize,
 						 VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 						 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-			vkMapMemory(pVulkanContext->logicalDevice,
+			vkMapMemory(g_VulkanGlobals.logicalDevice,
 						GET_SCOPE_ARRAY_INDEX(pShaderHandle->pMemories, bufferIndex),
 						0,
 						bufferSize,
@@ -341,8 +330,7 @@ static Result createUniformBuffers(VulkanContextHandle* pVulkanContext,
 	return RESULT_SUCCESS;
 }
 
-static Result createDescriptorSetLayout(VulkanContextHandle*		  pVulkanContext,
-										ShaderHandle*				  pShaderHandle,
+static Result createDescriptorSetLayout(ShaderHandle*				  pShaderHandle,
 										VkDescriptorSetLayoutBinding* pSetLayoutBindings,
 										u32							  setLayoutBindingCount)
 {
@@ -351,7 +339,7 @@ static Result createDescriptorSetLayout(VulkanContextHandle*		  pVulkanContext,
 	layoutInfo.bindingCount = setLayoutBindingCount;
 	layoutInfo.pBindings	= pSetLayoutBindings;
 	VK_ASSERT(vkCreateDescriptorSetLayout(
-		pVulkanContext->logicalDevice, &layoutInfo, nullptr, &pShaderHandle->descriptorSetLayout));
+		g_VulkanGlobals.logicalDevice, &layoutInfo, nullptr, &pShaderHandle->descriptorSetLayout));
 
 	return RESULT_SUCCESS;
 }
@@ -376,13 +364,13 @@ static Result createDescriptorSetLayout(VulkanContextHandle*		  pVulkanContext,
 
 Result VulkanShaderStorage::SetUniformSamplerImpl(const Uniform&	   uniform,
 												  const Pointer<void>& pTextureHandle,
-												  const Pointer<void>& pRenderContext,
-												  const Pointer<void>& pShaderHandle)
+												  const Pointer<void>& pShaderHandle,
+												  const Pointer<void>& pRenderContext)
 {
 	NTT_UNUSED(uniform);
 	NTT_UNUSED(pTextureHandle);
-	NTT_UNUSED(pRenderContext);
 	NTT_UNUSED(pShaderHandle);
+	NTT_UNUSED(pRenderContext);
 	return RESULT_SUCCESS;
 }
 
@@ -694,32 +682,31 @@ Result VulkanShaderStorage::UseShaderImpl(const Pointer<void>& pRenderContext, c
 	return RESULT_SUCCESS;
 }
 
-Result VulkanShaderStorage::RemoveShaderImpl(const Pointer<void>& pRenderContext, const Pointer<void>& pShaderHandle)
+Result VulkanShaderStorage::RemoveShaderImpl(const Pointer<void>& pShaderHandle)
 {
-	ShaderHandle*		 pHandle		= VK_SHADER_CAST(pShaderHandle);
-	VulkanContextHandle* pVulkanContext = VK_CONTEXT_CAST(pRenderContext);
+	ShaderHandle* pHandle = VK_SHADER_CAST(pShaderHandle);
 
-	NTT_ASSERT_RESULT_SUCCESS(destroyDescriptorPool(pVulkanContext, pHandle));
-	NTT_ASSERT_RESULT_SUCCESS(destroyUniformBuffers(pVulkanContext, pHandle));
-	NTT_ASSERT_RESULT_SUCCESS(destroyDescriptorSetLayout(pVulkanContext, pHandle));
-	vkDestroyPipeline(pVulkanContext->logicalDevice, pHandle->pipeline, nullptr);
-	vkDestroyPipelineLayout(pVulkanContext->logicalDevice, pHandle->pipelineLayout, nullptr);
-	vkDestroyShaderModule(pVulkanContext->logicalDevice, pHandle->vertexModule, nullptr);
-	vkDestroyShaderModule(pVulkanContext->logicalDevice, pHandle->fragmentModule, nullptr);
+	NTT_ASSERT_RESULT_SUCCESS(destroyDescriptorPool(pHandle));
+	NTT_ASSERT_RESULT_SUCCESS(destroyUniformBuffers(pHandle));
+	NTT_ASSERT_RESULT_SUCCESS(destroyDescriptorSetLayout(pHandle));
+	vkDestroyPipeline(g_VulkanGlobals.logicalDevice, pHandle->pipeline, nullptr);
+	vkDestroyPipelineLayout(g_VulkanGlobals.logicalDevice, pHandle->pipelineLayout, nullptr);
+	vkDestroyShaderModule(g_VulkanGlobals.logicalDevice, pHandle->vertexModule, nullptr);
+	vkDestroyShaderModule(g_VulkanGlobals.logicalDevice, pHandle->fragmentModule, nullptr);
 
 	return RESULT_SUCCESS;
 }
 
-static Result destroyDescriptorPool(VulkanContextHandle* pVulkanContext, ShaderHandle* pShaderHandle)
+static Result destroyDescriptorPool(ShaderHandle* pShaderHandle)
 {
-	vkDestroyDescriptorPool(pVulkanContext->logicalDevice, pShaderHandle->descriptorPool, nullptr);
+	vkDestroyDescriptorPool(g_VulkanGlobals.logicalDevice, pShaderHandle->descriptorPool, nullptr);
 
 	pShaderHandle->pDescriptorSets.Reset();
 
 	return RESULT_SUCCESS;
 }
 
-static Result destroyUniformBuffers(VulkanContextHandle* pVulkanContext, ShaderHandle* pShaderHandle)
+static Result destroyUniformBuffers(ShaderHandle* pShaderHandle)
 {
 	for (u32 i = 0; i < pShaderHandle->descriptorSetLayoutBindingCount; ++i)
 	{
@@ -727,12 +714,12 @@ static Result destroyUniformBuffers(VulkanContextHandle* pVulkanContext, ShaderH
 		{
 			u32 bufferIndex = i * MAX_FRAMES_IN_FLIGHT + j;
 
-			vkUnmapMemory(pVulkanContext->logicalDevice, GET_SCOPE_ARRAY_INDEX(pShaderHandle->pMemories, bufferIndex));
+			vkUnmapMemory(g_VulkanGlobals.logicalDevice, GET_SCOPE_ARRAY_INDEX(pShaderHandle->pMemories, bufferIndex));
 
 			vkDestroyBuffer(
-				pVulkanContext->logicalDevice, GET_SCOPE_ARRAY_INDEX(pShaderHandle->pBuffers, bufferIndex), nullptr);
+				g_VulkanGlobals.logicalDevice, GET_SCOPE_ARRAY_INDEX(pShaderHandle->pBuffers, bufferIndex), nullptr);
 			vkFreeMemory(
-				pVulkanContext->logicalDevice, GET_SCOPE_ARRAY_INDEX(pShaderHandle->pMemories, bufferIndex), nullptr);
+				g_VulkanGlobals.logicalDevice, GET_SCOPE_ARRAY_INDEX(pShaderHandle->pMemories, bufferIndex), nullptr);
 		}
 	}
 
@@ -743,9 +730,9 @@ static Result destroyUniformBuffers(VulkanContextHandle* pVulkanContext, ShaderH
 	return RESULT_SUCCESS;
 }
 
-static Result destroyDescriptorSetLayout(VulkanContextHandle* pVulkanContext, ShaderHandle* pShaderHandle)
+static Result destroyDescriptorSetLayout(ShaderHandle* pShaderHandle)
 {
-	vkDestroyDescriptorSetLayout(pVulkanContext->logicalDevice, pShaderHandle->descriptorSetLayout, nullptr);
+	vkDestroyDescriptorSetLayout(g_VulkanGlobals.logicalDevice, pShaderHandle->descriptorSetLayout, nullptr);
 
 	return RESULT_SUCCESS;
 }
@@ -760,7 +747,7 @@ u32 VulkanShaderStorage::GetUniformInfoSize() const
 	return (u32)sizeof(VulkanUniformInfo);
 }
 
-static Result updateDescriptorSets(VulkanContextHandle* pVulkanContext, ShaderHandle* pShaderHandle, u32 currentFrame)
+static Result updateDescriptorSets(ShaderHandle* pShaderHandle, u32 currentFrame)
 {
 	for (u32 i = 0; i < pShaderHandle->descriptorSetLayoutBindingCount; ++i)
 	{
@@ -780,7 +767,7 @@ static Result updateDescriptorSets(VulkanContextHandle* pVulkanContext, ShaderHa
 		descriptorWrite.descriptorCount = 1;
 		descriptorWrite.pBufferInfo		= &bufferInfo;
 
-		vkUpdateDescriptorSets(pVulkanContext->logicalDevice, 1, &descriptorWrite, 0, nullptr);
+		vkUpdateDescriptorSets(g_VulkanGlobals.logicalDevice, 1, &descriptorWrite, 0, nullptr);
 	}
 
 	return RESULT_SUCCESS;

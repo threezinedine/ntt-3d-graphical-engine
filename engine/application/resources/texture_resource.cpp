@@ -8,11 +8,10 @@
 
 namespace ntt {
 
-TextureResource::TextureResource(RenderContextID contextID, StringView filePath, IAllocator* pAllocator)
+TextureResource::TextureResource(StringView filePath, IAllocator* pAllocator)
 	: Resource(NTT_RESOURCE_TYPE_TEXTURE)
 	, m_pAllocator(pAllocator)
 	, m_FilePath(filePath)
-	, m_ContextID(contextID)
 	, m_TextureID(INVALID_TEXTURE_ID)
 {
 }
@@ -34,8 +33,7 @@ Result TextureResource::LoadImpl()
 						   height,
 						   channels);
 
-		m_TextureID = NTT_TEXTURE_STORAGE->AddTexture(m_ContextID,
-													  Vec3i{width, height, channels},
+		m_TextureID = NTT_TEXTURE_STORAGE->AddTexture(Vec3i{width, height, channels},
 													  data,
 													  {NTT_TEXTURE_WRAP_REPEAT,
 													   NTT_TEXTURE_WRAP_REPEAT,

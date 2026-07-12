@@ -50,15 +50,13 @@ Result OpenGLShaderStorage::ShutdownImpl()
 
 static Result extractUniforms(u32 shaderProgram, Uniform* pUniforms, u32& uniformCount);
 
-Result OpenGLShaderStorage::AddShaderImpl(const Pointer<void>& pRenderContext,
-										  ShaderInputTopology  inputTopology,
-										  const char*		   pVertexShaderSource,
-										  const char*		   pFragmentShaderSource,
-										  Pointer<void>&	   pShaderHandle,
-										  Uniform*			   pUniforms,
-										  u32&				   uniformCount)
+Result OpenGLShaderStorage::AddShaderImpl(ShaderInputTopology inputTopology,
+										  const char*		  pVertexShaderSource,
+										  const char*		  pFragmentShaderSource,
+										  Pointer<void>&	  pShaderHandle,
+										  Uniform*			  pUniforms,
+										  u32&				  uniformCount)
 {
-	NTT_UNUSED(pRenderContext);
 	NTT_UNUSED(inputTopology);
 
 	ShaderHandle* pHandle = CAST_SHADER_HANDLE(pShaderHandle);
@@ -188,14 +186,13 @@ static Result extractUniforms(u32 shaderProgram, Uniform* pUniforms, u32& unifor
 Result OpenGLShaderStorage::SetUniformSamplerImpl(const Uniform&	   uniform,
 												  const Pointer<void>& pTextureHandle,
 												  const Pointer<void>& pShaderHandle,
-												  const Pointer<void>& pRenderContext)
+												  const Pointer<void>& pRenderHandle)
 {
-	TextureHandle*		 pTextureHandleCast = CAST_TEXTURE_HANDLE(pTextureHandle);
-	UniformInfo*		 pUniformInfo		= CAST_UNIFORM_INFO(uniform.pInternalData);
-	ShaderHandle*		 pShaderHandleCast	= CAST_SHADER_HANDLE(pShaderHandle);
-	OpenGLContextHandle* pRenderContextCast = CAST_CONTEXT_HANDLE(pRenderContext);
-
-	NTT_UNUSED(pRenderContextCast);
+	NTT_UNUSED(pRenderHandle);
+	TextureHandle* pTextureHandleCast = CAST_TEXTURE_HANDLE(pTextureHandle);
+	UniformInfo*   pUniformInfo		  = CAST_UNIFORM_INFO(uniform.pInternalData);
+	ShaderHandle*  pShaderHandleCast  = CAST_SHADER_HANDLE(pShaderHandle);
+	NTT_UNUSED(pShaderHandleCast);
 
 	glActiveTexture(GL_TEXTURE0 + pUniformInfo->slot);
 	glBindTexture(GL_TEXTURE_2D, pTextureHandleCast->textureID);
@@ -205,7 +202,7 @@ Result OpenGLShaderStorage::SetUniformSamplerImpl(const Uniform&	   uniform,
 	return RESULT_SUCCESS;
 }
 
-Result OpenGLShaderStorage::UseShaderImpl(const Pointer<void>& pRenderContext, const Pointer<void>& pShaderHandle)
+Result OpenGLShaderStorage::UseShaderImpl(const Pointer<void>& pShaderHandle, const Pointer<void>& pRenderContext)
 {
 	NTT_UNUSED(pRenderContext);
 	ShaderHandle* pHandle = CAST_SHADER_HANDLE(pShaderHandle);
@@ -215,9 +212,8 @@ Result OpenGLShaderStorage::UseShaderImpl(const Pointer<void>& pRenderContext, c
 	return RESULT_SUCCESS;
 }
 
-Result OpenGLShaderStorage::RemoveShaderImpl(const Pointer<void>& pRenderContext, const Pointer<void>& pShaderHandle)
+Result OpenGLShaderStorage::RemoveShaderImpl(const Pointer<void>& pShaderHandle)
 {
-	NTT_UNUSED(pRenderContext);
 	ShaderHandle* pHandle = CAST_SHADER_HANDLE(pShaderHandle);
 
 	GL_ASSERT(glDeleteProgram(pHandle->program));

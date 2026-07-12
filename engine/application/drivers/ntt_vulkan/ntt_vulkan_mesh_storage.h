@@ -16,14 +16,8 @@ protected:
 	virtual Result InitializeImpl() override;
 	virtual Result ShutdownImpl() override;
 
-	virtual Result
-	AddMeshImpl(Mesh& mesh, Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext, bool dynamic) override;
-	virtual Result DrawMeshImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext) override;
-#if NTT_DEBUG
-	virtual Result
-	DrawDebugLineImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext, f32 lineWidth) override;
-#endif // NTT_DEBUG
-	virtual Result RemoveMeshImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext) override;
+	virtual Result AddMeshImpl(Mesh& mesh, Pointer<void>& pMeshHandle, bool dynamic) override;
+	virtual Result RemoveMeshImpl(const Pointer<void>& pMeshHandle) override;
 
 protected:
 	virtual u32 GetMeshHandleSize() const override;

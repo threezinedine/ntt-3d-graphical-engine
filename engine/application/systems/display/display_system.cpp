@@ -48,13 +48,13 @@ Result DisplaySystem::ShutdownImpl()
 	return RESULT_SUCCESS;
 }
 
-WindowID DisplaySystem::CreateWindow(u32 width, u32 height, const char* title)
+WindowID DisplaySystem::CreateWindow(u32 width, u32 height, const char* title, bool shareContext)
 {
 	WindowID	windowID	= m_pWindowIDStorage->Add();
 	WindowInfo* pWindowInfo = m_pWindowIDStorage->Get(windowID);
 	pWindowInfo->pWindowHandle =
 		ALLOCATOR_SAFE(g_GlobalAllocators.pMalloc)->Allocate(g_DisplayDriver.GetWindowHandleSize());
-	Result result = g_DisplayDriver.CreateWindow(width, height, title, pWindowInfo->pWindowHandle);
+	Result result = g_DisplayDriver.CreateWindow(width, height, title, pWindowInfo->pWindowHandle, shareContext);
 
 	if (result != RESULT_SUCCESS)
 	{

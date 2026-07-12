@@ -1,11 +1,8 @@
 #pragma once
+#include "render_system_types.h"
 #include "services.h"
 
 namespace ntt {
-
-typedef u32			RenderContextID;
-typedef u32			TextureID;
-constexpr TextureID INVALID_TEXTURE_ID = static_cast<u32>(-1);
 
 extern TextureID g_LogoTextureID;
 
@@ -46,10 +43,9 @@ public:
 	Result Initialize();
 	Result Shutdown();
 
-	TextureID
-		   AddTexture(RenderContextID contextID, Vec3i textureShape, u8* pData, const TextureSample& sample) noexcept;
-	Result SetTextureSample(TextureID textureID, const TextureSample& sample);
-	Result RemoveTexture(TextureID textureID);
+	TextureID AddTexture(Vec3i textureShape, u8* pData, const TextureSample& sample) noexcept;
+	Result	  SetTextureSample(TextureID textureID, const TextureSample& sample);
+	Result	  RemoveTexture(TextureID textureID);
 
 protected:
 	virtual Result InitializeImpl() = 0;
@@ -66,10 +62,9 @@ protected:
 public:
 	struct TextureNode
 	{
-		RenderContextID contextID;
-		TextureSample	sample;
-		Pointer<void>	pTextureHandle;
-		Vec3i			textureShape;
+		TextureSample sample;
+		Pointer<void> pTextureHandle;
+		Vec3i		  textureShape;
 	};
 
 	friend class ShaderStorage;

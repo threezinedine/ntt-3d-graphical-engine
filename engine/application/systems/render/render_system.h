@@ -7,8 +7,12 @@ namespace ntt {
 
 typedef u32 ShaderID;
 typedef u32 RenderContextID;
+typedef u32 MeshViewID;
+typedef u32 MeshID;
 
 constexpr RenderContextID INVALID_RENDER_CONTEXT_ID = static_cast<u32>(-1);
+
+class MeshViewStorage;
 
 class RenderSystem : public System
 {
@@ -35,14 +39,11 @@ public:
 	struct RenderContext
 	{
 		Pointer<void> pRenderContextHandle;
-		ShaderID	  defaultMeshShaderID;
-#if NTT_DEBUG
-		ShaderID defaultDebugLineShaderID;
-#endif // NTT_DEBUG
 	};
 
 	friend class ShaderStorage;
 	friend class MeshStorage;
+	friend class MeshViewStorage;
 
 private:
 	Scope<Storage<RenderContext>> m_pRenderContextStorage;

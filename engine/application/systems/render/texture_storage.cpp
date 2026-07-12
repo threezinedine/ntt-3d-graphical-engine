@@ -37,14 +37,10 @@ Result TextureStorage::Shutdown()
 	return ShutdownImpl();
 }
 
-TextureID TextureStorage::AddTexture(RenderContextID	  contextID,
-									 Vec3i				  textureShape,
-									 u8*				  pData,
-									 const TextureSample& sample) noexcept
+TextureID TextureStorage::AddTexture(Vec3i textureShape, u8* pData, const TextureSample& sample) noexcept
 {
 	TextureID	 textureID = m_pTextureStorage->Add();
 	TextureNode* pNode	   = m_pTextureStorage->Get(textureID);
-	pNode->contextID	   = contextID;
 	pNode->sample		   = sample;
 	pNode->textureShape	   = textureShape;
 

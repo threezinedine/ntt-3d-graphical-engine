@@ -14,15 +14,14 @@ protected:
 	virtual Result InitializeImpl() override;
 	virtual Result ShutdownImpl() override;
 
-	virtual Result AddShaderImpl(const Pointer<void>& pRenderContext,
-								 ShaderInputTopology  inputTopology,
-								 const char*		  pVertexShaderSource,
-								 const char*		  pFragmentShaderSource,
-								 Pointer<void>&		  pShaderHandle,
-								 Uniform*			  pUniforms,
-								 u32&				  uniformCount) override;
+	virtual Result AddShaderImpl(ShaderInputTopology inputTopology,
+								 const char*		 pVertexShaderSource,
+								 const char*		 pFragmentShaderSource,
+								 Pointer<void>&		 pShaderHandle,
+								 Uniform*			 pUniforms,
+								 u32&				 uniformCount) override;
 	virtual Result UseShaderImpl(const Pointer<void>& pRenderContext, const Pointer<void>& pShaderHandle) override;
-	virtual Result RemoveShaderImpl(const Pointer<void>& pRenderContext, const Pointer<void>& pShaderHandle) override;
+	virtual Result RemoveShaderImpl(const Pointer<void>& pShaderHandle) override;
 
 protected:
 	u32 GetUniformInfoSize() const override;

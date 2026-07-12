@@ -9,7 +9,7 @@ struct DisplayDriver
 {
 	Result (*Initialize)();
 	Result (*Shutdown)();
-	Result (*CreateWindow)(u32 width, u32 height, const char* title, Pointer<void>& pWindowHandle);
+	Result (*CreateWindow)(u32 width, u32 height, const char* title, Pointer<void>& pWindowHandle, bool shareContext);
 	bool (*ShouldCloseWindow)(Pointer<void> pWindowHandle);
 	Result (*DestroyWindow)(Pointer<void> pWindowHandle);
 	Result (*OnBeginFrame)(Pointer<void> pDriverHandle);

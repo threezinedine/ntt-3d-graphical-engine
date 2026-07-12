@@ -70,16 +70,32 @@ struct ShaderHandle
 struct MeshHandle
 {
 	u32 verticesCount;
-	u32 vao;
 	u32 vbo;
 #if NTT_DEBUG
-	u32 debugVAO;
 	u32 debugVBO;
 #endif // NTT_DEBUG
 };
 
 #define CAST_MESH_HANDLE(handle)                                                                                       \
 	reinterpret_cast<MeshHandle*>(handle.Get());                                                                       \
+	do                                                                                                                 \
+	{                                                                                                                  \
+		if (handle == nullptr)                                                                                         \
+		{                                                                                                              \
+			return RESULT_NULL_POINTER;                                                                                \
+		}                                                                                                              \
+	} while (0)
+
+struct MeshViewHandle
+{
+	u32 vao;
+#if NTT_DEBUG
+	u32 debugVAO;
+#endif // NTT_DEBUG
+};
+
+#define CAST_MESH_VIEW_HANDLE(handle)                                                                                  \
+	reinterpret_cast<MeshViewHandle*>(handle.Get());                                                                   \
 	do                                                                                                                 \
 	{                                                                                                                  \
 		if (handle == nullptr)                                                                                         \

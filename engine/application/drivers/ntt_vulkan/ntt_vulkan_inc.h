@@ -43,6 +43,28 @@
 
 namespace ntt {
 
+struct VulkanGlobals
+{
+	VkInstance		 instance;
+	VkPhysicalDevice physicalDevice;
+	VkDevice		 logicalDevice;
+	VkRenderPass	 renderPass;
+	u32				 graphicsQueueFamilyIndex;
+	u32				 presentQueueFamilyIndex;
+	u32				 transferQueueFamilyIndex;
+	u32				 computeQueueFamilyIndex;
+	VkFormat		 swapchainImageFormat;
+	VkExtent2D		 swapchainExtent;
+	VkQueue			 graphicsQueue;
+	VkQueue			 presentQueue;
+	VkQueue			 transferQueue;
+	VkCommandPool	 graphicsCommandPool;
+	VkCommandPool	 presentCommandPool;
+	VkCommandPool	 transferCommandPool;
+};
+
+extern VulkanGlobals g_VulkanGlobals;
+
 struct MeshHandle
 {
 	VkBuffer	   vertexBuffer;
@@ -57,6 +79,21 @@ struct MeshHandle
 
 #define VK_MESH_CAST(handle)                                                                                           \
 	reinterpret_cast<MeshHandle*>(handle.Get());                                                                       \
+	do                                                                                                                 \
+	{                                                                                                                  \
+		if (handle == nullptr)                                                                                         \
+		{                                                                                                              \
+			return RESULT_NULL_POINTER;                                                                                \
+		}                                                                                                              \
+	} while (0)
+
+struct MeshViewHandle
+{
+	void* placeholder; // Placeholder for future Vulkan-specific data
+};
+
+#define VK_MESH_VIEW_CAST(handle)                                                                                      \
+	reinterpret_cast<MeshViewHandle*>(handle.Get());                                                                   \
 	do                                                                                                                 \
 	{                                                                                                                  \
 		if (handle == nullptr)                                                                                         \
@@ -100,27 +137,12 @@ struct VulkanUniformInfo
 struct VulkanContextHandle
 {
 	Pointer<void>				  pWindowHandle;
-	VkPhysicalDevice			  physicalDevice;
 	VkSurfaceKHR				  surface;
-	u32							  graphicsQueueFamilyIndex;
-	u32							  presentQueueFamilyIndex;
-	u32							  transferQueueFamilyIndex;
-	u32							  computeQueueFamilyIndex;
-	VkDevice					  logicalDevice;
-	VkQueue						  graphicsQueue;
-	VkQueue						  presentQueue;
-	VkQueue						  transferQueue;
 	VkSwapchainKHR				  swapchain;
 	Scope<Array<VkImage>>		  pSwapchainImages;
 	u32							  swapchainImageCount;
 	Scope<Array<VkImageView>>	  pSwapchainImageViews;
-	VkFormat					  swapchainImageFormat;
-	VkExtent2D					  swapchainExtent;
-	VkRenderPass				  renderPass;
 	Scope<Array<VkFramebuffer>>	  pSwapchainFramebuffers;
-	VkCommandPool				  graphicsCommandPool;
-	VkCommandPool				  presentCommandPool;
-	VkCommandPool				  transferCommandPool;
 	Scope<Array<VkCommandBuffer>> pCommandBuffers;
 	Scope<Array<VkSemaphore>>	  pImageAvailableSemaphores;
 	Scope<Array<VkSemaphore>>	  pRenderFinishedSemaphores;
@@ -161,7 +183,6 @@ struct TextureHandle
 
 Result createBuffer(VkBuffer&			  outBuffer,
 					VkDeviceMemory&		  outBufferMemory,
-					VulkanContextHandle*  pVulkanContext,
 					VkDeviceSize		  size,
 					VkBufferUsageFlags	  usage,
 					VkMemoryPropertyFlags properties);

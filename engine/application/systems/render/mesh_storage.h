@@ -1,14 +1,14 @@
 #pragma once
 
 #include "components/components.h"
+#include "render_system_types.h"
 #include "services.h"
 #include "shader_storage.h"
 #include "systems/render/render_system.h"
 
 namespace ntt {
 
-typedef u32	 MeshID;
-const MeshID INVALID_MESH_ID = static_cast<u32>(-1);
+class MeshViewStorage;
 
 class MeshStorage
 {
@@ -19,65 +19,30 @@ public:
 	Result Initialize();
 	Result Shutdown();
 
-	MeshID AddMesh(Mesh&& mesh, RenderContextID renderContextID, bool dynamic = false) noexcept;
-	Result DrawMesh(MeshID meshID);
-#if NTT_DEBUG
-	Result DrawDebugLine(MeshID meshID);
-#endif // NTT_DEBUG
+	MeshID AddMesh(Mesh&& mesh, bool dynamic = false) noexcept;
 	Result RemoveMesh(MeshID meshID);
-
-	Result SetShader(MeshID meshID, ShaderID shaderID);
-#if NTT_DEBUG
-	Result SetDebugLineShader(MeshID meshID, ShaderID shaderID);
-	Result SetDebugLineWidth(MeshID meshID, f32 lineWidth);
-#endif // NTT_DEBUG
-
-#define UNIFORM_TYPE_DEF(type, typeName, uppercase, glType)                                                            \
-public:                                                                                                                \
-	Result SetUniform##typeName(MeshID meshID, const char* pUniformName, type value);
-#define UNIFORM_TYPE_SAMPLER_DEF(type, typeName, uppercase, glType) UNIFORM_TYPE_DEF(type, typeName, uppercase, glType)
-#include "systems/render/uniform_type.def"
-#undef UNIFORM_TYPE_DEF
-#undef UNIFORM_TYPE_SAMPLER_DEF
-
-#if NTT_DEBUG
-#define UNIFORM_TYPE_DEF(type, typeName, uppercase, glType)                                                            \
-public:                                                                                                                \
-	Result SetDebugLineUniform##typeName(MeshID meshID, const char* pUniformName, type value);
-#include "systems/render/uniform_type.def"
-#undef UNIFORM_TYPE_DEF
-#endif // NTT_DEBUG
 
 protected:
 	virtual Result InitializeImpl() = 0;
 	virtual Result ShutdownImpl()	= 0;
 
-	virtual Result
-	AddMeshImpl(Mesh& mesh, Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext, bool dynamic) = 0;
-#if NTT_DEBUG
-	virtual Result
-	DrawDebugLineImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext, f32 lineWidth) = 0;
-#endif // NTT_DEBUG
-	virtual Result DrawMeshImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext)	 = 0;
-	virtual Result RemoveMeshImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext) = 0;
+	virtual Result AddMeshImpl(Mesh& mesh, Pointer<void>& pMeshHandle, bool dynamic) = 0;
+	virtual Result RemoveMeshImpl(const Pointer<void>& pMeshHandle)					 = 0;
 
 protected:
 	virtual u32 GetMeshHandleSize() const = 0;
 
-private:
+public:
 	struct MeshNode
 	{
-		Mesh	 mesh;
-		bool	 dynamic;
-		ShaderID shaderID;
-#if NTT_DEBUG
-		ShaderID debugLineShaderID;
-		f32		 lineWidth;
-#endif // NTT_DEBUG
+		Mesh		  mesh;
+		bool		  dynamic;
 		Pointer<void> pMeshHandle;
-		Pointer<void> pRenderContext;
 	};
 
+	friend class MeshViewStorage;
+
+private:
 	IAllocator*				 m_pAllocator;
 	Scope<Storage<MeshNode>> m_pMeshStorage;
 };

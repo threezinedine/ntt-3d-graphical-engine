@@ -18,6 +18,11 @@ extern unsigned char vulkan_line_fs_data[];
 
 namespace ntt {
 
+ShaderID defaultMeshShaderID;
+#if NTT_DEBUG
+ShaderID defaultDebugLineShaderID;
+#endif // NTT_DEBUG
+
 ShaderStorage::ShaderStorage(IAllocator* pAllocator)
 	: m_pAllocator(pAllocator)
 {
@@ -31,11 +36,66 @@ Result ShaderStorage::Initialize()
 {
 	m_pStorage = MakeScope<Storage<ShaderNode>>(m_pAllocator);
 
-	return InitializeImpl();
+	NTT_ASSERT_RESULT_SUCCESS(InitializeImpl());
+
+	return RESULT_SUCCESS;
 }
 
 Result ShaderStorage::Shutdown()
 {
+	NTT_ASSERT_RESULT_SUCCESS(ShutdownImpl());
+
+	m_pStorage.Reset();
+	return RESULT_SUCCESS;
+}
+
+Result ShaderStorage::SetupDefaultShaders()
+{
+#if NTT_VULKAN
+	if (NTT_ARG_BOOL(USE_VULKAN))
+	{
+		defaultMeshShaderID = NTT_SHADER_STORAGE->AddShader(NTT_SHADER_INPUT_TOPOLOGY_TRIANGLES,
+															reinterpret_cast<const char*>(vulkan_mesh_vs_data),
+															reinterpret_cast<const char*>(vulkan_mesh_fs_data));
+
+		defaultDebugLineShaderID = NTT_SHADER_STORAGE->AddShader(NTT_SHADER_INPUT_TOPOLOGY_LINES,
+																 reinterpret_cast<const char*>(vulkan_line_vs_data),
+																 reinterpret_cast<const char*>(vulkan_line_fs_data));
+	}
+	else
+#endif // NTT_VULKAN
+	{
+		defaultMeshShaderID = NTT_SHADER_STORAGE->AddShader(NTT_SHADER_INPUT_TOPOLOGY_TRIANGLES,
+															reinterpret_cast<const char*>(mesh_vs_data),
+															reinterpret_cast<const char*>(mesh_fs_data));
+
+#if NTT_DEBUG
+		defaultDebugLineShaderID = NTT_SHADER_STORAGE->AddShader(NTT_SHADER_INPUT_TOPOLOGY_LINES,
+																 reinterpret_cast<const char*>(line_vs_data),
+																 reinterpret_cast<const char*>(line_fs_data));
+#endif // NTT_DEBUG
+	}
+
+	return RESULT_SUCCESS;
+}
+
+Result ShaderStorage::RemoveDefaultShaders()
+{
+	if (defaultMeshShaderID == INVALID_SHADER_ID)
+	{
+		return RESULT_UNKNOWN;
+	}
+
+	NTT_ASSERT_RESULT_SUCCESS(NTT_SHADER_STORAGE->RemoveShader(defaultMeshShaderID));
+
+#if NTT_DEBUG
+	if (defaultDebugLineShaderID == INVALID_SHADER_ID)
+	{
+		return RESULT_UNKNOWN;
+	}
+	NTT_ASSERT_RESULT_SUCCESS(NTT_SHADER_STORAGE->RemoveShader(defaultDebugLineShaderID));
+#endif // NTT_DEBUG
+
 	for (u32 i = 0; i < m_pStorage->GetCount(); ++i)
 	{
 		if (m_pStorage->IsActive(i))
@@ -44,82 +104,10 @@ Result ShaderStorage::Shutdown()
 		}
 	}
 
-	m_pStorage.Reset();
-	return ShutdownImpl();
-}
-
-Result ShaderStorage::SetupDefaultShaders(RenderContextID renderContextID)
-{
-	RenderSystem::RenderContext* pRenderContext =
-		SystemGlobals::pRenderSystem->m_pRenderContextStorage->Get(renderContextID);
-
-	if (pRenderContext == nullptr)
-	{
-		return RESULT_INDEX_OUT_OF_BOUNDS;
-	}
-
-#if NTT_VULKAN
-	if (NTT_ARG_BOOL(USE_VULKAN))
-	{
-		pRenderContext->defaultMeshShaderID = AddShader(renderContextID,
-														NTT_SHADER_INPUT_TOPOLOGY_TRIANGLES,
-														reinterpret_cast<const char*>(vulkan_mesh_vs_data),
-														reinterpret_cast<const char*>(vulkan_mesh_fs_data));
-
-		pRenderContext->defaultDebugLineShaderID = AddShader(renderContextID,
-															 NTT_SHADER_INPUT_TOPOLOGY_LINES,
-															 reinterpret_cast<const char*>(vulkan_line_vs_data),
-															 reinterpret_cast<const char*>(vulkan_line_fs_data));
-	}
-	else
-#endif // NTT_VULKAN
-	{
-		pRenderContext->defaultMeshShaderID = AddShader(renderContextID,
-														NTT_SHADER_INPUT_TOPOLOGY_TRIANGLES,
-														reinterpret_cast<const char*>(mesh_vs_data),
-														reinterpret_cast<const char*>(mesh_fs_data));
-
-#if NTT_DEBUG
-		pRenderContext->defaultDebugLineShaderID = AddShader(renderContextID,
-															 NTT_SHADER_INPUT_TOPOLOGY_LINES,
-															 reinterpret_cast<const char*>(line_vs_data),
-															 reinterpret_cast<const char*>(line_fs_data));
-#endif // NTT_DEBUG
-	}
-
 	return RESULT_SUCCESS;
 }
 
-Result ShaderStorage::RemoveDefaultShaders(RenderContextID renderContextID)
-{
-	RenderSystem::RenderContext* pRenderContext =
-		SystemGlobals::pRenderSystem->m_pRenderContextStorage->Get(renderContextID);
-
-	if (pRenderContext == nullptr)
-	{
-		return RESULT_INDEX_OUT_OF_BOUNDS;
-	}
-
-	if (pRenderContext->defaultMeshShaderID == INVALID_SHADER_ID)
-	{
-		return RESULT_UNKNOWN;
-	}
-
-	NTT_ASSERT_RESULT_SUCCESS(RemoveShader(pRenderContext->defaultMeshShaderID));
-
-#if NTT_DEBUG
-	if (pRenderContext->defaultDebugLineShaderID == INVALID_SHADER_ID)
-	{
-		return RESULT_UNKNOWN;
-	}
-	NTT_ASSERT_RESULT_SUCCESS(RemoveShader(pRenderContext->defaultDebugLineShaderID));
-#endif // NTT_DEBUG
-
-	return RESULT_SUCCESS;
-}
-
-ShaderID ShaderStorage::AddShader(RenderContextID	  renderContextID,
-								  ShaderInputTopology inputTopology,
+ShaderID ShaderStorage::AddShader(ShaderInputTopology inputTopology,
 								  const char*		  pVertexShaderSource,
 								  const char*		  pFragmentShaderSource) noexcept
 {
@@ -127,14 +115,14 @@ ShaderID ShaderStorage::AddShader(RenderContextID	  renderContextID,
 
 	if (shaderID == INVALID_SHADER_ID)
 	{
-		return RESULT_OUT_OF_IDS;
+		return INVALID_SHADER_ID;
 	}
 
 	ShaderNode* pShaderNode = m_pStorage->Get(shaderID);
 
 	if (pShaderNode == nullptr)
 	{
-		return RESULT_INACTIVE_STORAGE_INDEX; // Return RESULT_INACTIVE_STORAGE_INDEX if the shader node is not found
+		return INVALID_SHADER_ID; // Return INVALID_SHADER_ID if the shader node is not found
 	}
 
 	if (GetUniformInfoSize() != 0)
@@ -146,15 +134,11 @@ ShaderID ShaderStorage::AddShader(RenderContextID	  renderContextID,
 		}
 	}
 
-	pShaderNode->pShaderHandle	 = ALLOCATOR_SAFE(m_pAllocator)->Allocate(GetShaderHandleSize());
-	pShaderNode->renderContextID = renderContextID;
-	pShaderNode->inputTopology	 = inputTopology;
+	pShaderNode->pShaderHandle = ALLOCATOR_SAFE(m_pAllocator)->Allocate(GetShaderHandleSize());
+	MemSet(pShaderNode->pShaderHandle.Get(), 0, GetShaderHandleSize());
+	pShaderNode->inputTopology = inputTopology;
 
-	RenderSystem::RenderContext* pRenderContext =
-		SystemGlobals::pRenderSystem->m_pRenderContextStorage->Get(renderContextID);
-
-	Result result = AddShaderImpl(pRenderContext->pRenderContextHandle,
-								  inputTopology,
+	Result result = AddShaderImpl(inputTopology,
 								  pVertexShaderSource,
 								  pFragmentShaderSource,
 								  pShaderNode->pShaderHandle,
@@ -199,10 +183,7 @@ Result ShaderStorage::RemoveShader(ShaderID shaderID)
 		return RESULT_INACTIVE_STORAGE_INDEX; // Return RESULT_INACTIVE_STORAGE_INDEX if the shader node is not found
 	}
 
-	RenderSystem::RenderContext* pRenderContext =
-		SystemGlobals::pRenderSystem->m_pRenderContextStorage->Get(pShaderNode->renderContextID);
-
-	NTT_ASSERT_RESULT_SUCCESS(RemoveShaderImpl(pRenderContext->pRenderContextHandle, pShaderNode->pShaderHandle));
+	NTT_ASSERT_RESULT_SUCCESS(RemoveShaderImpl(pShaderNode->pShaderHandle));
 	NTT_ASSERT_RESULT_SUCCESS(pShaderNode->pShaderHandle.Free()); // Free the allocated shader handle
 
 	for (u32 i = 0; i < 16; ++i)
@@ -218,8 +199,10 @@ Result ShaderStorage::RemoveShader(ShaderID shaderID)
 	return m_pStorage->Remove(shaderID);
 }
 
-Result ShaderStorage::UseShader(ShaderID shaderID)
+Result ShaderStorage::UseShader(ShaderID shaderID, RenderContextID renderContextID)
 {
+	RenderSystem::RenderContext* pRenderContext =
+		SystemGlobals::pRenderSystem->m_pRenderContextStorage->Get(renderContextID);
 	ShaderNode* pShaderNode = m_pStorage->Get(shaderID);
 
 	if (pShaderNode == nullptr)
@@ -227,10 +210,7 @@ Result ShaderStorage::UseShader(ShaderID shaderID)
 		return RESULT_INACTIVE_STORAGE_INDEX; // Return RESULT_INACTIVE_STORAGE_INDEX if the shader node is not found
 	}
 
-	RenderSystem::RenderContext* pRenderContext =
-		SystemGlobals::pRenderSystem->m_pRenderContextStorage->Get(pShaderNode->renderContextID);
-
-	NTT_ASSERT_RESULT_SUCCESS(UseShaderImpl(pRenderContext->pRenderContextHandle, pShaderNode->pShaderHandle));
+	NTT_ASSERT_RESULT_SUCCESS(UseShaderImpl(pShaderNode->pShaderHandle, pRenderContext->pRenderContextHandle));
 
 	for (u32 i = 0; i < pShaderNode->uniformCount; ++i)
 	{
@@ -275,9 +255,6 @@ Result ShaderStorage::UseShader(ShaderID shaderID)
 		{                                                                                                              \
 			return RESULT_INACTIVE_STORAGE_INDEX;                                                                      \
 		}                                                                                                              \
-		Pointer<void> pRenderContext =                                                                                 \
-			SystemGlobals::pRenderSystem->m_pRenderContextStorage->Get(pShaderNode->renderContextID)                   \
-				->pRenderContextHandle;                                                                                \
 		bool uniformFound = false;                                                                                     \
 		u32	 uniformIndex = static_cast<u32>(-1);                                                                      \
 		for (u32 i = 0; i < pShaderNode->uniformCount; i++)                                                            \

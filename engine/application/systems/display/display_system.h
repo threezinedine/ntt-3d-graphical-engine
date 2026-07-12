@@ -24,7 +24,7 @@ protected:
 	virtual Result ShutdownImpl() override;
 
 public:
-	WindowID CreateWindow(u32 width, u32 height, const char* title);
+	WindowID CreateWindow(u32 width, u32 height, const char* title, bool shareContext);
 	Result	 DestroyWindow(WindowID windowID);
 	bool	 ShouldCloseWindow(WindowID windowID) const;
 	bool	 IsWindowActive(WindowID windowID) const;
