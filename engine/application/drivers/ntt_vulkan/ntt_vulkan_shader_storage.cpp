@@ -658,7 +658,7 @@ static UniformType getUniformTypeFromFlags(const SpvReflectBlockVariable& member
 	return UNIFORM_TYPE_FLOAT; // Default to float if type is unrecognized
 }
 
-Result VulkanShaderStorage::UseShaderImpl(const Pointer<void>& pRenderContext, const Pointer<void>& pShaderHandle)
+Result VulkanShaderStorage::UseShaderImpl(const Pointer<void>& pShaderHandle, const Pointer<void>& pRenderContext)
 {
 	VulkanContextHandle* pVulkanContext = VK_CONTEXT_CAST(pRenderContext);
 	ShaderHandle*		 pHandle		= VK_SHADER_CAST(pShaderHandle);

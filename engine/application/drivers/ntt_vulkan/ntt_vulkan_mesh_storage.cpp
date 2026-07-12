@@ -153,54 +153,6 @@ static Result createStaticVertexBuffer(MeshHandle* pMeshHandle, Mesh& mesh)
 	return RESULT_SUCCESS;
 }
 
-// Result VulkanMeshStorage::DrawMeshImpl(const Pointer<void>& pMeshHandle, const Pointer<void>& pRenderContext)
-// {
-// 	VulkanContextHandle* pVulkanContext = VK_CONTEXT_CAST(pRenderContext);
-// 	MeshHandle*			 pHandle		= VK_MESH_CAST(pMeshHandle);
-
-// 	VkBuffer	 vertexBuffers[] = {pHandle->vertexBuffer};
-// 	VkDeviceSize offsets[]		 = {0};
-// 	vkCmdBindVertexBuffers(GET_SCOPE_ARRAY_INDEX(pVulkanContext->pCommandBuffers, pVulkanContext->currentFrame),
-// 						   0,
-// 						   1,
-// 						   vertexBuffers,
-// 						   offsets);
-
-// 	vkCmdDraw(GET_SCOPE_ARRAY_INDEX(pVulkanContext->pCommandBuffers, pVulkanContext->currentFrame),
-// 			  pHandle->vertexCount,
-// 			  1,
-// 			  0,
-// 			  0);
-// 	return RESULT_SUCCESS;
-// }
-
-// #if NTT_DEBUG
-// Result VulkanMeshStorage::DrawDebugLineImpl(const Pointer<void>& pMeshHandle,
-// 											const Pointer<void>& pRenderContext,
-// 											f32					 lineWidth)
-// {
-// 	VulkanContextHandle* pVulkanContext = VK_CONTEXT_CAST(pRenderContext);
-// 	MeshHandle*			 pHandle		= VK_MESH_CAST(pMeshHandle);
-
-// 	VkBuffer	 vertexBuffers[] = {pHandle->debugVertexBuffer};
-// 	VkDeviceSize offsets[]		 = {0};
-// 	vkCmdBindVertexBuffers(GET_SCOPE_ARRAY_INDEX(pVulkanContext->pCommandBuffers, pVulkanContext->currentFrame),
-// 						   0,
-// 						   1,
-// 						   vertexBuffers,
-// 						   offsets);
-
-// 	vkCmdSetLineWidth(GET_SCOPE_ARRAY_INDEX(pVulkanContext->pCommandBuffers, pVulkanContext->currentFrame), lineWidth);
-
-// 	vkCmdDraw(GET_SCOPE_ARRAY_INDEX(pVulkanContext->pCommandBuffers, pVulkanContext->currentFrame),
-// 			  pHandle->vertexCount * 2,
-// 			  1,
-// 			  0,
-// 			  0);
-// 	return RESULT_SUCCESS;
-// }
-// #endif // NTT_DEBUG
-
 Result VulkanMeshStorage::RemoveMeshImpl(const Pointer<void>& pMeshHandle)
 {
 	MeshHandle* pHandle = VK_MESH_CAST(pMeshHandle);

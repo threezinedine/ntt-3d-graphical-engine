@@ -46,8 +46,22 @@ Result VulkanMeshViewStorage::DrawMeshViewImpl(const Pointer<void>& pMeshViewHan
 											   const Pointer<void>& pRenderContext)
 {
 	NTT_UNUSED(pMeshViewHanle);
-	NTT_UNUSED(pMeshHandle);
-	NTT_UNUSED(pRenderContext);
+	VulkanContextHandle* pVulkanContext = VK_CONTEXT_CAST(pRenderContext);
+	MeshHandle*			 pHandle		= VK_MESH_CAST(pMeshHandle);
+
+	VkBuffer	 vertexBuffers[] = {pHandle->vertexBuffer};
+	VkDeviceSize offsets[]		 = {0};
+	vkCmdBindVertexBuffers(GET_SCOPE_ARRAY_INDEX(pVulkanContext->pCommandBuffers, pVulkanContext->currentFrame),
+						   0,
+						   1,
+						   vertexBuffers,
+						   offsets);
+
+	vkCmdDraw(GET_SCOPE_ARRAY_INDEX(pVulkanContext->pCommandBuffers, pVulkanContext->currentFrame),
+			  pHandle->vertexCount,
+			  1,
+			  0,
+			  0);
 
 	return RESULT_SUCCESS;
 }
@@ -61,6 +75,25 @@ Result VulkanMeshViewStorage::DrawDebugLineImpl(const Pointer<void>& pMeshViewHa
 	NTT_UNUSED(pMeshHandle);
 	NTT_UNUSED(pRenderContext);
 	NTT_UNUSED(lineWidth);
+
+	VulkanContextHandle* pVulkanContext = VK_CONTEXT_CAST(pRenderContext);
+	MeshHandle*			 pHandle		= VK_MESH_CAST(pMeshHandle);
+
+	VkBuffer	 vertexBuffers[] = {pHandle->debugVertexBuffer};
+	VkDeviceSize offsets[]		 = {0};
+	vkCmdBindVertexBuffers(GET_SCOPE_ARRAY_INDEX(pVulkanContext->pCommandBuffers, pVulkanContext->currentFrame),
+						   0,
+						   1,
+						   vertexBuffers,
+						   offsets);
+
+	vkCmdSetLineWidth(GET_SCOPE_ARRAY_INDEX(pVulkanContext->pCommandBuffers, pVulkanContext->currentFrame), lineWidth);
+
+	vkCmdDraw(GET_SCOPE_ARRAY_INDEX(pVulkanContext->pCommandBuffers, pVulkanContext->currentFrame),
+			  pHandle->vertexCount * 2,
+			  1,
+			  0,
+			  0);
 
 	return RESULT_SUCCESS;
 }

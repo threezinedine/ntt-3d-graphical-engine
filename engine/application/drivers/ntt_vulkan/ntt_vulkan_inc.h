@@ -147,6 +147,7 @@ struct VulkanContextHandle
 	Scope<Array<VkSemaphore>>	  pImageAvailableSemaphores;
 	Scope<Array<VkSemaphore>>	  pRenderFinishedSemaphores;
 	Scope<Array<VkFence>>		  pInFlightFences;
+	VkExtent2D					  swapchainExtent;
 
 	// temp attribute
 	u32 currentImageIndex;

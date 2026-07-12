@@ -916,6 +916,7 @@ static Result createSwapchain(VulkanContextHandle* pContextHandle, Vec2u& pWindo
 	pContextHandle->pSwapchainFramebuffers->Resize(pContextHandle->swapchainImageCount);
 
 	g_VulkanGlobals.swapchainImageFormat = surfaceFormat.format;
+	pContextHandle->swapchainExtent		 = extent;
 	g_VulkanGlobals.swapchainExtent		 = extent;
 	NTT_ASSERT_RESULT_SUCCESS(createSwapchainImageViews(pContextHandle));
 
@@ -1096,8 +1097,8 @@ static Result createSwapchainFramebuffers(VulkanContextHandle* pContextHandle)
 		framebufferInfo.renderPass		= g_VulkanGlobals.renderPass;
 		framebufferInfo.attachmentCount = 1;
 		framebufferInfo.pAttachments	= attachments;
-		framebufferInfo.width			= g_VulkanGlobals.swapchainExtent.width;
-		framebufferInfo.height			= g_VulkanGlobals.swapchainExtent.height;
+		framebufferInfo.width			= pContextHandle->swapchainExtent.width;
+		framebufferInfo.height			= pContextHandle->swapchainExtent.height;
 		framebufferInfo.layers			= 1;
 
 		VK_ASSERT(vkCreateFramebuffer(g_VulkanGlobals.logicalDevice,
@@ -1281,7 +1282,7 @@ static Result recordCommandBuffer(VulkanContextHandle* pContextHandle, u32 image
 	renderPassInfo.renderPass		 = g_VulkanGlobals.renderPass;
 	renderPassInfo.framebuffer		 = (*pContextHandle->pSwapchainFramebuffers.Get())[imageIndex];
 	renderPassInfo.renderArea.offset = {0, 0};
-	renderPassInfo.renderArea.extent = g_VulkanGlobals.swapchainExtent;
+	renderPassInfo.renderArea.extent = pContextHandle->swapchainExtent;
 
 	VkClearValue clearColor{};
 	clearColor.color = {
@@ -1297,8 +1298,8 @@ static Result recordCommandBuffer(VulkanContextHandle* pContextHandle, u32 image
 	VkViewport viewport{};
 	viewport.x		  = 0.0f;
 	viewport.y		  = 0.0f;
-	viewport.width	  = static_cast<float>(g_VulkanGlobals.swapchainExtent.width);
-	viewport.height	  = static_cast<float>(g_VulkanGlobals.swapchainExtent.height);
+	viewport.width	  = static_cast<float>(pContextHandle->swapchainExtent.width);
+	viewport.height	  = static_cast<float>(pContextHandle->swapchainExtent.height);
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 	vkCmdSetViewport(
@@ -1306,7 +1307,7 @@ static Result recordCommandBuffer(VulkanContextHandle* pContextHandle, u32 image
 
 	VkRect2D scissor{};
 	scissor.offset = {0, 0};
-	scissor.extent = g_VulkanGlobals.swapchainExtent;
+	scissor.extent = pContextHandle->swapchainExtent;
 	vkCmdSetScissor(
 		GET_SCOPE_ARRAY_INDEX(pContextHandle->pCommandBuffers, pContextHandle->currentFrame), 0, 1, &scissor);
 
