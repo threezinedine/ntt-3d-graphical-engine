@@ -1,3 +1,5 @@
+#if NTT_VULKAN
+
 #include "ntt_vulkan_mesh_view_storage.h"
 
 namespace ntt {
@@ -69,3 +71,5 @@ u32 VulkanMeshViewStorage::GetMeshViewHandleSize() const
 }
 
 } // namespace ntt
+
+#endif // NTT_VULKAN
